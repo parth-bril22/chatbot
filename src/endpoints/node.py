@@ -2,26 +2,12 @@ from ..schemas.nodeSchema import *
 from ..models.node import *
 
 
-from fastapi import FastAPI, Body
 from fastapi import APIRouter
-import uvicorn 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 import json
 import datetime
 import secrets
 from ast import literal_eval
-from fastapi_sqlalchemy import DBSessionMiddleware, db
-
-# import copy
-# doc.config = copy.deepcopy(doc.config)
-#https://amercader.net/blog/beware-of-json-fields-in-sqlalchemy/
-
-# from schema import CustomFieldSchema, NodeSchema, ConnectionSchema
-# from models import Node, NodeType, Connections, CustomFields, CustomFieldTypes, Diagram
-
-
-#start sqlalchemy engine, connect to database and start db.session
+from fastapi_sqlalchemy import db
 
 router = APIRouter(
     prefix="/node",
@@ -59,10 +45,7 @@ async def create_node(node:NodeSchema):
                         else:#TODO:complete <=>...validation
                             if "args" in prop_value_json['||']:
                                 print(prop_value_json['||']["args"][0]["=="])
-                                 #"{\"||\" : {\"args\":[{\"==\":{\"arg1\":\"1\", \"arg2\" : \"2\"}}]}}"
-                            # else:
-                                # return {"message" : "no args"}
-    
+                                 
     #set unique name
     my_name = secrets.token_hex(4)
 
@@ -148,6 +131,3 @@ async def create_custom_field(cus : CustomFieldSchema):
         db.session.add(new_cus)
         db.session.commit()
         return {"message":'success'}
-
-# if __name__ == "__main__":
-#     uvicorn.run(router)

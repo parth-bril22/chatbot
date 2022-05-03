@@ -5,26 +5,10 @@ class User(BaseModel):
     email: str
     password: str
     first_name: str
-    last_name: str
-    # register_time: datetime
-    
+    last_name: str    
 
     class Config:
         orm_mode = True
-
-
-# class FullUser(BaseModel):
-#     id: int
-#     email: str
-#     password: str
-#     first_name: str
-#     last_name: str
-#     register_time: datetime
-    
-
-#     class Config:
-#         orm_mode = True
-
 
 class LoginSchema(BaseModel):
     email : str

@@ -1,31 +1,18 @@
 #run using:
-#uvicorn filename(without .py):app --reload
-import imp
-from ..dependencies import env
+#uvicorn filename(without .py):app --reloadimport imp
 from ..dependencies.auth import AuthHandler
 auth_handler = AuthHandler()
-from ..models.login import *
-from ..models.node import *
-from ..schemas.loginSchema import *
-from ..schemas.nodeSchema import *
 
 # import uuid
 from fastapi import APIRouter
-from os import link
 from uuid import uuid4
-from fastapi import FastAPI, Depends, HTTPException, Request
-from fastapi_sqlalchemy import DBSessionMiddleware, db
+from fastapi import Depends, HTTPException 
+from fastapi_sqlalchemy import db
 from datetime import datetime, timezone
-# from starlette.responses import  RedirectResponse #for redirecting to another internal URL
 
-# import os
-# from dotenv import load_dotenv
-# load_dotenv('env')#load database details from .env file
+
 import bcrypt
 import re
-from requests import session
-import uvicorn
-# import env
 
 #for mailing
 from sendgrid import SendGridAPIClient
@@ -33,19 +20,18 @@ from sendgrid.helpers.mail import Mail
 
 #imports from our files
 
-from ..models.login import User as ModelUser
+from ..models.users import User as ModelUser
+from ..models.users import Password_tokens
+from ..schemas.userSchema import User as SchemaUser
+from ..schemas.userSchema import LoginSchema as lg
+from ..schemas.userSchema import PasswordResetSchema, PasswordChangeSchema
 
-from ..schemas.loginSchema import User as SchemaUser
-from ..schemas.loginSchema import LoginSchema as lg
+
 router = APIRouter(
     prefix="/login",
     tags=["login"],
     responses={404: {"description": "Not found"}},
 )
-
-
-# # to avoid csrftokenError/cookie related error
-# router.add_middleware(DBSessionMiddleware, db_url =  env.DATABASE_URL)
 
 #make an object of the AuthHandler class from the auth.py file
 auth_handler = AuthHandler()
@@ -184,10 +170,6 @@ async def req_change_password(email_id : str):
     print(datetime.now)
     db.session.merge(db_user)
     db.session.commit()
-    
-    #PRINT UUID FOR CHECKING PURPOSES
-    print(my_uuid)
-
     #send email
     return send_mail(my_uuid)    
     # return user
@@ -220,23 +202,6 @@ async def get_user_by_id(my_id: int):
     #return all details of the user
     return ModelUser(id = my_id, email=user.email, password=user.password, first_name=user.first_name, last_name = user.last_name, created_at = user.created_at)
 
-
-# @app.get('/reset_password_link')
-# async def reset_password_link(my_uuid:str):
-#     from starlette.responses import PlainTextResponse, RedirectResponse
-#     #get id,uuid and genreated time of token via method get_uuid_details
-#     uuid_details = get_uuid_details((my_uuid))
-#     mins_passed = ((datetime.now(timezone.utc) - uuid_details.time).seconds)/60
-#     if(uuid_details.used == True):
-#         raise HTTPException(status_code=400, detail='Link already used once')
-#     elif(mins_passed > 10):
-#         raise HTTPException(status_code=401, detail = 'More than 10 minutes have passed')
-#     else:
-#         response = RedirectResponse(url='/reset_password_by_link')
-#     return response
-#     # return {'message': 'Hello', 'my_uuid':my_uuid, 'user_id': uuid_details.id}
-
-
 @router.post('/reset_password_link')
 async def reset_password_link(my_uuid:str,ps:PasswordResetSchema):
     #get id,uuid and genreated time of token via method get_uuid_details
@@ -266,10 +231,7 @@ async def reset_password_link(my_uuid:str,ps:PasswordResetSchema):
                 return {'message':'password change sucessful'}    
         else:
             raise HTTPException(status_code=401, detail = 'Passwords are not same')
-        # url = app.url_path_for("change_password")
-        # response = RedirectResponse(url, my_uuid)
-        # return response
-
+    
 @router.post('/change_password')
 async def change_password(ps:PasswordChangeSchema, my_email = Depends(auth_handler.auth_wrapper) ):
     """
@@ -286,11 +248,7 @@ async def change_password(ps:PasswordChangeSchema, my_email = Depends(auth_handl
         if(ps.new_password == ps.confirm_password and len(ps.new_password) > 6 and ps.new_password != ps.current_password):
             user.password =  bcrypt.hashpw(ps.new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-            #create a ModelUser instance with the details entered
-            # db_user = ModelUser(id = my_id, email = user.email, password = hashed_password.decode('utf-8'), first_name = user.first_name, last_name = user.last_name, register_time = user.register_time)
-            # #update the hashed password in the database
-
-            # #add/merge the ModelUser object(db_user) to the database
+            # add/merge the ModelUser object(db_user) to the database
             db.session.merge(user)
 
             # db.session.query(ModelUser).filter_by(id = my_id).update({ModelUser.password : hashed_password.decode('utf-8')}, synchronize_session = False)

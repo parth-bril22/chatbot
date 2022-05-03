@@ -1,7 +1,5 @@
-# import copy
-# doc.config = copy.deepcopy(doc.config)
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSON
@@ -55,16 +53,4 @@ class Diagram(Base):
     __tablename__ = 'diagram'
     id = Column(String, primary_key = True)
     name = Column(String)
-
-# nt = NodeType(id = '95', type = 'hellions', params = {"message":"world", "text":"no text"} )
-# nt.params['text'] = 'yes text'
-# session.add(nt)
-# session.commit()
-
-# # nt = copy.deepcopy(nt)
-# # session.add(nt)
-# # session.commit()
-# # session.close()
-
-# print(nt.params['text'])
 
