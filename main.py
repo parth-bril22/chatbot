@@ -6,17 +6,16 @@ from routes.api import router as api_router
 from fastapi_sqlalchemy import DBSessionMiddleware , db
 from src.dependencies import env
 app = FastAPI()
-
+app.add_middleware(DBSessionMiddleware, db_url =  env.DATABASE_URL)
 origins = ["*"]
 
 app.add_middleware(
-DBSessionMiddleware,
+DBSessionMiddleware
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    db_url =  env.DATABASE_URL
 )
 
 app.include_router(api_router)
