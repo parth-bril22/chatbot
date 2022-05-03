@@ -7,7 +7,7 @@ from fastapi_sqlalchemy import DBSessionMiddleware
 from src.dependencies import env
 app = FastAPI()
 app.add_middleware(DBSessionMiddleware, db_url =  env.DATABASE_URL)
-origins = ["http://localhost:8000"]
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
