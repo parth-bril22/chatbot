@@ -96,7 +96,7 @@ async def signup(user: SchemaUser):
         hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
 
         #create a ModelUser instance with the details entered
-        db_user = ModelUser(email = user.email, password = hashed_password.decode('utf-8'), first_name = user.first_name, last_name = user.last_name, register_time = datetime.now(timezone.utc))
+        db_user = ModelUser(email = user.email, password = hashed_password.decode('utf-8'), first_name = user.first_name, last_name = user.last_name, created_at = datetime.now(timezone.utc))
 
         #add the ModelUser object(db_user) to the database
         db.session.add(db_user)
@@ -116,7 +116,7 @@ async def get_user_by_email(my_email: str):
         return False
 
     #return all details of the user
-    return ModelUser(id = user.id, email=user.email, password=user.password, first_name=user.first_name, last_name = user.last_name, register_time=user.register_time)
+    return ModelUser(id = user.id, email=user.email, password=user.password, first_name=user.first_name, last_name = user.last_name, created_at=user.created_at)
 
 @router.post("/login/")
 async def authenticate_user(input_user: lg):
@@ -218,7 +218,7 @@ async def get_user_by_id(my_id: int):
     if(user == None):
         return False
     #return all details of the user
-    return ModelUser(id = my_id, email=user.email, password=user.password, first_name=user.first_name, last_name = user.last_name, register_time = user.register_time)
+    return ModelUser(id = my_id, email=user.email, password=user.password, first_name=user.first_name, last_name = user.last_name, created_at = user.created_at)
 
 
 # @app.get('/reset_password_link')

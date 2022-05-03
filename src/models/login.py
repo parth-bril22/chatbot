@@ -5,19 +5,19 @@ from sqlalchemy.orm import relationship
 Base  = declarative_base()
 
 class User(Base):
-    __tablename__ = 'login'
+    __tablename__ = 'user_info'
     id = Column(Integer, primary_key = True)
     email = Column(String)
     password = Column(String)
     first_name = Column(String)
     last_name = Column(String)
-    register_time = Column(DateTime)
+    created_at = Column(DateTime)
     pwd_token = relationship("Password_tokens", back_populates = "user", uselist = False, cascade = "all, delete", passive_deletes = True)
 
 
 class Password_tokens(Base):
     __tablename__ = 'password_tokens'
-    id = Column(Integer, ForeignKey("login.id", ondelete = "CASCADE"), primary_key = True)
+    id = Column(Integer, ForeignKey("user_info.id", ondelete = "CASCADE"), primary_key = True)
     uuid = Column(String)
     time = Column(DateTime)
     used = Column(BOOLEAN)
