@@ -37,11 +37,6 @@ router = APIRouter(
 auth_handler = AuthHandler()
 
 
-
-@router.get("/")
-async def root():
-    return {"message": "hello world"}
-
 #validate the user, check if the details entered by the user can be used for making a new account
 def validate_user(user:ModelUser):
     """
