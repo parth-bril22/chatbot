@@ -10,7 +10,6 @@ app.add_middleware(DBSessionMiddleware, db_url =  env.DATABASE_URL)
 origins = ["*"]
 
 app.add_middleware(
-DBSessionMiddleware
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
