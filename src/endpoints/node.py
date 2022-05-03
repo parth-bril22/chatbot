@@ -11,7 +11,7 @@ from fastapi_sqlalchemy import db
 
 router = APIRouter(
     prefix="/node",
-    tags=["node"],
+    tags=["Node"],
     responses={404: {"description": "Not found"}},
 )
 

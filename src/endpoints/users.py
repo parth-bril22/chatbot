@@ -28,8 +28,8 @@ from ..schemas.userSchema import PasswordResetSchema, PasswordChangeSchema
 
 
 router = APIRouter(
-    prefix="/login",
-    tags=["login"],
+    prefix="/users",
+    tags=["User"],
     responses={404: {"description": "Not found"}},
 )
 
