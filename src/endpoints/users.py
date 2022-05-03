@@ -150,7 +150,7 @@ def send_mail(my_uuid:str):
         raise HTTPException(status_code=400, detail='Sorry!We could not send the link right now')
 
 
-@router.post('/request_change_password',tags=["login"])
+@router.post('/request_change_password')
 async def req_change_password(email_id : str):
     my_email =  email_id
 
