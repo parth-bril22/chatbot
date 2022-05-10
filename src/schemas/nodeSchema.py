@@ -12,7 +12,7 @@ class NodeSchema(BaseModel):
     position: Dict = {"top":"0","left":"0"}
 
     # all fields from all types are present. Later in api.py, only the relevant fields will be taken into consideration
-    properties: Dict = {"text":"","value":"" ,"name" :"", "type":"", "source":"", "message":"", "btn":"" }
+    properties: Dict = {"text":"","value":"" ,"name" :"", "type":"", "source":"", "message":"", "btn":"","id":"" }
 
     class Config:
         orm_mode = True

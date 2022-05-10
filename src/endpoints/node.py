@@ -1,7 +1,10 @@
 from ..schemas.nodeSchema import *
 from ..models.node import *
+from fastapi.responses import JSONResponse
 
 
+from fastapi import APIRouter, status, HTTPException
+from typing import List
 from fastapi import APIRouter
 import json
 import datetime
@@ -10,13 +13,70 @@ from ast import literal_eval
 from fastapi_sqlalchemy import db
 
 router = APIRouter(
-    prefix="/node",
+    prefix="/node/v1",
     tags=["Node"],
     responses={404: {"description": "Not found"}},
 )
 
+async def check_conditional_logic(prop_value_json : json):
+    """
+    Input format:
+    "{\"||\" : {\"args\":[{\"==\":{\"arg1\":\"1\", \"arg2\" : \"2\"}}, {\"<\":{\"arg1\":\"1\", \"arg2\" : \"2\"}}]}}"
+
+    Check if json is empty or not
+    then check at five levels: 
+    via if /else: 1)||, 2)args, 3) "==", 4)arg1,
+    via try/except: 5) 1
+    """
+    #if json is empty, return error
+    if(len(prop_value_json.keys( )) == 0 ):
+        # return {"message" : "please fill all fields"}
+        raise HTTPException(status_code = status.HTTP_204_NO_CONTENT, )
+        
+    else:
+        #else we will check if the (or,and,etc) entered are correct
+        for ele in list(prop_value_json.keys()): 
+                if ele not in ["||", "&&", "!"]:
+                    # return {"message" : "please fill || or && or > or < or ! only"}
+                    # return JSONResponse(status_code = 404, content={'Error': "Please Upload .PNG files only"})
+                    raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+                else:
+                    #check if there is "args" key in the json
+                    if "args" in prop_value_json[ele]:
+                        #iterate over all conditions(==,<,...) in "args"
+                        for all_symbols in prop_value_json[ele]["args"]:
+                            #all_symbols_keys returns dict_keys object, so we convert it into list and get the first(and only) element to get the key
+                            symbol = list(all_symbols.keys())[0]
+
+                            if symbol not in ["==", "<", ">"] or len(list(all_symbols.keys())) != 1:
+                                # return {"message" : "Enter conditional logic correctly", "at": (ele)}
+                                raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+                            else:
+                                #get all args, ie arg1 and arg2
+                                all_args = (list((all_symbols[symbol]).keys()))
+                                for arg in all_args:
+                                    if arg not in ["arg1", "arg2"]:
+                                        # return {"message" : "Enter conditional logic correctly", "at": (ele,symbol)}
+                                        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+                                    else:
+                                        try:
+                                            #load value of each arg
+                                            value = json.loads(all_symbols[symbol][arg])
+                                            #TODO:we will check whether the entered value are numeric or not by adding 1 as only numbers can be added to numbers.
+                                            value + 1
+                                            #The existing methods&libraries check only for float or/and int, making checking for other data types difficult.
+                                            #OR regex can be used
+                                        except:
+                                            # return {"message" : "Enter conditional logic correctly", "at": (ele,symbol,arg)}
+                                            raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+                    else:
+                        # return {"message" : "Enter conditional logic correctly", "at":""}
+                        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+    return True
+
+
 #create a new node
-@router.post('/create_node')
+# @router.post('/create_node')
 async def create_node(node:NodeSchema):
     #use of path??
 
@@ -24,53 +84,60 @@ async def create_node(node:NodeSchema):
     prop = db.session.query(NodeType).filter(NodeType.type == node.type).first()
     #if not, return message
     if(prop == None):
-        return {"message": "incorrect type field"}
+        return JSONResponse(status_code = 404, content = {"message": "incorrect type field"})
     
     #make a dict which will take only the relevant key-value pairs according to the type of node
     prop_dict = {k: v for k, v in node.properties.items() if k in prop.params.keys()}
 
     if (len(prop_dict) != len(prop.params.keys())):#necessary fields not filled
-        return {"message" : "please enter all fields"}
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
     if "" in node.dict().values( ) or "" in prop_dict.values(): #For Empty entries.
-        return {"message" : "please leave no field empty"}
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+        
     
-    if "value" in prop_dict.keys() and node.type == "button": # for json in button
-            prop_value_json = json.loads(prop_dict['value'])
-            if(len(prop_value_json.keys( )) == 0 ):
-                return {"message" : "please fill all fields"}
-            else:
-                for ele in list(prop_value_json.keys()): 
-                        if ele not in ["||", "&&", ">", "<", "!"]:
-                            return {"message" : "please fill || or && or > or < or ! only"}
-                        else:#TODO:complete <=>...validation
-                            if "args" in prop_value_json['||']:
-                                print(prop_value_json['||']["args"][0]["=="])
-                                 
-    #set unique name
+    if "value" in prop_dict.keys() and node.type == "conditional_logic": # if type is conditional logic, then get the "value" field
+            prop_value_json = json.loads(prop_dict['value'])#load string in "value" as json
+            logic_check = await check_conditional_logic(prop_value_json)
+            if(logic_check != True):
+                return logic_check
+    
+    #set unique name og length(4 * 2 = 8)
     my_name = secrets.token_hex(4)
 
     # make a new object of type Node with all the entered details
     new_node = Node(name = my_name, path = my_name, type = node.type, node_type = node.node_type, properties = json.dumps(prop_dict), position = json.dumps(node.position))
     #id,name and path are made private by the "_" before name in schemas.py, so frontend need not enter them.
-
     db.session.add(new_node)
     db.session.commit()
-    return {"message": "success"}
+    return JSONResponse(status_code = 200, content = {"message": "success"})
 
 
-@router.post('/create_connection')
-async def create_connection(conn : ConnectionSchema) :
+
+
+@router.post('/create_nodes')
+async def create_many_nodes(nodes : List[NodeSchema]):
+    for item in nodes:
+        x = await create_node(item)
+        if(x.status_code != 200):
+            return x
+    return JSONResponse(status_code = 200, content = {"message": "success"})
+
+
+# @router.post('/create_connection')
+async def create_connection(conn : ConnectionSchema):
     #if empty, set $success as default
     if conn.sub_node == "" : conn.sub_node = "$success"
     
     if "" in conn.dict().values( ):
-        return {"message" : "please leave no field empty"}  
+        # return {"message" : "please leave no field empty"}  
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
 
     #set my_name variable which will later be used to set the name
     my_name = "c_" + conn.source_node + "_" + conn.sub_node + "-" + conn.target_node
 
     if(conn.source_node == conn.target_node):
-        return {"message" : "Source and Target node cannot be the same"}
+        # return {"message" : "Source and Target node cannot be the same"}
+        return JSONResponse(status_code = 406, content={"message":"Source and Target node cannot be the same"})
 
     #if the (source_node's + subnode's) connection exists somewhere, update other variables only. Else make a new entry
     if(db.session.query(Connections).filter_by(source_node = conn.source_node).filter_by(sub_node = conn.sub_node).first() is not None):
@@ -81,8 +148,17 @@ async def create_connection(conn : ConnectionSchema) :
         db.session.add(new_conn)
 
     db.session.commit()
-    return {"message":'success'}
+    # return {"message":'success'}
+    return JSONResponse(status_code = 200, content = {"message": "success"})
 
+
+@router.post('/connections')
+async def create_all_connections(conns : List[ConnectionSchema]):
+    for conn in conns:
+        x = await create_connection(conn)
+        if(x.status_code != 200):
+            return x
+    return JSONResponse(status_code = 200, content = {"message" :"success"})
 
 @router.post('/create_custom_field')
 async def create_custom_field(cus : CustomFieldSchema):
@@ -91,9 +167,11 @@ async def create_custom_field(cus : CustomFieldSchema):
     prop = db.session.query(CustomFieldTypes).filter(CustomFieldTypes.type == cus.type).first()
     
     if(prop == None):
-        return {"message": "incorrect type field"}
+        # return {"message": "incorrect type field"}
+        raise HTTPException(status_code = status.HTTP_204_NO_CONTENT)
     if "" in cus.dict().values( ):
-        return {"message" : "please leave no field empty"}  
+        # return {"message" : "please leave no field empty"}  
+        raise HTTPException(status_code = status.HTTP_204_NO_CONTENT)
 
     #check if type entered and value's datatype matches
 
@@ -103,7 +181,8 @@ async def create_custom_field(cus : CustomFieldSchema):
             my_type = str(ip_type).split(" ")[-1][:-1].strip("\'")
             print(my_type)
             if my_type != "int" and my_type != "float":
-                return {"please check your number"}
+                # return {"please check your number"}
+                return JSONResponse(status_code = 404, content={"message": "please check your number"})
         else:
             raise ValueError
     except (ValueError, SyntaxError):# error occurs when type is string
@@ -115,9 +194,11 @@ async def create_custom_field(cus : CustomFieldSchema):
                 format = "%Y-%m-%d"
                 datetime.datetime.strptime(cus.value, format)
             except ValueError:
-                return {"message" : "This is the incorrect date string format. It should be YYYY-MM-DD"}
+                # return {"message" : "This is the incorrect date string format. It should be YYYY-MM-DD"}
+                return JSONResponse(status_code = 404, content={"message" : "This is the incorrect date string format. It should be YYYY-MM-DD"})
         else:
-            return {"message": "type not matching"}
+            # return {"message": "type not matching"}
+            return JSONResponse(status_code = 404, content={"type not matching"})
 
 
     
@@ -125,9 +206,13 @@ async def create_custom_field(cus : CustomFieldSchema):
     if(db.session.query(CustomFields).filter_by(name = cus.name).first() is not None):
         db.session.query(CustomFields).filter(CustomFields.name == cus.name).update({'value':cus.value})
         db.session.commit()
-        return {"message":'custom field updated'}
+        # return {"message":'custom field updated'}
+        return JSONResponse(status_code = 200, content={"message" : "custom field updated"})
     else:
         new_cus = CustomFields(type = cus.type, name = cus.name, value = cus.value)
         db.session.add(new_cus)
         db.session.commit()
-        return {"message":'success'}
+        # return {"message":'success'}
+        return JSONResponse(status_code = 200, content={"message" : "success"})
+
+

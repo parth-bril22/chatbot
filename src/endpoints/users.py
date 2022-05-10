@@ -1,5 +1,6 @@
 #run using:
 #uvicorn filename(without .py):app --reloadimport imp
+from requests import session
 from ..dependencies.auth import AuthHandler
 auth_handler = AuthHandler()
 
@@ -9,7 +10,7 @@ from uuid import uuid4
 from fastapi import Depends, HTTPException 
 from fastapi_sqlalchemy import db
 from datetime import datetime, timezone
-
+from fastapi.responses import JSONResponse
 
 import bcrypt
 import re
@@ -28,14 +29,10 @@ from ..schemas.userSchema import PasswordResetSchema, PasswordChangeSchema
 
 
 router = APIRouter(
-    prefix="/users",
+    prefix="/users/v1",
     tags=["User"],
     responses={404: {"description": "Not found"}},
 )
-
-#make an object of the AuthHandler class from the auth.py file
-auth_handler = AuthHandler()
-
 
 #validate the user, check if the details entered by the user can be used for making a new account
 def validate_user(user:ModelUser):
@@ -44,16 +41,16 @@ def validate_user(user:ModelUser):
     """
     
     if(bool(db.session.query(ModelUser).filter_by(email = user.email).first())):
-        raise HTTPException(status_code=400, detail='Mail already exists')
+        return JSONResponse(status_code=404, content = {"message" : 'Mail already exists'})
 
     elif not (re.fullmatch(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+$', user.email)):
-        raise HTTPException(status_code=400, detail='Enter valid email')
+        return JSONResponse(status_code=404, content = {"message" : 'Enter valid email'})
 
     elif (len(user.password) < 7):
-        raise HTTPException(status_code=400, detail='Password must be greater than 6 characters')
+        return JSONResponse(status_code=404, content = {"message" : 'Password must be greater than 6 characters'})
 
     elif not (re.fullmatch(r'[a-zA-Z]+$', user.first_name) and re.fullmatch(r'[A-Za-z]+$', user.last_name)):
-        raise HTTPException(status_code=400, detail='Enter valid name')
+        return JSONResponse(status_code=404, content = {"message" : 'Enter valid name'})
 
     else:
         return True
@@ -82,7 +79,7 @@ async def signup(user: SchemaUser):
         #add the ModelUser object(db_user) to the database
         db.session.add(db_user)
         db.session.commit()
-        return {'message': "Signup Successful"}
+        return JSONResponse(status_code=200, content = {'message': "Signup Successful"})
 
 
 #get details of the user if the email_id entered is valid, else return False
@@ -104,12 +101,12 @@ async def authenticate_user(input_user: lg):
     user = await get_user_by_email(input_user.email)
 
     if (not user) or (not bcrypt.checkpw(input_user.password.encode('utf-8'), user.password.encode('utf-8'))):
-        raise HTTPException(status_code=401, detail='Invalid username or password')
+        return JSONResponse(status_code=401, content = {"message" : 'Invalid username or password'})
 
     else:   
         #generate/encode and return JWT token 
         token = auth_handler.encode_token(input_user.email)
-        return {'token':token, 'message': 'Details are correct'}#valid for 1 minute and 30 seconds, change expiration time in auth.py
+        return JSONResponse(status_code=200, content={"message" : "success", 'token':token})#valid for 1 minute and 30 seconds, change expiration time in auth.py
 
 
     """
@@ -141,8 +138,8 @@ def send_mail(my_uuid:str):
         print(response.body)
         print(response.headers)
         return {'message': 'Link sent, please check mail', "link" : link1}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail='Sorry!We could not send the link right now')
+    except Exception:
+        return JSONResponse(status_code=404,content = {"message" : 'Sorry!We could not send the link right now'})
 
 
 @router.post('/request_change_password')
@@ -154,7 +151,7 @@ async def req_change_password(email_id : str):
 
     #if email id does not exist in the db, return false
     if(user == None):
-        raise HTTPException(status_code=400, detail = 'The user is not registered')
+        return JSONResponse(status_code=404,content = {"message" : 'The user is not registered'})
     my_id = user.id
 
     #if the user exists, generate uuid
@@ -178,11 +175,11 @@ def get_uuid_details(my_uuid:str):
     try:
         user = db.session.query(Password_tokens).filter_by(uuid = str(my_uuid)).first()
     except:
-        raise HTTPException(status_code=400, detail='UUID entered incorrectly')
+        return JSONResponse(status_code=401, content = {"message" : 'UUID entered incorrectly'})
 
     #if email id does not exist in the db, return false
     if(user == None):
-        raise HTTPException(status_code=400, detail='UUID not found')
+        return JSONResponse(status_code=401, content = {"message" : 'UUID not found'})
 
     #return all details of the user
     return Password_tokens(id = user.id, uuid = my_uuid, time = user.time, used = user.used)
@@ -203,11 +200,11 @@ async def reset_password_link(my_uuid:str,ps:PasswordResetSchema):
     uuid_details = get_uuid_details((my_uuid))
 
     if(uuid_details.used == True):
-        raise HTTPException(status_code=400, detail='Link already used once')
+        return JSONResponse(status_code=401,content = {"message" : 'Link already used once'})
 
     mins_passed = ((datetime.now(timezone.utc) - uuid_details.time).seconds)/60
     if(mins_passed > 10):
-        raise HTTPException(status_code=401, detail = 'More than 10 minutes have passed')
+        return JSONResponse(status_code=401, content = {"message" : 'More than 10 minutes have passed'})
     else:
         new_user = await get_user_by_id(uuid_details.id)
         
@@ -222,10 +219,10 @@ async def reset_password_link(my_uuid:str,ps:PasswordResetSchema):
                 db.session.query(Password_tokens).filter_by(id = uuid_details.id).update(dict(used = True))
    
                 db.session.commit()
-
-                return {'message':'password change sucessful'}    
+                db,session.close()
+                return JSONResponse(status_code=200, content={'message': "success"})   
         else:
-            raise HTTPException(status_code=401, detail = 'Passwords are not same')
+            return JSONResponse(status_code=400, content = {"message" : 'Passwords are not same'})
     
 @router.post('/change_password')
 async def change_password(ps:PasswordChangeSchema, my_email = Depends(auth_handler.auth_wrapper) ):
@@ -250,16 +247,17 @@ async def change_password(ps:PasswordChangeSchema, my_email = Depends(auth_handl
             db.session.commit()
             db.session.close()
             
-            return {'message':'password change sucessful'}    
+            return JSONResponse(status_code=200, content={'message':'success'})    
         else:
-            raise HTTPException(status_code=401, detail = 'Passwords must be same and of length greater than 6 and must not be the same as old password ')
+            return JSONResponse(status_code=400, content = {"message" : 'Passwords must be same and of length greater than 6 and must not be the same as old password '})
     else:
-        raise HTTPException(status_code=401, detail = 'Please enter correct current password')
+        return JSONResponse(status_code=401, content = {"message" : 'Please enter correct current password'})
 
 
 @router.post('/delete_user')
 async def delete_user(my_email = Depends(auth_handler.auth_wrapper)):
      db.session.query(ModelUser).filter_by(email = my_email).delete()
      db.session.commit()
-     return {'message': 'deleted'}
+     db.session.close()
+     return JSONResponse(status_code = 200, content = {'message': 'deleted'})
 
