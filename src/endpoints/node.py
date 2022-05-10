@@ -115,7 +115,7 @@ async def create_node(node:NodeSchema):
 
 
 @router.post('/create_nodes')
-async def create_many_nodes(nodes : List[NodeSchema]):
+async def create_nodes(nodes : List[NodeSchema]):
     for item in nodes:
         x = await create_node(item)
         if(x.status_code != 200):
