@@ -224,7 +224,7 @@ async def reset_password_link(my_uuid:str,ps:PasswordResetSchema):
         else:
             return JSONResponse(status_code=400, content = {"message" : 'Passwords are not same'})
     
-@router.post('/change_password')
+@router.patch('/change_password')
 async def change_password(ps:PasswordChangeSchema, my_email = Depends(auth_handler.auth_wrapper) ):
     """
     To change password  when the user is logged in. Needs PasswordChangeSchema and JWT token as input parameters. 
@@ -254,7 +254,7 @@ async def change_password(ps:PasswordChangeSchema, my_email = Depends(auth_handl
         return JSONResponse(status_code=401, content = {"message" : 'Please enter correct current password'})
 
 
-@router.post('/delete_user')
+@router.delete('/delete_user')
 async def delete_user(my_email = Depends(auth_handler.auth_wrapper)):
      db.session.query(ModelUser).filter_by(email = my_email).delete()
      db.session.commit()
