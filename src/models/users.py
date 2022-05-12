@@ -21,3 +21,4 @@ class Password_tokens(Base):
     time = Column(DateTime)
     used = Column(BOOLEAN)
     user = relationship("User", back_populates = "pwd_token")
+

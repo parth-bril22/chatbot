@@ -1,11 +1,10 @@
 from ..schemas.nodeSchema import *
-from ..models.node import *
+from ..models.node import Node, NodeType , Connections,CustomFieldTypes, CustomFields
 from fastapi.responses import JSONResponse
 
 
 from fastapi import APIRouter, status, HTTPException
 from typing import List
-from fastapi import APIRouter
 import json
 import datetime
 import secrets
@@ -111,9 +110,6 @@ async def create_node(node:NodeSchema):
     db.session.commit()
     return JSONResponse(status_code = 200, content = {"message": "success"})
 
-
-
-
 @router.post('/create_nodes')
 async def create_nodes(nodes : List[NodeSchema]):
     for item in nodes:
@@ -122,6 +118,17 @@ async def create_nodes(nodes : List[NodeSchema]):
             return x
     return JSONResponse(status_code = 200, content = {"message": "success"})
 
+# Delete node by user
+@router.delete('/delete_node')
+async def delete_node(node_id :int):
+    
+    if node_id in [value[0] for value in db.session.query(Node.id)]:
+        db.session.query(Node).filter_by(id = node_id).delete()
+        db.session.commit()
+        db.session.close()
+    else: 
+        return JSONResponse(status_code = 404, content = {'message': 'id not found'})
+    return JSONResponse(status_code = 200, content = {'message': 'Node deleted'})
 
 # @router.post('/create_connection')
 async def create_connection(conn : ConnectionSchema):
@@ -152,8 +159,8 @@ async def create_connection(conn : ConnectionSchema):
     return JSONResponse(status_code = 200, content = {"message": "success"})
 
 
-@router.post('/connections')
-async def create_all_connections(conns : List[ConnectionSchema]):
+@router.post('/create_connection')
+async def create_connection(conns : List[ConnectionSchema]):
     for conn in conns:
         x = await create_connection(conn)
         if(x.status_code != 200):
