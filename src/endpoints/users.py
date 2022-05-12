@@ -7,7 +7,7 @@ auth_handler = AuthHandler()
 # import uuid
 from fastapi import APIRouter
 from uuid import uuid4
-from fastapi import Depends, HTTPException 
+from fastapi import Depends, HTTPException, Request
 from fastapi_sqlalchemy import db
 from datetime import datetime, timezone
 from fastapi.responses import JSONResponse
@@ -106,7 +106,7 @@ async def authenticate_user(input_user: lg):
     else:   
         #generate/encode and return JWT token 
         token = auth_handler.encode_token(input_user.email)
-        return JSONResponse(status_code=200, content={"message" : "success", 'token':token})#valid for 1 minute and 30 seconds, change expiration time in auth.py
+        return JSONResponse(status_code=200, content={"message" : "success", 'token':token, "   h_token" : auth_handler.create_refresh_token(input_user.email)})#valid for 1 minute and 30 seconds, change expiration time in auth.py
 
 
     """
@@ -115,6 +115,24 @@ async def authenticate_user(input_user: lg):
     This function is only to demonstrate that. To run this:
     curl --header "Authorizaion: Bearer entertokenhere" localhost:8000/protected
     """
+
+
+@router.post('/refresh')
+async def refresh( refresh_token : str):
+    try:
+        payload = auth_handler.decode_refresh_token(refresh_token)
+            # Check if token is not expired
+        if datetime.utcfromtimestamp(payload.get('exp')) > datetime.utcnow():
+            email = payload.get('email')
+            # Validate email
+            user = await get_user_by_email(email)
+            if user:
+                # Create and return token
+                return JSONResponse(status_code=200, content={"message" : "success", 'access_token': auth_handler.encode_token(email)})
+
+    except Exception:
+        return JSONResponse(status_code=401, content = {"message" : 'Unauthorized'})
+    return JSONResponse(status_code=401, content = {"message" : 'Unauthorized'})
 
 
 
