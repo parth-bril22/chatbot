@@ -119,22 +119,50 @@ async def create_nodes(nodes : List[NodeSchema]):
     return JSONResponse(status_code = 200, content = {"message": "success"})
 
 # Delete node by user
+# @router.delete('/delete_node')
+# async def delete_node(node_id :int):
+#     if node_id in [value[0] for value in db.session.query(Node.id)]:
+#         db.session.query(Node).filter_by(id = node_id).delete()
+#         db.session.commit()
+#         db.session.close()
+#     else: 
+#         return JSONResponse(status_code = 404, content = {'message': 'id not found'})
+#     return JSONResponse(status_code = 200, content = {'message': 'Node deleted'})
+
 @router.delete('/delete_node')
-async def delete_node(node_id :int):
-    
-    if node_id in [value[0] for value in db.session.query(Node.id)]:
-        db.session.query(Node).filter_by(id = node_id).delete()
+async def delete_node(node_id : str):
+    try:
+        # print([value[0] for value in db.session.query(Node.id)])
+        node_in_db = db.session.query(Node).filter_by(id = node_id)
+
+        if(node_in_db.first() == None):
+            return JSONResponse(status_code=404, content={"message":"Node not found"})
+
+        # delete node from node table
+        node_in_db.delete()
+        #delete all connections of deleted node from connections table(if matched at source node or target node)
+        db.session.query(Connections).filter((Connections.source_node == node_id) | (Connections.target_node == node_id)).delete()
         db.session.commit()
         db.session.close()
-    else: 
-        return JSONResponse(status_code = 404, content = {'message': 'id not found'})
-    return JSONResponse(status_code = 200, content = {'message': 'Node deleted'})
+        return JSONResponse(status_code = 200, content = {'message': 'Node deleted'})
+    except:
+        return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})  
+
+
 
 # @router.post('/create_connection')
 async def create_connection(conn : ConnectionSchema):
     #if empty, set $success as default
     if conn.sub_node == "" : conn.sub_node = "$success"
-    
+    try:
+        source_node_exists = db.session.query(Node).filter((Node.id == conn.source_node)).first()
+        target_node_exists = db.session.query(Node).filter((Node.id == conn.target_node)).first()
+
+        if(source_node_exists == None or target_node_exists == None):
+            return JSONResponse(status_code = 404, content = {"message" : "Node not found"})
+    except:
+        return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})
+
     if "" in conn.dict().values( ):
         # return {"message" : "please leave no field empty"}  
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
@@ -160,7 +188,7 @@ async def create_connection(conn : ConnectionSchema):
 
 
 @router.post('/create_connection')
-async def create_connection(conns : List[ConnectionSchema]):
+async def create_connections(conns : List[ConnectionSchema]):
     for conn in conns:
         x = await create_connection(conn)
         if(x.status_code != 200):
