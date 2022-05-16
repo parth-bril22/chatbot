@@ -24,6 +24,14 @@ class DelNodeSchema(BaseModel):
         orm_mode = True
         underscore_attrs_are_private = True
 
+class SubNodeSchema(BaseModel):
+    _id : int
+    node_id : int
+    name : str
+    properties : Dict = {"text":""}
+    class Config:
+        orm_mode = True
+        underscore_attrs_are_private = True
 class ConnectionSchema(BaseModel):
     _id: int
     _name: Optional[str]

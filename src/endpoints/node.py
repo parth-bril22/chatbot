@@ -1,5 +1,5 @@
 from ..schemas.nodeSchema import *
-from ..models.node import Node, NodeType , Connections,CustomFieldTypes, CustomFields
+from ..models.node import Node, NodeType , Connections,CustomFieldTypes, CustomFields, SubNode
 from fastapi.responses import JSONResponse
 
 
@@ -148,12 +148,26 @@ async def delete_node(node_id : str):
     except:
         return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})  
 
+@router.post("/add_sub_node")
+async def add_sub_node(sub:SubNodeSchema):
+    try:
+        new_sub_node = SubNode(node_id = sub.node_id, name = sub.name,properties = json.dumps(sub.properties))
+        db.session.add(new_sub_node)
+        db.session.commit()
+        db.session.close()
+        return JSONResponse(status_code = 200, content = {"message" : "Sub node addedd"})
+    except:
+        return JSONResponse(status_code=404, content={"message":"Node not present in db"})  
 
 
+
+    
 # @router.post('/create_connection')
 async def create_connection(conn : ConnectionSchema):
     #if empty, set $success as default
     if conn.sub_node == "" : conn.sub_node = "$success"
+
+
     try:
         source_node_exists = db.session.query(Node).filter((Node.id == conn.source_node)).first()
         target_node_exists = db.session.query(Node).filter((Node.id == conn.target_node)).first()
@@ -187,6 +201,55 @@ async def create_connection(conn : ConnectionSchema):
     return JSONResponse(status_code = 200, content = {"message": "success"})
 
 
+async def check_node_details(node:NodeSchema):
+    prop = db.session.query(NodeType).filter(NodeType.type == node.type).first()
+    #if not, return message
+    if(prop == None):
+        return JSONResponse(status_code = 404, content = {"message": "incorrect type field"})
+    
+    #make a dict which will take only the relevant key-value pairs according to the type of node
+    prop_dict = {k: v for k, v in node.properties.items() if k in prop.params.keys()}
+
+    if (len(prop_dict) != len(prop.params.keys())):#necessary fields not filled
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+    if "" in node.dict().values( ) or "" in prop_dict.values(): #For Empty entries.
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+        
+    
+    if "value" in prop_dict.keys() and node.type == "conditional_logic": # if type is conditional logic, then get the "value" field
+            prop_value_json = json.loads(prop_dict['value'])#load string in "value" as json
+            logic_check = await check_conditional_logic(prop_value_json)
+            if(logic_check != True):
+                return logic_check
+                #  "{\"||\" : {\"args\":[{\"==\":{\"arg1\":\"1\", \"arg2\" : \"2\"}}, {\"<\":{\"arg1\":\"1\", \"arg2\" : \"2\"}}]}}"
+    return JSONResponse(status_code=200), prop_dict
+
+@router.post('/update_node')
+async def update_node(node_id:str,my_node:NodeSchema):
+    try:
+        
+        #check if the node_id is in the database
+        node_in_db = db.session.query(Node).filter_by(id = node_id)
+        #if there is no node with given id, return 404
+        if(node_in_db.first() == None):
+            return JSONResponse(status_code=404, content={"message":"Node not found"})
+        
+
+        #get jsonresponse(w status code) and dict with relevant fields only
+        node_check, node_properties = await check_node_details(my_node)
+        #check for errors
+        if(node_check.status_code != 200):
+            return node_check
+    
+        #update node properties
+        db.session.query(Node).filter(Node.id == node_id).update({'properties' : node_properties})
+        db.session.commit()
+        db.session.close()
+
+        return JSONResponse(status_code = 200, content = {"message":"success"})
+    except:
+         return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})  
+         
 @router.post('/create_connection')
 async def create_connections(conns : List[ConnectionSchema]):
     for conn in conns:
