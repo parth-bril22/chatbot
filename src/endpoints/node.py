@@ -1,9 +1,12 @@
+from src.schemas.flowSchema import *
 from ..schemas.nodeSchema import *
 from ..models.node import Node, NodeType , Connections,CustomFieldTypes, CustomFields, SubNode
+from ..models.flow import Flow
 from fastapi.responses import JSONResponse
 
 
-from fastapi import APIRouter, status, HTTPException
+
+from fastapi import APIRouter, status, HTTPException ,encoders
 from typing import List
 import json
 import datetime
@@ -75,9 +78,7 @@ async def check_conditional_logic(prop_value_json : json):
 
 
 #create a new node
-# @router.post('/create_node')
 async def create_node(node:NodeSchema):
-    #use of path??
 
     #check if the "type" of node is actually present in the nodetype table
     prop = db.session.query(NodeType).filter(NodeType.type == node.type).first()
@@ -104,13 +105,13 @@ async def create_node(node:NodeSchema):
     my_name = secrets.token_hex(4)
 
     # make a new object of type Node with all the entered details
-    new_node = Node(name = my_name, path = my_name, type = node.type, node_type = node.node_type, properties = json.dumps(prop_dict), position = json.dumps(node.position))
+    new_node = Node(name = my_name, path = my_name, type = node.type, node_type = node.node_type, properties = json.dumps(prop_dict), position = json.dumps(node.position),flow_id=node.flow_id)
     #id,name and path are made private by the "_" before name in schemas.py, so frontend need not enter them.
     db.session.add(new_node)
     db.session.commit()
     return JSONResponse(status_code = 200, content = {"message": "success"})
 
-@router.post('/create_nodes')
+@router.post('/create_node')
 async def create_nodes(nodes : List[NodeSchema]):
     for item in nodes:
         x = await create_node(item)
@@ -118,22 +119,11 @@ async def create_nodes(nodes : List[NodeSchema]):
             return x
     return JSONResponse(status_code = 200, content = {"message": "success"})
 
-# Delete node by user
-# @router.delete('/delete_node')
-# async def delete_node(node_id :int):
-#     if node_id in [value[0] for value in db.session.query(Node.id)]:
-#         db.session.query(Node).filter_by(id = node_id).delete()
-#         db.session.commit()
-#         db.session.close()
-#     else: 
-#         return JSONResponse(status_code = 404, content = {'message': 'id not found'})
-#     return JSONResponse(status_code = 200, content = {'message': 'Node deleted'})
-
 @router.delete('/delete_node')
-async def delete_node(node_id : str):
+async def delete_node(node_id : str, flow_id:int):
     try:
         # print([value[0] for value in db.session.query(Node.id)])
-        node_in_db = db.session.query(Node).filter_by(id = node_id)
+        node_in_db = db.session.query(Node).filter_by(flow_id = flow_id).filter_by(id = node_id)
 
         if(node_in_db.first() == None):
             return JSONResponse(status_code=404, content={"message":"Node not found"})
@@ -141,36 +131,84 @@ async def delete_node(node_id : str):
         # delete node from node table
         node_in_db.delete()
         #delete all connections of deleted node from connections table(if matched at source node or target node)
-        db.session.query(Connections).filter((Connections.source_node == node_id) | (Connections.target_node == node_id)).delete()
+        db.session.query(Connections).filter((Connections.source_node_id == node_id) | (Connections.target_node_id == node_id)).delete()
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code = 200, content = {'message': 'Node deleted'})
     except:
         return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})  
 
-@router.post("/add_sub_node")
-async def add_sub_node(sub:SubNodeSchema):
+@router.post('/update_node')
+async def update_node(node_id:str,my_node:NodeSchema):
     try:
-        new_sub_node = SubNode(node_id = sub.node_id, name = sub.name,properties = json.dumps(sub.properties))
-        db.session.add(new_sub_node)
+        
+        #check if the node_id is in the database
+        node_in_db = db.session.query(Node).filter_by(id = node_id).filter_by(flow_id=my_node.flow_id)
+        
+        #if there is no node with given id, return 404
+        if(node_in_db.first() == None):
+            return JSONResponse(status_code=404, content={"message":"Node not found"})
+        
+
+        #get jsonresponse(w status code) and dict with relevant fields only
+        node_check, node_properties = await check_node_details(my_node)
+        #check for errors
+        if(node_check.status_code != 200):
+            return node_check
+    
+        #update node properties
+        db.session.query(Node).filter(Node.id == node_id).filter_by(flow_id=my_node.flow_id).update({'properties' : node_properties})
         db.session.commit()
         db.session.close()
-        return JSONResponse(status_code = 200, content = {"message" : "Sub node addedd"})
+
+        return JSONResponse(status_code = 200, content = {"message":"success"})
     except:
-        return JSONResponse(status_code=404, content={"message":"Node not present in db"})  
+         return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"}) 
 
+@router.post("/add_sub_node")
+async def add_sub_node(sub:SubNodeSchema):
+    # try:
+    #make default sub_node for all nodes
+    # new_sub_node = SubNode(node_id = new_node.id, name = "$default", flow_id = node.flow_id)
+    # db.session.add(new_sub_node)
+    node_in_db = db.session.query(Node).filter_by(id = sub.node_id).filter_by(flow_id=sub.flow_id)
+    if(node_in_db.first() == None):
+        return JSONResponse(status_code=404, content={"message":"Node or flow id not found"})
+    # node_in_db.delete()
+    new_sub_node = SubNode(node_id = sub.node_id, name = sub.name,properties = json.dumps(sub.properties),flow_id = sub.flow_id)
+    db.session.add(new_sub_node)
+    db.session.commit()
+    db.session.close()
+    return JSONResponse(status_code = 200, content = {"message" : "Sub node addedd"})
+    # except:
+        # return JSONResponse(status_code=404, content={"message":"Node not present in db"})  
 
+@router.delete('/delete_sub_node')
+async def delete_sub_node(sub_node_id : str, flow_id:int):
+    try:
+        # print([value[0] for value in db.session.query(Node.id)])
+        node_in_db = db.session.query(SubNode).filter_by(flow_id = flow_id).filter_by(id = sub_node_id)
 
-    
+        if(node_in_db.first() == None):
+            return JSONResponse(status_code=404, content={"message":"Sub Node not found"})
+
+        # delete node from node table
+        node_in_db.delete()
+        #delete all connections of deleted node from connections table(if matched at source node or target node)
+        db.session.query(Connections).filter(Connections.sub_node_id == sub_node_id).delete()
+        db.session.commit()
+        db.session.close()
+        return JSONResponse(status_code = 200, content = {'message': 'Sub Node deleted'})
+    except:
+        return JSONResponse(status_code=404, content={"message":"Please enter sub_node_id correctly"})  
 # @router.post('/create_connection')
 async def create_connection(conn : ConnectionSchema):
     #if empty, set $success as default
-    if conn.sub_node == "" : conn.sub_node = "$success"
-
+    if conn.sub_node_id == "" : conn.sub_node_id = "$success"
 
     try:
-        source_node_exists = db.session.query(Node).filter((Node.id == conn.source_node)).first()
-        target_node_exists = db.session.query(Node).filter((Node.id == conn.target_node)).first()
+        source_node_exists = db.session.query(Node).filter((Node.id == conn.source_node_id)).first()
+        target_node_exists = db.session.query(Node).filter((Node.id == conn.target_node_id)).first()
 
         if(source_node_exists == None or target_node_exists == None):
             return JSONResponse(status_code = 404, content = {"message" : "Node not found"})
@@ -182,18 +220,18 @@ async def create_connection(conn : ConnectionSchema):
         raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
 
     #set my_name variable which will later be used to set the name
-    my_name = "c_" + conn.source_node + "_" + conn.sub_node + "-" + conn.target_node
+    my_name = "c_" + str(conn.source_node_id) + "_" + str(conn.sub_node_id) + "-" + str(conn.target_node_id)
 
-    if(conn.source_node == conn.target_node):
+    if(conn.source_node_id == conn.target_node_id):
         # return {"message" : "Source and Target node cannot be the same"}
         return JSONResponse(status_code = 406, content={"message":"Source and Target node cannot be the same"})
 
     #if the (source_node's + subnode's) connection exists somewhere, update other variables only. Else make a new entry
-    if(db.session.query(Connections).filter_by(source_node = conn.source_node).filter_by(sub_node = conn.sub_node).first() is not None):
-        db.session.query(Connections).filter(Connections.source_node == conn.source_node).filter(Connections.sub_node == conn.sub_node).\
-        update({'target_node':conn.target_node, 'name' : my_name})
+    if(db.session.query(Connections).filter_by(flow_id=conn.flow_id).filter_by(source_node_id= conn.source_node_id).filter_by(sub_node_id = conn.sub_node_id).first() is not None):
+        db.session.query(Connections).filter(Connections.source_node_id == conn.source_node_id).filter(Connections.sub_node_id == conn.sub_node_id).\
+        update({'target_node':conn.target_node_id, 'name' : my_name})
     else:
-        new_conn = Connections(sub_node = conn.sub_node, source_node = conn.source_node, target_node = conn.target_node, name = my_name)
+        new_conn = Connections(sub_node_id = conn.sub_node_id, source_node_id = conn.source_node_id, target_node_id = conn.target_node_id, name = my_name,flow_id= conn.flow_id)
         db.session.add(new_conn)
 
     db.session.commit()
@@ -224,31 +262,7 @@ async def check_node_details(node:NodeSchema):
                 #  "{\"||\" : {\"args\":[{\"==\":{\"arg1\":\"1\", \"arg2\" : \"2\"}}, {\"<\":{\"arg1\":\"1\", \"arg2\" : \"2\"}}]}}"
     return JSONResponse(status_code=200), prop_dict
 
-@router.post('/update_node')
-async def update_node(node_id:str,my_node:NodeSchema):
-    try:
-        
-        #check if the node_id is in the database
-        node_in_db = db.session.query(Node).filter_by(id = node_id)
-        #if there is no node with given id, return 404
-        if(node_in_db.first() == None):
-            return JSONResponse(status_code=404, content={"message":"Node not found"})
-        
-
-        #get jsonresponse(w status code) and dict with relevant fields only
-        node_check, node_properties = await check_node_details(my_node)
-        #check for errors
-        if(node_check.status_code != 200):
-            return node_check
-    
-        #update node properties
-        db.session.query(Node).filter(Node.id == node_id).update({'properties' : node_properties})
-        db.session.commit()
-        db.session.close()
-
-        return JSONResponse(status_code = 200, content = {"message":"success"})
-    except:
-         return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})  
+ 
          
 @router.post('/create_connection')
 async def create_connections(conns : List[ConnectionSchema]):
@@ -301,16 +315,46 @@ async def create_custom_field(cus : CustomFieldSchema):
 
     
     #if name exists then update fields. Else make a new entry    
-    if(db.session.query(CustomFields).filter_by(name = cus.name).first() is not None):
+    if(db.session.query(CustomFields).filter_by(flow_id = cus.flow_id).filter_by(name = cus.name).first() is not None):
         db.session.query(CustomFields).filter(CustomFields.name == cus.name).update({'value':cus.value})
         db.session.commit()
         # return {"message":'custom field updated'}
         return JSONResponse(status_code = 200, content={"message" : "custom field updated"})
     else:
-        new_cus = CustomFields(type = cus.type, name = cus.name, value = cus.value)
+        new_cus = CustomFields(type = cus.type, name = cus.name, value = cus.value,flow_id=cus.flow_id)
         db.session.add(new_cus)
         db.session.commit()
         # return {"message":'success'}
         return JSONResponse(status_code = 200, content={"message" : "success"})
 
+async def create_custom_fields(cus : List[CustomFieldSchema]):
+    for item in cus:
+        x = await create_custom_field(item)
+        if(x.status_code != 200):
+            return x
+    return JSONResponse(status_code = 200, content = {"message" :"success"})
 
+@router.post('/preview')
+async def preview(flow_id : int):
+    try:
+        start_node = db.session.query(Node.properties, Node.flow_id, Node.id, Node.type).filter_by(node_type = "start_node").filter_by(flow_id=flow_id).first()
+        start_node = encoders.jsonable_encoder(start_node)
+        sub_nodes = db.session.query(SubNode).filter_by(node_id = start_node['id']).filter_by(flow_id=flow_id).all()
+        sub_nodes = encoders.jsonable_encoder(sub_nodes)
+        return JSONResponse(status_code=200,content={"start_node": start_node, "sub_nodes":sub_nodes})
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=404, content={"message":"Error in preview"})
+
+@router.post('/send')
+async def send(flow_id : int, my_source_node:str, my_sub_node:str):
+    try:
+        if(db.session.query(Node.node_type).filter_by(id=my_source_node).first()[0] == "end_node"):
+            return JSONResponse(status_code=400, content = {"message":"Chat over"})
+        # print(db.session.query(Node.node_type).filter_by(id=my_source_node).first()[0])
+        next_node_id = db.session.query(Connections).filter_by(source_node_id = my_source_node).filter_by(sub_node_id = my_sub_node).filter_by(flow_id=flow_id).first()
+        next_node = db.session.query(Node).filter_by(id = next_node_id.target_node_id).filter_by(flow_id=flow_id).first()
+        return {"next_node_type" : next_node.type, "next_node_properties":json.loads(next_node.properties), "next_node_id" : next_node.id}
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})

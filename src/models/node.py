@@ -1,5 +1,5 @@
 
-from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy import Column, ForeignKey, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSON
@@ -10,6 +10,7 @@ Base  = declarative_base()
 class Node(Base):
     __tablename__ = 'node'
     id = Column(Integer, primary_key = True)
+    flow_id = Column(Integer)
     name = Column(String)
     path = Column(String)
     node_type = Column(String)
@@ -19,7 +20,6 @@ class Node(Base):
     node_conn = relationship("NodeType", back_populates = "node_type_conn")
     node_sub_node =  relationship("SubNode",back_populates = 'sub_node_con')
 
-
 class NodeType(Base):
     __tablename__ = 'node_type'
     id = Column(Integer, primary_key = True)
@@ -27,27 +27,36 @@ class NodeType(Base):
     params = Column(JSON)
     node_type_conn = relationship("Node", back_populates = "node_conn")
 
-
 class Connections(Base):
     __tablename__ = 'connections'
     id = Column(Integer, primary_key = True)
+    flow_id = Column(Integer)
     name = Column(String)
-    source_node = Column(String)
-    target_node = Column(String)
-    sub_node = Column(String)
-
+    source_node_id = Column(Integer)
+    target_node_id = Column(Integer)
+    sub_node_id = Column(Integer)
 class SubNode(Base):
     __tablename__ = 'sub_node'
     id = Column(Integer, primary_key = True)
+    flow_id = Column(Integer)
     name = Column(String)
     properties = Column(JSON)
     node_id = Column(Integer,ForeignKey("node.id", ondelete = "NO ACTION"))
     sub_node_con =  relationship("Node",back_populates = 'node_sub_node')
 
 
+class Flow(Base):
+    __tablename__ = 'flow'
+    id = Column(Integer, primary_key = True)
+    name = Column(String)
+    user_id = Column(Integer)
+    created_at = Column(DateTime)
+    updated_at = Column(DateTime)
+
 class CustomFields(Base):
     __tablename__ = 'custom_fields'
     id = Column(Integer, primary_key = True)
+    flow_id = Column(Integer)
     name = Column(String)
     value = Column(String)
     type = Column(String, ForeignKey("custom_field_types.type", ondelete = "NO ACTION"))

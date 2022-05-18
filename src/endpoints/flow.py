@@ -1,6 +1,6 @@
 from ..schemas.flowSchema import *
 from ..models.flow import *
-
+from ..models.node import *
 
 from fastapi import APIRouter, status, HTTPException
 from fastapi.responses import JSONResponse, Response
@@ -116,3 +116,32 @@ async def delete_flow(user_id : int, flow_list: List[int] ):
     db.session.commit()
     db.session.close()
     return JSONResponse(status_code=200, content={"message":"success"})
+
+@router.post('/duplicate_flow')
+async def duplicate_flow(user_id:int, flow_id:int):
+    try:
+        user_check = await check_user_id(user_id)
+        if user_check.status_code != 200 :
+            return user_check 
+        
+        flow_data = db.session.query(Flow).filter_by(id = flow_id).first()
+        if (flow_data == None):
+            return JSONResponse(status_code=404, content={"message":"no flows with this id"})   
+
+        new_flow = Flow(name = "duplicate of " + flow_data.name, user_id = flow_data.user_id, created_at = datetime.now(timezone.utc), updated_at = datetime.now(timezone.utc), diagram = flow_data.diagram)
+        db.session.add(new_flow)
+        db.session.commit()
+        db.session.close()
+        return JSONResponse(status_code=200, content={"message":"success"})
+    except Exception as e:
+        print(e, "at duplcate flow. Time:", datetime.now())
+        return JSONResponse(status_code=400, content={"message":"please check the input"})
+
+
+@router.get("/get_diagram")
+async def get_diagram(flow_id :int):
+    all_connections = db.session.query(Connections).filter_by(flow_id=flow_id).all()
+    all_custom_fileds = db.session.query(CustomFields).filter_by(flow_id=flow_id).all()
+    all_nodes = db.session.query(Node).filter_by(flow_id=flow_id).all()
+    return {'diagram':{'connection':all_connections,'node':all_nodes,'custom_field':all_custom_fileds}}
+
