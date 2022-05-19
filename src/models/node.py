@@ -55,6 +55,9 @@ class Flow(Base):
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
     diagram = Column(JSON)
+    publish_token = Column(String)
+    chats = Column(Integer)
+    finished = Column(Integer)
 
 class CustomFields(Base):
     __tablename__ = 'custom_fields'

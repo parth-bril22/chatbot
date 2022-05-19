@@ -25,7 +25,7 @@ async def create_flow(flow : FlowSchema):
         if(flow.name == None or len(flow.name.strip()) == 0):
             return Response(status_code=204)
         my_uuid = uuid.uuid4()
-        new_flow = Flow(name = flow.name, user_id = flow.user_id, created_at = datetime.now(timezone.utc), updated_at = datetime.now(timezone.utc),publish_token=my_uuid)
+        new_flow = Flow(name = flow.name, user_id = flow.user_id, created_at = datetime.now(timezone.utc), updated_at = datetime.now(timezone.utc),publish_token = my_uuid)
         db.session.add(new_flow)
         db.session.commit()
 
