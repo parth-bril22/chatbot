@@ -3,7 +3,7 @@ import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from routes.api import router as api_router
-from fastapi_sqlalchemy import DBSessionMiddleware , db
+from fastapi_sqlalchemy import DBSessionMiddleware
 from src.dependencies import env
 app = FastAPI()
 app.add_middleware(DBSessionMiddleware, db_url =  env.DATABASE_URL)

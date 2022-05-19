@@ -1,4 +1,4 @@
-from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import JSON, Column, DateTime, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 Base  = declarative_base()
@@ -11,3 +11,4 @@ class Flow(Base):
     updated_at = Column(DateTime)
     name = Column(String)
     diagram = Column(JSON)
+    publish_token = Column(String)

@@ -336,25 +336,81 @@ async def create_custom_fields(cus : List[CustomFieldSchema]):
 
 @router.post('/preview')
 async def preview(flow_id : int):
+    """
+    When user clicks on preview, start a preview chat page and return the first/start node.
+    """
     try:
-        start_node = db.session.query(Node.properties, Node.flow_id, Node.id, Node.type).filter_by(node_type = "start_node").filter_by(flow_id=flow_id).first()
+
+        #get start node and encode it to JSON
+        start_node = db.session.query(Node.properties, Node.flow_id, Node.id, Node.type).filter_by(type = "special").filter_by(flow_id=flow_id).first()#first() and not all(), need to take care of multiple startnodes in the DB
         start_node = encoders.jsonable_encoder(start_node)
+
+        if(start_node == None):
+            return JSONResponse(status_code=400, content={"message":"Error: No valid node found in this id"})
+        
+        #get sub nodes of the obtained start node and convert to JSON
         sub_nodes = db.session.query(SubNode).filter_by(node_id = start_node['id']).filter_by(flow_id=flow_id).all()
         sub_nodes = encoders.jsonable_encoder(sub_nodes)
+
+        if(sub_nodes == None):
+            return JSONResponse(status_code=400, content={"message":"Error: No sub node found with this id"})
+
+
+        chat_count = db.session.query(Flow.chats).filter_by(id = flow_id).first()
+        if(chat_count[0] == None):
+            local_count = 0
+        else:
+            local_count = chat_count[0]
+        
+        local_count = local_count + 1
+        db.session.query(Flow).filter_by(id = flow_id).update({"chats":local_count})
+        db.session.commit()
+        db.session.close()
+
         return JSONResponse(status_code=200,content={"start_node": start_node, "sub_nodes":sub_nodes})
     except Exception as e:
         print(e)
         return JSONResponse(status_code=404, content={"message":"Error in preview"})
 
+
+
 @router.post('/send')
 async def send(flow_id : int, my_source_node:str, my_sub_node:str):
+    """
+    Enter the source node and its sub_node and get the next node according to the connections table.
+    """
     try:
-        if(db.session.query(Node.node_type).filter_by(id=my_source_node).first()[0] == "end_node"):
-            return JSONResponse(status_code=400, content = {"message":"Chat over"})
+        is_end_node = False
         # print(db.session.query(Node.node_type).filter_by(id=my_source_node).first()[0])
-        next_node_id = db.session.query(Connections).filter_by(source_node_id = my_source_node).filter_by(sub_node_id = my_sub_node).filter_by(flow_id=flow_id).first()
-        next_node = db.session.query(Node).filter_by(id = next_node_id.target_node_id).filter_by(flow_id=flow_id).first()
-        return {"next_node_type" : next_node.type, "next_node_properties":json.loads(next_node.properties), "next_node_id" : next_node.id}
+
+        #get the next node from Connections table
+        next_node_row = db.session.query(Connections).filter_by(source_node = my_source_node).filter_by(sub_node = my_sub_node).filter_by(flow_id=flow_id).first()
+        
+        #if the type of node is end node, then complete the chat.
+        if(db.session.query(Connections).filter_by(source_node = next_node_row.target_node).filter_by(sub_node = my_sub_node).filter_by(flow_id=flow_id).first() == None):
+            #get the current count of finish
+            finished_count = db.session.query(Flow.finished).filter_by(id = flow_id).first()
+            #the default value is null, in such cases initialize to 0
+            if(finished_count[0] == None):
+                local_count = 0
+            else:
+                local_count = finished_count[0]
+            
+            #increase by one for present chat
+            local_count = local_count + 1
+            #change is_end_node value and update
+            is_end_node = True
+            db.session.query(Flow).filter_by(id = flow_id).update({"finished":local_count})
+            db.session.commit()
+        
+        #get all the details of next node from the ID
+        next_node = db.session.query(Node).filter_by(id = next_node_row.target_node).filter_by(flow_id=flow_id).first()
+        #get the sub_nodes of the obtained node
+        sub_nodes = db.session.query(SubNode).filter_by(node_id = next_node.id).filter_by(flow_id=flow_id).all()
+        sub_nodes = encoders.jsonable_encoder(sub_nodes)
+        db.session.commit()
+        # db.session.close()
+        return {"next_node_type" : next_node.type, "next_node_properties":json.loads(next_node.properties), "next_node_row" : next_node.id, "next_node_sub_nodes": sub_nodes, "is_end_node": is_end_node}
     except Exception as e:
         print(e)
         return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})

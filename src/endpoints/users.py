@@ -1,13 +1,12 @@
 #run using:
 #uvicorn filename(without .py):app --reloadimport imp
-from requests import session
 from ..dependencies.auth import AuthHandler
 auth_handler = AuthHandler()
 
 # import uuid
 from fastapi import APIRouter
 from uuid import uuid4
-from fastapi import Depends, HTTPException, Request
+from fastapi import Depends, HTTPException
 from fastapi_sqlalchemy import db
 from datetime import datetime, timezone
 from fastapi.responses import JSONResponse
@@ -237,7 +236,7 @@ async def reset_password_link(my_uuid:str,ps:PasswordResetSchema):
                 db.session.query(Password_tokens).filter_by(id = uuid_details.id).update(dict(used = True))
    
                 db.session.commit()
-                db,session.close()
+                db.session.close()
                 return JSONResponse(status_code=200, content={'message': "success"})   
         else:
             return JSONResponse(status_code=400, content = {"message" : 'Passwords are not same'})
