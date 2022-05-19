@@ -52,6 +52,7 @@ class Flow(Base):
     user_id = Column(Integer)
     created_at = Column(DateTime)
     updated_at = Column(DateTime)
+    diagram = Column(JSON)
 
 class CustomFields(Base):
     __tablename__ = 'custom_fields'

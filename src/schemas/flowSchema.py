@@ -1,6 +1,9 @@
 # build a schema using pydantic
+import json
 from pydantic import BaseModel
 from datetime import datetime
+
+from src.models.node import Diagram
 
 
 class FlowSchema(BaseModel):

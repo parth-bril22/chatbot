@@ -126,7 +126,7 @@ async def duplicate_flow(user_id:int, flow_id:int):
         
         flow_data = db.session.query(Flow).filter_by(id = flow_id).first()
         if (flow_data == None):
-            return JSONResponse(status_code=404, content={"message":"no flows with this id"})   
+            return JSONResponse(status_code=404, content={"message":"flow not found on this id"})   
 
         new_flow = Flow(name = "duplicate of " + flow_data.name, user_id = flow_data.user_id, created_at = datetime.now(timezone.utc), updated_at = datetime.now(timezone.utc), diagram = flow_data.diagram)
         db.session.add(new_flow)
