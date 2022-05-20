@@ -11,6 +11,6 @@ class Flow(Base):
     updated_at = Column(DateTime)
     name = Column(String)
     diagram = Column(JSON)
+    publish_token = Column(String)
     chats = Column(Integer)
     finished = Column(Integer)
-    publish_token = Column(String)

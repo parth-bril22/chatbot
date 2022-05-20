@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 
 
 
-from fastapi import APIRouter, status, HTTPException ,encoders
+from fastapi import APIRouter, status, HTTPException ,encoders , Response
 from typing import List
 import json
 import datetime
@@ -41,7 +41,7 @@ async def check_conditional_logic(prop_value_json : json):
                 if ele not in ["||", "&&", "!"]:
                     # return {"message" : "please fill || or && or > or < or ! only"}
                     # return JSONResponse(status_code = 404, content={'Error': "Please Upload .PNG files only"})
-                    raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+                    Response(status_code = 204)
                 else:
                     #check if there is "args" key in the json
                     if "args" in prop_value_json[ele]:
@@ -52,14 +52,14 @@ async def check_conditional_logic(prop_value_json : json):
 
                             if symbol not in ["==", "<", ">"] or len(list(all_symbols.keys())) != 1:
                                 # return {"message" : "Enter conditional logic correctly", "at": (ele)}
-                                raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+                                Response(status_code = 204)
                             else:
                                 #get all args, ie arg1 and arg2
                                 all_args = (list((all_symbols[symbol]).keys()))
                                 for arg in all_args:
                                     if arg not in ["arg1", "arg2"]:
                                         # return {"message" : "Enter conditional logic correctly", "at": (ele,symbol)}
-                                        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+                                        Response(status_code = 204)
                                     else:
                                         try:
                                             #load value of each arg
@@ -70,45 +70,92 @@ async def check_conditional_logic(prop_value_json : json):
                                             #OR regex can be used
                                         except:
                                             # return {"message" : "Enter conditional logic correctly", "at": (ele,symbol,arg)}
-                                            raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+                                            Response(status_code = 204)
                     else:
                         # return {"message" : "Enter conditional logic correctly", "at":""}
-                        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+                        Response(status_code = 204)
     return True
 
 
-#create a new node
-async def create_node(node:NodeSchema):
-
-    #check if the "type" of node is actually present in the nodetype table
-    prop = db.session.query(NodeType).filter(NodeType.type == node.type).first()
-    #if not, return message
-    if(prop == None):
-        return JSONResponse(status_code = 404, content = {"message": "incorrect type field"})
+async def check_property_dict(node: Node, prop : Dict, keys : List):
     
-    #make a dict which will take only the relevant key-value pairs according to the type of node
-    prop_dict = {k: v for k, v in node.properties.items() if k in prop.params.keys()}
-
-    if (len(prop_dict) != len(prop.params.keys())):#necessary fields not filled
-        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
-    if "" in node.dict().values( ) or "" in prop_dict.values(): #For Empty entries.
-        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
-        
+    prop_dict = {k: v for k, v in prop.items() if k in keys}
+    print(prop_dict)
+    #necessary fields not filled
+    if (len(prop_dict) != len(keys)):
+        return False, Response(status_code = 204)
     
-    if "value" in prop_dict.keys() and node.type == "conditional_logic": # if type is conditional logic, then get the "value" field
-            prop_value_json = json.loads(prop_dict['value'])#load string in "value" as json
+    #For Empty entries return error. string.strip() can be used for spaces later.
+    if "" in node.dict().values( ) or "" in prop_dict.values(): 
+        return False, Response(status_code = 204)
+    
+    # if type is conditional logic, then get the "value" field
+    if "value" in prop_dict.keys() and node.type == "conditional_logic": 
+            #load string in "value" as json
+            prop_value_json = json.loads(prop_dict['value'])
             logic_check = await check_conditional_logic(prop_value_json)
             if(logic_check != True):
-                return logic_check
+                return False, logic_check
     
+    return True, prop_dict
+
+async def check_node_details(node:NodeSchema):
+     #check if the "type" of node is actually present in the nodetype table
+    print("-----------")
+    node_type_params = db.session.query(NodeType).filter(NodeType.type == node.type).first()
+    #if not, return error
+    if(node_type_params == None):
+        return JSONResponse(status_code = 404, content = {"message": "incorrect type field"}), node.properties
+    props = []
+    print(node.properties['nodeData'])
+    print(node_type_params)
+    #make a dict of properties(prop_dict) which will take only the relevant key-value pairs according to the type of node
+    for property in node.properties['nodeData']:
+        bool_val, prop_dict = await check_property_dict(node, property,list(node_type_params.params.keys()))
+        if(bool_val == False):
+            return prop_dict
+        else:
+            props.append(prop_dict)
+    #  "{\"||\" : {\"args\":[{\"==\":{\"arg1\":\"1\", \"arg2\" : \"2\"}}, {\"<\":{\"arg1\":\"1\", \"arg2\" : \"2\"}}]}}"
+    return JSONResponse(status_code=200), props
+
+#create a new node
+# @router.post('/create_node')
+async def create_node(node:NodeSchema):
+    """
+    Insert a node into the database. Returns 200 if success, error code and description otherwise.
+    """
+    print(node)
+    #check if values in node are correct
+    node_check, node_properties = await check_node_details(node)
+    print(node_check.status_code)
+    print(node_properties)
+    if(node_check.status_code != 200):
+        return node_check
+
+    #get dictionary of node Can be changed to properties  
+    prop_dict = node_properties
+
     #set unique name og length(4 * 2 = 8)
     my_name = secrets.token_hex(4)
-
+    # node_data = {"nodeData" : json.dumps(prop_dict)}
     # make a new object of type Node with all the entered details
-    new_node = Node(name = my_name, path = my_name, type = node.type, node_type = node.node_type, properties = json.dumps(prop_dict), position = json.dumps(node.position),flow_id=node.flow_id)
+    new_node = Node(name = my_name, type = node.type, properties = prop_dict , position = json.dumps(node.position), flow_id = node.flow_id)
     #id,name and path are made private by the "_" before name in schemas.py, so frontend need not enter them.
     db.session.add(new_node)
     db.session.commit()
+
+
+    # if(db.session.query(SubNode).filter_by(node_id = new_node.id).filter_by(flow_id = new_node.flow_id).filter_by(id = "$success") == None):
+    #make default sub_node for all nodes
+    for item in prop_dict:
+        print(item)
+        new_sub_node = SubNode(node_id = new_node.id, flow_id = node.flow_id, properties = item)
+        db.session.add(new_sub_node)
+    db.session.commit()
+    db.session.close()
+    # print(json.loads(new_node.properties))
+    # return {"message": "success"}
     return JSONResponse(status_code = 200, content = {"message": "success"})
 
 @router.post('/create_node')
@@ -118,6 +165,14 @@ async def create_nodes(nodes : List[NodeSchema]):
         if(x.status_code != 200):
             return x
     return JSONResponse(status_code = 200, content = {"message": "success"})
+
+@router.post('/get_node')
+async def get_node(node_id: int, flow_id : int):
+    my_node = db.session.query(Node).filter_by(flow_id=flow_id).filter_by(id = node_id).first()
+    if(my_node == None):
+        return JSONResponse(status_code=200, content = {"message":"Node not found"})
+    else:
+        return JSONResponse(status_code = 200, content = {"id" : my_node.id, "type" : my_node.type, "position":json.loads(my_node.position), "data": {"label" : "NEW NODE", "nodeData":json.loads(my_node.properties)} })
 
 @router.delete('/delete_node')
 async def delete_node(node_id : str, flow_id:int):
@@ -175,7 +230,7 @@ async def add_sub_node(sub:SubNodeSchema):
     if(node_in_db.first() == None):
         return JSONResponse(status_code=404, content={"message":"Node or flow id not found"})
     # node_in_db.delete()
-    new_sub_node = SubNode(node_id = sub.node_id, name = sub.name,properties = json.dumps(sub.properties),flow_id = sub.flow_id)
+    new_sub_node = SubNode(node_id = sub.node_id,properties = json.dumps(sub.properties),flow_id = sub.flow_id)
     db.session.add(new_sub_node)
     db.session.commit()
     db.session.close()
@@ -217,7 +272,7 @@ async def create_connection(conn : ConnectionSchema):
 
     if "" in conn.dict().values( ):
         # return {"message" : "please leave no field empty"}  
-        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+        Response(status_code = 204)
 
     #set my_name variable which will later be used to set the name
     my_name = "c_" + str(conn.source_node_id) + "_" + str(conn.sub_node_id) + "-" + str(conn.target_node_id)
@@ -238,31 +293,6 @@ async def create_connection(conn : ConnectionSchema):
     # return {"message":'success'}
     return JSONResponse(status_code = 200, content = {"message": "success"})
 
-
-async def check_node_details(node:NodeSchema):
-    prop = db.session.query(NodeType).filter(NodeType.type == node.type).first()
-    #if not, return message
-    if(prop == None):
-        return JSONResponse(status_code = 404, content = {"message": "incorrect type field"})
-    
-    #make a dict which will take only the relevant key-value pairs according to the type of node
-    prop_dict = {k: v for k, v in node.properties.items() if k in prop.params.keys()}
-
-    if (len(prop_dict) != len(prop.params.keys())):#necessary fields not filled
-        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
-    if "" in node.dict().values( ) or "" in prop_dict.values(): #For Empty entries.
-        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
-        
-    
-    if "value" in prop_dict.keys() and node.type == "conditional_logic": # if type is conditional logic, then get the "value" field
-            prop_value_json = json.loads(prop_dict['value'])#load string in "value" as json
-            logic_check = await check_conditional_logic(prop_value_json)
-            if(logic_check != True):
-                return logic_check
-                #  "{\"||\" : {\"args\":[{\"==\":{\"arg1\":\"1\", \"arg2\" : \"2\"}}, {\"<\":{\"arg1\":\"1\", \"arg2\" : \"2\"}}]}}"
-    return JSONResponse(status_code=200), prop_dict
-
- 
          
 @router.post('/create_connection')
 async def create_connections(conns : List[ConnectionSchema]):
@@ -414,3 +444,4 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
     except Exception as e:
         print(e)
         return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})
+    

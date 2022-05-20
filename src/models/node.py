@@ -12,8 +12,6 @@ class Node(Base):
     id = Column(Integer, primary_key = True)
     flow_id = Column(Integer)
     name = Column(String)
-    path = Column(String)
-    node_type = Column(String)
     properties = Column(JSON)#but input will be as string/dict
     position = Column(JSON)#string/dict
     type = Column(String, ForeignKey("node_type.type", ondelete = "NO ACTION"))
@@ -37,28 +35,15 @@ class Connections(Base):
     source_node_id = Column(Integer)
     target_node_id = Column(Integer)
     sub_node_id = Column(Integer)
+
 class SubNode(Base):
     __tablename__ = 'sub_node'
     id = Column(Integer, primary_key = True)
     flow_id = Column(Integer)
-    name = Column(String)
     properties = Column(JSON)
     node_id = Column(Integer,ForeignKey("node.id", ondelete = "NO ACTION"))
     sub_node_con =  relationship("Node",back_populates = 'node_sub_node')
-
-
-# class Flow(Base):
-#     __tablename__ = 'flow'
-#     id = Column(Integer, primary_key = True)
-#     name = Column(String)
-#     user_id = Column(Integer)
-#     created_at = Column(DateTime)
-#     updated_at = Column(DateTime)
-#     diagram = Column(JSON)
-#     publish_token = Column(String)
-#     chats = Column(Integer)
-#     finished = Column(Integer)
-
+    
 class CustomFields(Base):
     __tablename__ = 'custom_fields'
     id = Column(Integer, primary_key = True)

@@ -1,5 +1,5 @@
 # build a schema using pydantic
-from typing import Dict, Optional
+from typing import Dict, Optional ,List
 from pydantic import BaseModel
 
 
@@ -7,14 +7,10 @@ class NodeSchema(BaseModel):
     _id: int #id is made private by the "_" before its name, so frontend need not enter it.
     flow_id: int
     _name: str = "name"
-    _path: str = "path"
     type: str = "chat"
-    node_type: str = "start_node"
     position: Dict = {"top":"0","left":"0"}
-
     # all fields from all types are present. Later in api.py, only the relevant fields will be taken into consideration
-    properties: Dict = {"text":"","value":"" ,"name" :"", "type":"", "source":"", "message":"", "btn":"","id":"" }
-
+    properties: Dict = {"nodeData":[{"text":"","value":"" ,"name" :"", "type":"", "source":"", "message":"", "btn":"" }]}
     class Config:
         orm_mode = True
         underscore_attrs_are_private = True
@@ -29,7 +25,6 @@ class SubNodeSchema(BaseModel):
     _id : int
     node_id : int
     flow_id: int
-    name : str
     properties : Dict = {"text":""}
     class Config:
         orm_mode = True
