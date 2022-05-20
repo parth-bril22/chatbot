@@ -384,10 +384,10 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
         # print(db.session.query(Node.node_type).filter_by(id=my_source_node).first()[0])
 
         #get the next node from Connections table
-        next_node_row = db.session.query(Connections).filter_by(source_node = my_source_node).filter_by(sub_node = my_sub_node).filter_by(flow_id=flow_id).first()
+        next_node_row = db.session.query(Connections).filter_by(source_node_id = my_source_node).filter_by(sub_node_id = my_sub_node).filter_by(flow_id=flow_id).first()
         
         #if the type of node is end node, then complete the chat.
-        if(db.session.query(Connections).filter_by(source_node = next_node_row.target_node).filter_by(sub_node = my_sub_node).filter_by(flow_id=flow_id).first() == None):
+        if(db.session.query(Connections).filter_by(source_node_id = next_node_row.target_node_id).filter_by(sub_node_id = my_sub_node).filter_by(flow_id=flow_id).first() == None):
             #get the current count of finish
             finished_count = db.session.query(Flow.finished).filter_by(id = flow_id).first()
             #the default value is null, in such cases initialize to 0
@@ -404,7 +404,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
             db.session.commit()
         
         #get all the details of next node from the ID
-        next_node = db.session.query(Node).filter_by(id = next_node_row.target_node).filter_by(flow_id=flow_id).first()
+        next_node = db.session.query(Node).filter_by(id = next_node_row.target_node_id).filter_by(flow_id=flow_id).first()
         #get the sub_nodes of the obtained node
         sub_nodes = db.session.query(SubNode).filter_by(node_id = next_node.id).filter_by(flow_id=flow_id).all()
         sub_nodes = encoders.jsonable_encoder(sub_nodes)
