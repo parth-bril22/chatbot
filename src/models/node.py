@@ -47,17 +47,17 @@ class SubNode(Base):
     sub_node_con =  relationship("Node",back_populates = 'node_sub_node')
 
 
-class Flow(Base):
-    __tablename__ = 'flow'
-    id = Column(Integer, primary_key = True)
-    name = Column(String)
-    user_id = Column(Integer)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
-    diagram = Column(JSON)
-    publish_token = Column(String)
-    chats = Column(Integer)
-    finished = Column(Integer)
+# class Flow(Base):
+#     __tablename__ = 'flow'
+#     id = Column(Integer, primary_key = True)
+#     name = Column(String)
+#     user_id = Column(Integer)
+#     created_at = Column(DateTime)
+#     updated_at = Column(DateTime)
+#     diagram = Column(JSON)
+#     publish_token = Column(String)
+#     chats = Column(Integer)
+#     finished = Column(Integer)
 
 class CustomFields(Base):
     __tablename__ = 'custom_fields'
