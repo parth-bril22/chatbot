@@ -386,13 +386,17 @@ async def preview(flow_id : int):
         if(sub_nodes == None):
             return JSONResponse(status_code=400, content={"message":"Error: No sub node found with this id"})
 
-
         chat_count = db.session.query(Flow.chats).filter_by(id = flow_id).first()
         if(chat_count[0] == None):
             local_count = 0
         else:
             local_count = chat_count[0]
         
+        #convert json to python dict to remove characters like \\ from the output
+        for i in range(len(sub_nodes)):
+            sub_nodes[i]['properties'] = json.loads(sub_nodes[i]['properties'])
+        start_node['properties'] = json.loads(start_node['properties'])
+
         local_count = local_count + 1
         db.session.query(Flow).filter_by(id = flow_id).update({"chats":local_count})
         db.session.commit()
@@ -441,8 +445,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
         sub_nodes = encoders.jsonable_encoder(sub_nodes)
         db.session.commit()
         # db.session.close()
-        return {"next_node_type" : next_node.type, "next_node_properties":json.loads(next_node.properties), "next_node_row" : next_node.id, "next_node_sub_nodes": sub_nodes, "is_end_node": is_end_node}
+        return {"next_node_type" : next_node.type, "next_node_properties":(next_node.properties), "next_node_row" : next_node.id, "next_node_sub_nodes": sub_nodes, "is_end_node": is_end_node}
     except Exception as e:
         print(e)
         return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})
-    
