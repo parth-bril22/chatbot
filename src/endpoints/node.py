@@ -30,7 +30,6 @@ async def check_conditional_logic(prop_value_json : json):
     via if /else: 1)||, 2)args, 3) "==", 4)arg1,
     via try/except: 5) 1
     """
-    print("for checking")
     #if json is empty, return error
     if(len(prop_value_json.keys( )) == 0 ):
         # return {"message" : "please fill all fields"}
@@ -393,6 +392,13 @@ async def preview(flow_id : int):
         else:
             local_count = chat_count[0]
         
+
+        #convert json to python dict to remove characters like \\ from the output
+        for i in range(len(sub_nodes)):
+            sub_nodes[i]['properties'] = json.loads(sub_nodes[i]['properties'])
+        start_node['properties'] = json.loads(start_node['properties'])
+
+        #increase count of chats initialized
         local_count = local_count + 1
         db.session.query(Flow).filter_by(id = flow_id).update({"chats":local_count})
         db.session.commit()
@@ -441,7 +447,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
         sub_nodes = encoders.jsonable_encoder(sub_nodes)
         db.session.commit()
         # db.session.close()
-        return {"next_node_type" : next_node.type, "next_node_properties":json.loads(next_node.properties), "next_node_row" : next_node.id, "next_node_sub_nodes": sub_nodes, "is_end_node": is_end_node}
+        return {"next_node_type" : next_node.type, "next_node_properties":(next_node.properties), "next_node_row" : next_node.id, "next_node_sub_nodes": sub_nodes, "is_end_node": is_end_node}
     except Exception as e:
         print(e)
         return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})

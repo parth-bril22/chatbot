@@ -156,8 +156,8 @@ async def get_diagram(flow_id :int):
 
         for node in all_nodes:
             node.position = json.loads(node.position)
-        return {"nodes":encoders.jsonable_encoder(all_nodes),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) }           
-        # return JSONResponse(status_code=200, content={"nodes":encoders.jsonable_encoder(all_nodes),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) })
+            
+        return JSONResponse(status_code=200, content={"nodes":encoders.jsonable_encoder(all_nodes),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) })
     except Exception as e:
         print(e, ": at get diagram")
         return JSONResponse(status_code=400, content={"message": "Cannot get diagram"})
