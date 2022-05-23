@@ -166,7 +166,7 @@ async def create_nodes(nodes : List[NodeSchema]):
             return x
     return JSONResponse(status_code = 200, content = {"message": "success"})
 
-@router.post('/get_node')
+@router.get('/get_node')
 async def get_node(node_id: int, flow_id : int):
     my_node = db.session.query(Node).filter_by(flow_id=flow_id).filter_by(id = node_id).first()
     if(my_node == None):
