@@ -32,7 +32,7 @@ async def create_flow(flow : FlowSchema):
         flow_id = db.session.query(Flow.id).filter_by(id = new_flow.id).first()
         print(flow_id)
         
-        default_node = Node(name = "Welcome", type = "special", properties = json.dumps({"text": ""}), position = json.dumps({"top": "100","left": "100"}),flow_id=flow_id[0])
+        default_node = Node(name = "Welcome", type = "special", data = json.dumps({"text": ""}), position = json.dumps({"top": "100","left": "100"}),flow_id=flow_id[0])
         db.session.merge(default_node)
         db.session.commit()
         db.session.close()
