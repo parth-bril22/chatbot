@@ -106,12 +106,12 @@ async def check_node_details(node:NodeSchema):
     node_type_params = db.session.query(NodeType).filter(NodeType.type == node.type).first()
     #if not, return error
     if(node_type_params == None):
-        return JSONResponse(status_code = 404, content = {"message": "incorrect type field"}), node.properties
+        return JSONResponse(status_code = 404, content = {"message": "incorrect type field"}), node.data
     props = []
-    print(node.properties['nodeData'])
+    print(node.data['nodeData'])
     print(node_type_params)
-    #make a dict of properties(prop_dict) which will take only the relevant key-value pairs according to the type of node
-    for property in node.properties['nodeData']:
+    #make a dict of data(prop_dict) which will take only the relevant key-value pairs according to the type of node
+    for property in node.data['nodeData']:
         bool_val, prop_dict = await check_property_dict(node, property,list(node_type_params.params.keys()))
         if(bool_val == False):
             return prop_dict
@@ -128,20 +128,20 @@ async def create_node(node:NodeSchema):
     """
     print(node)
     #check if values in node are correct
-    node_check, node_properties = await check_node_details(node)
+    node_check, node_data = await check_node_details(node)
     print(node_check.status_code)
-    print(node_properties)
+    print(node_data)
     if(node_check.status_code != 200):
         return node_check
 
-    #get dictionary of node Can be changed to properties  
-    prop_dict = node_properties
+    #get dictionary of node Can be changed to data  
+    prop_dict = node_data
 
     #set unique name og length(4 * 2 = 8)
     my_name = secrets.token_hex(4)
     # node_data = {"nodeData" : json.dumps(prop_dict)}
     # make a new object of type Node with all the entered details
-    new_node = Node(name = my_name, type = node.type, properties = prop_dict , position = json.dumps(node.position), flow_id = node.flow_id)
+    new_node = Node(name = my_name, type = node.type, data = prop_dict , position = json.dumps(node.position), flow_id = node.flow_id)
     #id,name and path are made private by the "_" before name in schemas.py, so frontend need not enter them.
     db.session.add(new_node)
     db.session.commit()
@@ -151,11 +151,11 @@ async def create_node(node:NodeSchema):
     #make default sub_node for all nodes
     for item in prop_dict:
         print(item)
-        new_sub_node = SubNode(node_id = new_node.id, flow_id = node.flow_id, properties = item)
+        new_sub_node = SubNode(node_id = new_node.id, flow_id = node.flow_id, data = item)
         db.session.add(new_sub_node)
     db.session.commit()
     db.session.close()
-    # print(json.loads(new_node.properties))
+    # print(json.loads(new_node.data))
     # return {"message": "success"}
     return JSONResponse(status_code = 200, content = {"message": "success"})
 
@@ -173,7 +173,7 @@ async def get_node(node_id: int, flow_id : int):
     if(my_node == None):
         return JSONResponse(status_code=200, content = {"message":"Node not found"})
     else:
-        return JSONResponse(status_code = 200, content = {"id" : my_node.id, "type" : my_node.type, "position":json.loads(my_node.position), "data": {"label" : "NEW NODE", "nodeData":json.loads(my_node.properties)} })
+        return JSONResponse(status_code = 200, content = {"id" : my_node.id, "type" : my_node.type, "position":json.loads(my_node.position), "data": {"label" : "NEW NODE", "nodeData":json.loads(my_node.data)} })
 
 @router.delete('/delete_node')
 async def delete_node(node_id : str, flow_id:int):
@@ -207,13 +207,13 @@ async def update_node(node_id:str,my_node:NodeSchema):
         
 
         #get jsonresponse(w status code) and dict with relevant fields only
-        node_check, node_properties = await check_node_details(my_node)
+        node_check, node_data = await check_node_details(my_node)
         #check for errors
         if(node_check.status_code != 200):
             return node_check
     
-        #update node properties
-        db.session.query(Node).filter(Node.id == node_id).filter_by(flow_id=my_node.flow_id).update({'properties' : node_properties})
+        #update node data
+        db.session.query(Node).filter(Node.id == node_id).filter_by(flow_id=my_node.flow_id).update({'data' : node_data})
         db.session.commit()
         db.session.close()
 
@@ -231,7 +231,7 @@ async def add_sub_node(sub:SubNodeSchema):
     if(node_in_db.first() == None):
         return JSONResponse(status_code=404, content={"message":"Node or flow id not found"})
     # node_in_db.delete()
-    new_sub_node = SubNode(node_id = sub.node_id,properties = json.dumps(sub.properties),flow_id = sub.flow_id)
+    new_sub_node = SubNode(node_id = sub.node_id,data = json.dumps(sub.data),flow_id = sub.flow_id)
     db.session.add(new_sub_node)
     db.session.commit()
     db.session.close()
@@ -373,7 +373,7 @@ async def preview(flow_id : int):
     try:
 
         #get start node and encode it to JSON
-        start_node = db.session.query(Node.properties, Node.flow_id, Node.id, Node.type).filter_by(type = "special").filter_by(flow_id=flow_id).first()#first() and not all(), need to take care of multiple startnodes in the DB
+        start_node = db.session.query(Node.data, Node.flow_id, Node.id, Node.type).filter_by(type = "special").filter_by(flow_id=flow_id).first()#first() and not all(), need to take care of multiple startnodes in the DB
         start_node = encoders.jsonable_encoder(start_node)
 
         if(start_node == None):
@@ -394,8 +394,8 @@ async def preview(flow_id : int):
         
         #convert json to python dict to remove characters like \\ from the output
         for i in range(len(sub_nodes)):
-            sub_nodes[i]['properties'] = json.loads(sub_nodes[i]['properties'])
-        start_node['properties'] = json.loads(start_node['properties'])
+            sub_nodes[i]['data'] = json.loads(sub_nodes[i]['data'])
+        start_node['data'] = json.loads(start_node['data'])
 
         local_count = local_count + 1
         db.session.query(Flow).filter_by(id = flow_id).update({"chats":local_count})
@@ -445,7 +445,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
         sub_nodes = encoders.jsonable_encoder(sub_nodes)
         db.session.commit()
         # db.session.close()
-        return {"next_node_type" : next_node.type, "next_node_properties":(next_node.properties), "next_node_row" : next_node.id, "next_node_sub_nodes": sub_nodes, "is_end_node": is_end_node}
+        return {"next_node_type" : next_node.type, "next_node_data":(next_node.data), "next_node_row" : next_node.id, "next_node_sub_nodes": sub_nodes, "is_end_node": is_end_node}
     except Exception as e:
         print(e)
         return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})

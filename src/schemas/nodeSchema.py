@@ -10,7 +10,7 @@ class NodeSchema(BaseModel):
     type: str = "chat"
     position: Dict = {"top":"0","left":"0"}
     # all fields from all types are present. Later in api.py, only the relevant fields will be taken into consideration
-    properties: Dict = {"nodeData":[{"text":"","value":"" ,"name" :"", "type":"", "source":"", "message":"", "btn":"" }]}
+    data: Dict = {"nodeData":[{"text":"","value":"" ,"name" :"", "type":"", "source":"", "message":"", "btn":"" }]}
     class Config:
         orm_mode = True
         underscore_attrs_are_private = True
@@ -25,7 +25,7 @@ class SubNodeSchema(BaseModel):
     _id : int
     node_id : int
     flow_id: int
-    properties : Dict = {"text":""}
+    data : Dict = {"text":""}
     class Config:
         orm_mode = True
         underscore_attrs_are_private = True
@@ -47,7 +47,7 @@ class NodeTypeSchema(BaseModel):
     _id: int
     type: str
     flow_id:int
-    properties: Dict
+    data: Dict
 
     class Config:
         orm_mode = True

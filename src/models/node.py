@@ -12,7 +12,7 @@ class Node(Base):
     id = Column(Integer, primary_key = True)
     flow_id = Column(Integer)
     name = Column(String)
-    properties = Column(JSON)#but input will be as string/dict
+    data = Column(JSON)#but input will be as string/dict
     position = Column(JSON)#string/dict
     type = Column(String, ForeignKey("node_type.type", ondelete = "NO ACTION"))
     node_conn = relationship("NodeType", back_populates = "node_type_conn")
@@ -40,7 +40,7 @@ class SubNode(Base):
     __tablename__ = 'sub_node'
     id = Column(Integer, primary_key = True)
     flow_id = Column(Integer)
-    properties = Column(JSON)
+    data = Column(JSON)
     node_id = Column(Integer,ForeignKey("node.id", ondelete = "NO ACTION"))
     sub_node_con =  relationship("Node",back_populates = 'node_sub_node')
     
