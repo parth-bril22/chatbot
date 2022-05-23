@@ -30,6 +30,7 @@ async def check_conditional_logic(prop_value_json : json):
     via if /else: 1)||, 2)args, 3) "==", 4)arg1,
     via try/except: 5) 1
     """
+    print("for checking")
     #if json is empty, return error
     if(len(prop_value_json.keys( )) == 0 ):
         # return {"message" : "please fill all fields"}
