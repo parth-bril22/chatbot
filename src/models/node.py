@@ -34,11 +34,11 @@ class Connections(Base):
     name = Column(String)
     source_node_id = Column(Integer)
     target_node_id = Column(Integer)
-    sub_node_id = Column(Integer)
+    sub_node_id = Column(String)
 
 class SubNode(Base):
     __tablename__ = 'sub_node'
-    id = Column(Integer, primary_key = True)
+    id = Column(String, primary_key = True)
     flow_id = Column(Integer)
     data = Column(JSON)
     node_id = Column(Integer,ForeignKey("node.id", ondelete = "NO ACTION"))

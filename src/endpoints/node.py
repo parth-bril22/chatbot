@@ -30,7 +30,6 @@ async def check_conditional_logic(prop_value_json : json):
     via if /else: 1)||, 2)args, 3) "==", 4)arg1,
     via try/except: 5) 1
     """
-    print("for checking")
     #if json is empty, return error
     if(len(prop_value_json.keys( )) == 0 ):
         # return {"message" : "please fill all fields"}
@@ -126,38 +125,45 @@ async def create_node(node:NodeSchema):
     """
     Insert a node into the database. Returns 200 if success, error code and description otherwise.
     """
-    print(node)
-    #check if values in node are correct
-    node_check, node_data = await check_node_details(node)
-    print(node_check.status_code)
-    print(node_data)
-    if(node_check.status_code != 200):
-        return node_check
+    try:
+        print(node)
+        #check if values in node are correct
+        node_check, node_data = await check_node_details(node)
+        print(node_check.status_code)
+        print(node_data)
+        if(node_check.status_code != 200):
+            return node_check
 
-    #get dictionary of node Can be changed to data  
-    prop_dict = node_data
+        #get dictionary of node Can be changed to data  
+        prop_dict = node_data
 
-    #set unique name og length(4 * 2 = 8)
-    my_name = secrets.token_hex(4)
-    # node_data = {"nodeData" : json.dumps(prop_dict)}
-    # make a new object of type Node with all the entered details
-    new_node = Node(name = my_name, type = node.type, data = prop_dict , position = json.dumps(node.position), flow_id = node.flow_id)
-    #id,name and path are made private by the "_" before name in schemas.py, so frontend need not enter them.
-    db.session.add(new_node)
-    db.session.commit()
+        #set unique name og length(4 * 2 = 8)
+        my_name = secrets.token_hex(4)
+        # node_data = {"nodeData" : json.dumps(prop_dict)}
+        # make a new object of type Node with all the entered details
+        new_node = Node(name = my_name, type = node.type, data = prop_dict , position = json.dumps(node.position), flow_id = node.flow_id)
+        #id,name and path are made private by the "_" before name in schemas.py, so frontend need not enter them.
+        db.session.add(new_node)
+        db.session.commit()
+        char = "a"
+    
 
-
-    # if(db.session.query(SubNode).filter_by(node_id = new_node.id).filter_by(flow_id = new_node.flow_id).filter_by(id = "$success") == None):
-    #make default sub_node for all nodes
-    for item in prop_dict:
-        print(item)
-        new_sub_node = SubNode(node_id = new_node.id, flow_id = node.flow_id, data = item)
-        db.session.add(new_sub_node)
-    db.session.commit()
-    db.session.close()
+        # if(db.session.query(SubNode).filter_by(node_id = new_node.id).filter_by(flow_id = new_node.flow_id).filter_by(id = "$success") == None):
+        #make default sub_node for all nodes
+        for item in prop_dict:
+            i = ord(char[0])
+            sn_id = chr(i)
+            new_sub_node = SubNode(id = str(new_node.id) + sn_id, node_id = new_node.id, flow_id = node.flow_id, data = item)
+            db.session.add(new_sub_node)
+            i += 1
+        db.session.commit()
+        db.session.close()
+        return JSONResponse(status_code = 200, content = {"message":"success"})
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})
     # print(json.loads(new_node.data))
     # return {"message": "success"}
-    return JSONResponse(status_code = 200, content = {"message": "success"})
 
 @router.post('/create_node')
 async def create_nodes(nodes : List[NodeSchema]):
@@ -386,17 +392,13 @@ async def preview(flow_id : int):
         if(sub_nodes == None):
             return JSONResponse(status_code=400, content={"message":"Error: No sub node found with this id"})
 
+
         chat_count = db.session.query(Flow.chats).filter_by(id = flow_id).first()
         if(chat_count[0] == None):
             local_count = 0
         else:
             local_count = chat_count[0]
         
-        #convert json to python dict to remove characters like \\ from the output
-        for i in range(len(sub_nodes)):
-            sub_nodes[i]['data'] = json.loads(sub_nodes[i]['data'])
-        start_node['data'] = json.loads(start_node['data'])
-
         local_count = local_count + 1
         db.session.query(Flow).filter_by(id = flow_id).update({"chats":local_count})
         db.session.commit()
@@ -445,8 +447,30 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
         sub_nodes = encoders.jsonable_encoder(sub_nodes)
         db.session.commit()
         # db.session.close()
-        return {"next_node_type" : next_node.type, "next_node_data":(next_node.data), "next_node_row" : next_node.id, "next_node_sub_nodes": sub_nodes, "is_end_node": is_end_node}
+        return {"next_node_type" : next_node.type, "next_node_data":json.loads(next_node.data), "next_node_row" : next_node.id, "next_node_sub_nodes": sub_nodes, "is_end_node": is_end_node}
     except Exception as e:
         print(e)
         return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})
- 
+
+@router.post('/send_diagram')
+async def send_diagram(nodes : List[NodeSchema], connections : List[ConnectionSchema], custom_fields : List[CustomFieldSchema]):
+    try:
+        create_nodes_response = await create_nodes(nodes)
+        if(create_nodes_response.status_code != 200):
+                return create_nodes_response
+
+        create_conns_response = await create_connections(connections)
+        if(create_conns_response.status_code != 200):
+                return create_conns_response
+        
+        create_cf_response = await create_custom_fields(custom_fields)
+        if(create_cf_response.status_code != 200):
+            return create_cf_response
+        
+        db.session.query(Flow).filter_by(id = nodes[0].flow_id).update({'diagram' : {"nodes" : encoders.jsonable_encoder(nodes), "connections":encoders.jsonable_encoder(connections), "custom_fields": encoders.jsonable_encoder(custom_fields)}})
+        db.session.commit()
+        db.session.close()
+        return JSONResponse(status_code=200, content={"message":"success"})
+    except Exception as e:
+        print(e, "at:", datetime.datetime.now())
+        return JSONResponse(status_code=400, content={"message":"please check the input"})

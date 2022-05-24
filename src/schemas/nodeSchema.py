@@ -22,7 +22,7 @@ class DelNodeSchema(BaseModel):
         underscore_attrs_are_private = True
 
 class SubNodeSchema(BaseModel):
-    _id : int
+    _id : str
     node_id : int
     flow_id: int
     data : Dict = {"text":""}
@@ -33,7 +33,7 @@ class ConnectionSchema(BaseModel):
     _id: int
     flow_id: int
     _name: Optional[str]
-    sub_node_id: int
+    sub_node_id: str
     source_node_id: int
     target_node_id: int
 

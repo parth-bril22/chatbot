@@ -1,3 +1,4 @@
+
 import uuid
 from ..schemas.flowSchema import *
 from ..schemas.nodeSchema import *
@@ -25,7 +26,7 @@ async def create_flow(flow : FlowSchema):
         if(flow.name == None or len(flow.name.strip()) == 0):
             return Response(status_code=204)
         my_uuid = uuid.uuid4()
-        new_flow = Flow(name = flow.name, user_id = flow.user_id, created_at = datetime.now(timezone.utc), updated_at = datetime.now(timezone.utc),publish_token=my_uuid)
+        new_flow = Flow(name = flow.name, user_id = flow.user_id, created_at = datetime.now(timezone.utc), updated_at = datetime.now(timezone.utc),publish_token=my_uuid,status = "active", isEnable = True)
         db.session.add(new_flow)
         db.session.commit()
 
@@ -111,7 +112,7 @@ async def rename_flow(user_id : int, flow_id:str, new_name:str):
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
 
-@router.delete('/delete_flow')
+@router.delete('/delete_flow_list')
 async def delete_flow(user_id : int, flow_list: List[int] ):
     user_check = await check_user_id(user_id)
     if user_check.status_code != 200 :
@@ -120,7 +121,7 @@ async def delete_flow(user_id : int, flow_list: List[int] ):
     for flow_id in flow_list:
         if (db.session.query(Flow).filter_by(id = flow_id).first() == None):
             return JSONResponse(status_code=404, content={"message":"no flows with this id"})    
-        db.session.query(Flow).filter_by(id = flow_id).delete()
+        db.session.query(Flow).filter_by(id = flow_id).update({"status":"trashed"})
 
     db.session.commit()
     db.session.close()
@@ -156,18 +157,18 @@ async def get_diagram(flow_id :int):
 
         for node in all_nodes:
             node.position = json.loads(node.position)
-        return {"nodes":encoders.jsonable_encoder(all_nodes),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) }           
-        # return JSONResponse(status_code=200, content={"nodes":encoders.jsonable_encoder(all_nodes),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) })
+            
+        return JSONResponse(status_code=200, content={"nodes":encoders.jsonable_encoder(all_nodes),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) })
     except Exception as e:
         print(e, ": at get diagram")
         return JSONResponse(status_code=400, content={"message": "Cannot get diagram"})
 
+
+
 @router.post('/save_draft')
-async def save_draft(flow_id:int):
+async def save_draft(nodes : List[NodeSchema], conns : List[ConnectionSchema], cus : List[CustomFieldSchema]):
     try:
-        diagram = await get_diagram(flow_id)
-        print(diagram)
-        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(), 'diagram' : diagram})
+        db.session.query(Flow).filter_by(id = nodes[0].flow_id).update({'updated_at' : datetime.now(), 'diagram' : {"nodes" : encoders.jsonable_encoder(nodes), "connections":encoders.jsonable_encoder(conns), "custom_fields": encoders.jsonable_encoder(cus)}})
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code=200, content={"message":"success"})
@@ -181,3 +182,40 @@ async def publish(flow_id : int, user_id : int, nodes : List[NodeSchema], conns 
     diagram = await get_diagram(flow_id)
     token = db.session.query(Flow.publish_token).filter_by(id = flow_id).filter_by(user_id = user_id).first()[0]
     return JSONResponse(status_code=200, content={"message":"success", "token": token , "diagram": encoders.jsonable_encoder(diagram)})
+
+@router.post("/disable_flow")
+async def flow_disabled(flow_id:int):
+    try:
+        db.session.query(Flow).filter_by(id=flow_id).update({"isEnable":False})
+        db.session.commit()
+        db.session.close()
+        return JSONResponse(status_code=200, content={"message":"flow disabled"})
+
+    except Exception as e:
+        print(e, "Error: at disable_flow. Time:", datetime.datetime.now())
+        return JSONResponse(status_code=400, content={"message":"please check the input"})
+
+        
+@router.post('/trash/delete_forever')
+async def delete_workspace(flow_id : int):
+    try:
+        db.session.query(Flow).filter_by(flow_id=flow_id).delete()
+        db.session.commit()
+        db.session.close()
+        return JSONResponse(status_code = 200, content = {"message": "success"})
+    except Exception as e:
+        print(e, "Error: at create_flow. Time:", datetime.datetime.now())
+        return JSONResponse(status_code=400, content={"message":"please check the input"})
+
+@router.post('/trash/restore')
+async def restore_workspace(flow_id : int):
+    try:
+
+        db.session.query(Flow).filter_by(id = flow_id).update({"status":"restored"})
+        db.session.query(Flow).filter_by(id=flow_id).update({"isEnable":True})
+        db.session.commit()
+        db.session.close()
+        return JSONResponse(status_code = 200, content = {"message": "success"})
+    except Exception as e:
+        print(e, "Error: at create_flow. Time:", datetime.datetime.now())
+        return JSONResponse(status_code=400, content={"message":"please check the input"})

@@ -1,4 +1,5 @@
-from sqlalchemy import JSON, Column, DateTime, Integer, String
+
+from sqlalchemy import JSON, Column, DateTime, Integer, String ,ARRAY , Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 Base  = declarative_base()
@@ -14,3 +15,5 @@ class Flow(Base):
     publish_token = Column(String)
     chats = Column(Integer)
     finished = Column(Integer)
+    isEnable = Column(Boolean)
+    status = Column(String)
