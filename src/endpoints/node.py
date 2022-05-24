@@ -449,26 +449,4 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
     except Exception as e:
         print(e)
         return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})
-    
-    @router.post('/send_diagram')
-async def send_diagram(nodes : List[NodeSchema], conns : List[ConnectionSchema], cus : List[CustomFieldSchema]):
-    try:
-        create_nodes_response = await create_nodes(nodes)
-        if(create_nodes_response.status_code != 200):
-                return create_nodes_response
-
-        create_conns_response = await create_connections(conns)
-        if(create_conns_response.status_code != 200):
-                return create_conns_response
-        
-        create_cf_response = await create_custom_fields(cus)
-        if(create_cf_response.status_code != 200):
-            return create_cf_response
-        
-        db.session.query(Flow).filter_by(id = nodes[0].flow_id).update({'diagram' : {"nodes" : encoders.jsonable_encoder(nodes), "connections":encoders.jsonable_encoder(conns), "custom_fields": encoders.jsonable_encoder(cus)}})
-        db.session.commit()
-        db.session.close()
-        return JSONResponse(status_code=200, content={"message":"success"})
-    except Exception as e:
-        print(e, "at:", datetime.datetime.now())
-        return JSONResponse(status_code=400, content={"message":"please check the input"})
+ 
