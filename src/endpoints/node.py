@@ -1,3 +1,4 @@
+from unittest import expectedFailure
 from src.schemas.flowSchema import *
 from ..schemas.nodeSchema import *
 from ..models.node import Node, NodeType , Connections,CustomFieldTypes, CustomFields, SubNode
@@ -156,7 +157,8 @@ async def create_node(node:NodeSchema):
             i += 1
         db.session.commit()
         db.session.close()
-        return JSONResponse(status_code = 200, content = {"message":"success"})
+        my_id =  new_node.id
+        return JSONResponse(status_code = 200, content = {"message":"success"}) , my_id
     except Exception as e:
         print(e)
         return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})
@@ -165,11 +167,19 @@ async def create_node(node:NodeSchema):
 
 @router.post('/create_node')
 async def create_nodes(nodes : List[NodeSchema]):
-    for item in nodes:
-        x = await create_node(item)
-        if(x.status_code != 200):
-            return x
-    return JSONResponse(status_code = 200, content = {"message": "success"})
+    try:
+        ids = []
+        for node in nodes:
+            create_node_response, my_id = await create_node(node)
+            if(create_node_response.status_code!=200):
+                return create_node_response
+            else:
+                ids.append(my_id)
+        return JSONResponse(status_code=200,content={"message":"success","ids":ids})
+    except Exception as e:
+        print(e,'at create_node')
+        return JSONResponse(status_code=404, content={"message":"Error in creating node"}) 
+
 
 @router.get('/get_node')
 async def get_node(node_id: int, flow_id : int):
