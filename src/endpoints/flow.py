@@ -156,19 +156,20 @@ async def get_diagram(flow_id :int):
         sub_nodes = db.session.query(SubNode).filter_by(flow_id=flow_id).all()
 
         for node in all_nodes:
-            node.position = json.loads(node.position)
-            
-        return JSONResponse(status_code=200, content={"nodes":encoders.jsonable_encoder(all_nodes),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) })
+            node.position = (node.position)
+        return {"nodes":encoders.jsonable_encoder(all_nodes),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) }           
+        # return JSONResponse(status_code=200, content={"nodes":encoders.jsonable_encoder(all_nodes),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) })
     except Exception as e:
         print(e, ": at get diagram")
         return JSONResponse(status_code=400, content={"message": "Cannot get diagram"})
 
 
-
 @router.post('/save_draft')
-async def save_draft(nodes : List[NodeSchema], conns : List[ConnectionSchema], cus : List[CustomFieldSchema]):
+async def save_draft(flow_id:int):
     try:
-        db.session.query(Flow).filter_by(id = nodes[0].flow_id).update({'updated_at' : datetime.now(), 'diagram' : {"nodes" : encoders.jsonable_encoder(nodes), "connections":encoders.jsonable_encoder(conns), "custom_fields": encoders.jsonable_encoder(cus)}})
+        diagram = await get_diagram(flow_id)
+        print(diagram)
+        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(), 'diagram' : diagram})
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code=200, content={"message":"success"})
