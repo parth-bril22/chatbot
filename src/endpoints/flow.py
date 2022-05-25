@@ -193,7 +193,7 @@ async def flow_disabled(flow_id:int):
         return JSONResponse(status_code=200, content={"message":"flow disabled"})
 
     except Exception as e:
-        print(e, "Error: at disable_flow. Time:", datetime.datetime.now())
+        print(e, "Error: at disable_flow. Time:", datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
         
@@ -205,7 +205,7 @@ async def delete_workspace(flow_id : int):
         db.session.close()
         return JSONResponse(status_code = 200, content = {"message": "success"})
     except Exception as e:
-        print(e, "Error: at create_flow. Time:", datetime.datetime.now())
+        print(e, "Error: at create_flow. Time:", datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
 @router.post('/trash/restore')
@@ -218,5 +218,5 @@ async def restore_workspace(flow_id : int):
         db.session.close()
         return JSONResponse(status_code = 200, content = {"message": "success"})
     except Exception as e:
-        print(e, "Error: at create_flow. Time:", datetime.datetime.now())
+        print(e, "Error: at create_flow. Time:", datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
