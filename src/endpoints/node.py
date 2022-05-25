@@ -141,7 +141,7 @@ async def create_node(node:NodeSchema):
         my_name = secrets.token_hex(4)
         # node_data = {"nodeData" : json.dumps(prop_dict)}
         # make a new object of type Node with all the entered details
-        new_node = Node(name = my_name, type = node.type, data = prop_dict , position = json.dumps(node.position), flow_id = node.flow_id)
+        new_node = Node(name = my_name, type = node.type, data = prop_dict , position = node.position, flow_id = node.flow_id)
         #id,name and path are made private by the "_" before name in schemas.py, so frontend need not enter them.
         db.session.add(new_node)
         db.session.commit()
