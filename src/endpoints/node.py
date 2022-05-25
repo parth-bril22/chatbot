@@ -146,6 +146,8 @@ async def create_node(node:NodeSchema):
         #id,name and path are made private by the "_" before name in schemas.py, so frontend need not enter them.
         db.session.add(new_node)
         db.session.commit()
+        my_id =  new_node.id
+
         char = "a"
         i = ord(char[0])
         # if(db.session.query(SubNode).filter_by(node_id = new_node.id).filter_by(flow_id = new_node.flow_id).filter_by(id = "$success") == None):
@@ -157,7 +159,6 @@ async def create_node(node:NodeSchema):
             i += 1
         db.session.commit()
         db.session.close()
-        my_id =  new_node.id
         return JSONResponse(status_code = 200, content = {"message":"success"}) , my_id
     except Exception as e:
         print(e)
