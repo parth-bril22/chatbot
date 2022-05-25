@@ -206,7 +206,8 @@ async def delete_node(node_id : str, flow_id:int):
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code = 200, content = {'message': 'Node deleted'})
-    except:
+    except Exception  as e:
+        print(e)
         return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})  
 
 @router.post('/update_node')
@@ -238,21 +239,24 @@ async def update_node(node_id:str,my_node:NodeSchema):
 
 @router.post("/add_sub_node")
 async def add_sub_node(sub:SubNodeSchema):
-    # try:
-    #make default sub_node for all nodes
-    # new_sub_node = SubNode(node_id = new_node.id, name = "$default", flow_id = node.flow_id)
-    # db.session.add(new_sub_node)
-    node_in_db = db.session.query(Node).filter_by(id = sub.node_id).filter_by(flow_id=sub.flow_id)
-    if(node_in_db.first() == None):
-        return JSONResponse(status_code=404, content={"message":"Node or flow id not found"})
-    # node_in_db.delete()
-    new_sub_node = SubNode(node_id = sub.node_id,data = json.dumps(sub.data),flow_id = sub.flow_id)
-    db.session.add(new_sub_node)
-    db.session.commit()
-    db.session.close()
-    return JSONResponse(status_code = 200, content = {"message" : "Sub node addedd"})
-    # except:
-        # return JSONResponse(status_code=404, content={"message":"Node not present in db"})  
+    try:
+        node_in_db = db.session.query(Node).filter_by(id = sub.node_id).filter_by(flow_id=sub.flow_id)
+        if(node_in_db.first() == None):
+            return JSONResponse(status_code=404, content={"message":"Node or flow id not found"})
+        # node_in_db.delete()
+        sub_node_last_id = db.session.query(SubNode.id).filter_by(node_id = sub.node_id).all()
+        letter = list(sub_node_last_id)[-1][0][-1]
+        i = ord(letter) + 1
+        i = chr(i)
+        id = str(sub.node_id) + i
+        new_sub_node = SubNode(id = id, node_id = sub.node_id, data = encoders.jsonable_encoder(sub.data),flow_id = sub.flow_id)
+        db.session.add(new_sub_node)
+        db.session.commit()
+        db.session.close()
+        return JSONResponse(status_code = 200, content = {"message" : "Sub node addedd"})
+    except Exception as e:
+        print("Error: at add_sub_node.",e)
+        return JSONResponse(status_code=404, content={"message":"Node not present in db"})    
 
 @router.delete('/delete_sub_node')
 async def delete_sub_node(sub_node_id : str, flow_id:int):
