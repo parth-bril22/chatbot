@@ -177,7 +177,7 @@ async def get_node(node_id: int, flow_id : int):
     if(my_node == None):
         return JSONResponse(status_code=200, content = {"message":"Node not found"})
     else:
-        return JSONResponse(status_code = 200, content = {"id" : my_node.id, "type" : my_node.type, "position":json.loads(my_node.position), "data": {"label" : "NEW NODE", "nodeData":json.loads(my_node.data)} })
+        return JSONResponse(status_code = 200, content = {"id" : my_node.id, "type" : my_node.type, "position":my_node.position, "data": {"label" : "NEW NODE", "nodeData":my_node.data} })
 
 @router.delete('/delete_node')
 async def delete_node(node_id : str, flow_id:int):
