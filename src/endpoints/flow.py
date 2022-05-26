@@ -33,7 +33,7 @@ async def create_flow(flow : FlowSchema):
         flow_id = db.session.query(Flow.id).filter_by(id = new_flow.id).first()
         print(flow_id)
         
-        default_node = Node(name = "Welcome", type = "special", data = json.dumps({"text": ""}), position = json.dumps({"x": "180","y": "260"}),flow_id=flow_id[0])
+        default_node = Node(name = "Welcome", type = "special", data = {"text": "Welcome Node"}, position = {"x": "180","y": "260"},flow_id=flow_id[0])
         db.session.merge(default_node)
         db.session.commit()
         db.session.close()
@@ -161,7 +161,7 @@ async def get_diagram(flow_id :int):
             # node.position = (node.position)
             # node.data = (node.data)
             get_data = {"id": node.id, "type": node.type, "position": node.position,
-             "data": {"label": "NEW NODE", "nodeData": node.data}}
+             "data": { "id": node.id,"label": "NEW NODE", "nodeData": node.data}}
             get_list.append(get_data)
         # return {"nodes":list({"id" : node.id, "type" : node.type, "position":node.position, "data": {"label" : "NEW NODE", "nodeData":node.data} }),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) }
         return {"nodes": get_list,"connections": encoders.jsonable_encoder(all_connections), "custom_fields": encoders.jsonable_encoder(all_custom_fileds),"sub_nodes:": encoders.jsonable_encoder(sub_nodes)}
