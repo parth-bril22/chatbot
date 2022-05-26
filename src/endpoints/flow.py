@@ -164,7 +164,7 @@ async def get_diagram(flow_id :int):
              "data": {"label": "NEW NODE", "nodeData": node.data}}
             get_list.append(get_data)
         # return {"nodes":list({"id" : node.id, "type" : node.type, "position":node.position, "data": {"label" : "NEW NODE", "nodeData":node.data} }),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) }
-        return {"nodes": get_list,"connections": encoders.jsonable_encoder(all_connections), "Custom Fields": encoders.jsonable_encoder(all_custom_fileds),"Sub Nodes:": encoders.jsonable_encoder(sub_nodes)}
+        return {"nodes": get_list,"connections": encoders.jsonable_encoder(all_connections), "custom_fields": encoders.jsonable_encoder(all_custom_fileds),"sub_nodes:": encoders.jsonable_encoder(sub_nodes)}
         # return JSONResponse(status_code=200, content={"nodes":encoders.jsonable_encoder(all_nodes),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) })
     except Exception as e:
         print(e, ": at get diagram")
