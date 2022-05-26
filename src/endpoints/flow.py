@@ -154,10 +154,17 @@ async def get_diagram(flow_id :int):
         all_custom_fileds = db.session.query(CustomFields).filter_by(flow_id=flow_id).all()
         all_nodes = db.session.query(Node).filter_by(flow_id=flow_id).all()
         sub_nodes = db.session.query(SubNode).filter_by(flow_id=flow_id).all()
-
+        get_list = []
         for node in all_nodes:
-            node.position = (node.position)
-        return {"nodes":encoders.jsonable_encoder(all_nodes),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) }           
+            # node.id  = (node.id)
+            # node.type = (node.type)
+            # node.position = (node.position)
+            # node.data = (node.data)
+            get_data = {"id": node.id, "type": node.type, "position": node.position,
+             "data": {"label": "NEW NODE", "nodeData": node.data}}
+            get_list.append(get_data)
+        # return {"nodes":list({"id" : node.id, "type" : node.type, "position":node.position, "data": {"label" : "NEW NODE", "nodeData":node.data} }),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) }
+        return {"nodes": get_list,"connections": encoders.jsonable_encoder(all_connections), "Custom Fields": encoders.jsonable_encoder(all_custom_fileds),"Sub Nodes:": encoders.jsonable_encoder(sub_nodes)}
         # return JSONResponse(status_code=200, content={"nodes":encoders.jsonable_encoder(all_nodes),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) })
     except Exception as e:
         print(e, ": at get diagram")
