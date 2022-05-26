@@ -150,8 +150,8 @@ async def duplicate_flow(user_id:int, flow_id:int):
 @router.get("/get_diagram")
 async def get_diagram(flow_id :int):
     try:
-        all_connections = db.session.query(Node).filter_by(flow_id=flow_id).all()
-        all_custom_fileds = db.session.query(Node).filter_by(flow_id=flow_id).all()
+        all_connections = db.session.query(Connections).filter_by(flow_id=flow_id).all()
+        all_custom_fileds = db.session.query(CustomFields).filter_by(flow_id=flow_id).all()
         all_nodes = db.session.query(Node).filter_by(flow_id=flow_id).all()
         sub_nodes = db.session.query(SubNode).filter_by(flow_id=flow_id).all()
 
