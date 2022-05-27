@@ -326,7 +326,7 @@ async def create_connection(conn : ConnectionSchema):
     #if the (source_node's + subnode's) connection exists somewhere, update other variables only. Else make a new entry
     if(db.session.query(Connections).filter_by(flow_id=conn.flow_id).filter_by(source_node_id= conn.source_node_id).filter_by(sub_node_id = conn.sub_node_id).first() is not None):
         db.session.query(Connections).filter(Connections.source_node_id == conn.source_node_id).filter(Connections.sub_node_id == conn.sub_node_id).\
-        update({'target_node':conn.target_node_id, 'name' : my_name})
+        update({'target_node_id':conn.target_node_id, 'name' : my_name})
     else:
         new_conn = Connections(sub_node_id = conn.sub_node_id, source_node_id = conn.source_node_id, target_node_id = conn.target_node_id, name = my_name,flow_id= conn.flow_id)
         db.session.add(new_conn)
@@ -343,6 +343,60 @@ async def create_connections(conns : List[ConnectionSchema]):
         if(x.status_code != 200):
             return x
     return JSONResponse(status_code = 200, content = {"message" :"success"})
+
+
+@router.delete('/delete_connection')
+async def delete_connection(flow_id: int, source_node_id: int, sub_node_id: str,
+                            target_node_id: int):  # or conn:ConnectionSchema if want parameters in body
+    try:
+
+        # get connection from the database
+        connection_in_db = db.session.query(Connections).filter_by(flow_id=flow_id).filter_by(
+            source_node_id=source_node_id).filter_by(sub_node_id=sub_node_id).filter_by(target_node_id=target_node_id)
+        # check if it exists or not, return error if does not exist
+        if (connection_in_db.first() == None):
+            return JSONResponse(status_code=404, content={"message": "Connection not found"})
+
+        # delete connection
+        connection_in_db.delete()
+        db.session.commit()
+        db.session.close()
+        return JSONResponse(status_code=200, content={'message': 'Connection deleted'})
+    except Exception as e:
+        print("Error in delete connection: ", e)
+        return JSONResponse(status_code=404, content={
+            "message": "Cannot delete connection. Check if node and flow ids entered correctly"})
+
+
+@router.post('/add_connection')
+async def add_connection(my_node: NodeSchema, connection: ConnectionSchema):
+    try:
+        # create new node and get its id
+        status, new_node_id = await create_node(node=my_node)
+        # check for errors
+        if (status.status_code != 200):
+            return status
+
+        # since create_connection takes ConnectionSchema as input, we will create tow new schemas. One where source-target are old_source-new_node_Created and other where source-targer are new_node_Created and old_target_node
+        conn_1 = ConnectionSchema(flow_id=connection.flow_id, source_node_id=connection.source_node_id,
+                                  sub_node_id=connection.sub_node_id, target_node_id=new_node_id)
+        await create_connection(conn_1)
+
+        # get first/default sub_node_id of the new node created
+        my_sub_node_id = db.session.query(SubNode.id).filter_by(node_id=new_node_id).filter_by(
+            flow_id=connection.flow_id).first()
+        # since the above line returns a row/tuple of (sub_node_id,''), we get only the sub_node_id from it
+        my_sub_node_id = my_sub_node_id[0]
+
+        conn_2 = ConnectionSchema(flow_id=connection.flow_id, source_node_id=new_node_id, sub_node_id=my_sub_node_id,
+                                  target_node_id=connection.target_node_id)
+        await create_connection(conn_2)
+
+        return JSONResponse(status_code=200, content={"message": "Success"})
+    except Exception as e:
+        print("Error in update_connection: ", e)
+        return JSONResponse(status_code=404, content={"message": "Cannot update/add connection"})
+
 
 @router.post('/create_custom_field')
 async def create_custom_field(cus : CustomFieldSchema):
