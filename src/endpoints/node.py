@@ -229,7 +229,7 @@ async def update_node(node_id:str,my_node:NodeSchema):
             return node_check
     
         #update node data
-        db.session.query(Node).filter(Node.id == node_id).filter_by(flow_id=my_node.flow_id).update({'data' : node_data})
+        db.session.query(Node).filter(Node.id == node_id).filter_by(flow_id=my_node.flow_id).update({'position':my_node.position,'type' : my_node.type,'data' : node_data,})
         db.session.commit()
         db.session.close()
 
