@@ -252,7 +252,7 @@ async def add_sub_node(sub:SubNodeSchema):
             letter = list(sub_node_list)[-1][0][-1]
             i = ord(letter) + 1
         else:
-            letter = 'a'
+            letter = 'b'
             i = ord(letter)
         i = chr(i)
         id = str(sub.node_id) + i
