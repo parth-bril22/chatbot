@@ -302,7 +302,7 @@ async def delete_sub_node(sub_node_id : str, flow_id:int):
 async def create_connection(conn : ConnectionSchema):
     try:
     #if empty, set $success as default
-        if conn.sub_node_id == "" : conn.sub_node_id = "$success"
+        if conn.sub_node_id == "" : conn.sub_node_id = "b"
 
         try:
             source_node_exists = db.session.query(Node).filter((Node.id == conn.source_node_id)).first()

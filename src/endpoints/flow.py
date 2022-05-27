@@ -151,6 +151,10 @@ async def duplicate_flow(user_id:int, flow_id:int):
 async def get_diagram(flow_id :int):
     try:
         all_connections = db.session.query(Connections).filter_by(flow_id=flow_id).all()
+        cons =[]
+        for con in cons:
+            get_con = {"id": con.id, "type": 'straight', "source": con.source_node_id, "sub_node": con.sub_node_id,"target": con.target_node_id, "animated": True, "label": 'edge label'}
+            cons.append(get_con)
         all_custom_fileds = db.session.query(CustomFields).filter_by(flow_id=flow_id).all()
         all_nodes = db.session.query(Node).filter_by(flow_id=flow_id).all()
         sub_nodes = db.session.query(SubNode).filter_by(flow_id=flow_id).all()
@@ -160,7 +164,7 @@ async def get_diagram(flow_id :int):
              "data": { "id": node.id,"label": "NEW NODE", "nodeData": node.data}}
             get_list.append(get_data)
         # return {"nodes":list({"id" : node.id, "type" : node.type, "position":node.position, "data": {"label" : "NEW NODE", "nodeData":node.data} }),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) }
-        return {"nodes": get_list,"connections": encoders.jsonable_encoder(all_connections), "custom_fields": encoders.jsonable_encoder(all_custom_fileds),"sub_nodes:": encoders.jsonable_encoder(sub_nodes)}
+        return {"nodes": get_list,"connections": cons, "custom_fields": encoders.jsonable_encoder(all_custom_fileds),"sub_nodes:": encoders.jsonable_encoder(sub_nodes)}
     except Exception as e:
         print(e, ": at get diagram")
         return JSONResponse(status_code=400, content={"message": "Cannot get diagram"})
