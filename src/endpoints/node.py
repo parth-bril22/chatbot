@@ -148,7 +148,7 @@ async def create_node(node:NodeSchema):
         db.session.commit()
         my_id =  new_node.id
 
-        char = "a"
+        char = "b"
         i = ord(char[0])
         # if(db.session.query(SubNode).filter_by(node_id = new_node.id).filter_by(flow_id = new_node.flow_id).filter_by(id = "$success") == None):
         #make default sub_node for all nodes
