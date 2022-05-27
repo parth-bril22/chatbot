@@ -300,41 +300,45 @@ async def delete_sub_node(sub_node_id : str, flow_id:int):
         return JSONResponse(status_code=404, content={"message":"Please enter sub_node_id correctly"})  
 # @router.post('/create_connection')
 async def create_connection(conn : ConnectionSchema):
-    #if empty, set $success as default
-    if conn.sub_node_id == "" : conn.sub_node_id = "$success"
-
     try:
-        source_node_exists = db.session.query(Node).filter((Node.id == conn.source_node_id)).first()
-        target_node_exists = db.session.query(Node).filter((Node.id == conn.target_node_id)).first()
+    #if empty, set $success as default
+        if conn.sub_node_id == "" : conn.sub_node_id = "$success"
 
-        if(source_node_exists == None or target_node_exists == None):
-            return JSONResponse(status_code = 404, content = {"message" : "Node not found"})
-    except:
-        return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})
+        try:
+            source_node_exists = db.session.query(Node).filter((Node.id == conn.source_node_id)).first()
+            target_node_exists = db.session.query(Node).filter((Node.id == conn.target_node_id)).first()
 
-    if "" in conn.dict().values( ):
-        # return {"message" : "please leave no field empty"}  
-        Response(status_code = 204)
+            if(source_node_exists == None or target_node_exists == None):
+                return JSONResponse(status_code = 404, content = {"message" : "Node not found"})
+        except:
+            return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})
 
-    #set my_name variable which will later be used to set the name
-    my_name = "c_" + str(conn.source_node_id) + "_" + str(conn.sub_node_id) + "-" + str(conn.target_node_id)
+        if "" in conn.dict().values( ):
+            # return {"message" : "please leave no field empty"}  
+            Response(status_code = 204)
 
-    if(conn.source_node_id == conn.target_node_id):
-        # return {"message" : "Source and Target node cannot be the same"}
-        return JSONResponse(status_code = 406, content={"message":"Source and Target node cannot be the same"})
+        #set my_name variable which will later be used to set the name
+        my_name = "c_" + str(conn.source_node_id) + "_" + str(conn.sub_node_id) + "-" + str(conn.target_node_id)
 
-    #if the (source_node's + subnode's) connection exists somewhere, update other variables only. Else make a new entry
-    if(db.session.query(Connections).filter_by(flow_id=conn.flow_id).filter_by(source_node_id= conn.source_node_id).filter_by(sub_node_id = conn.sub_node_id).first() is not None):
-        db.session.query(Connections).filter(Connections.source_node_id == conn.source_node_id).filter(Connections.sub_node_id == conn.sub_node_id).\
-        update({'target_node_id':conn.target_node_id, 'name' : my_name})
-    else:
-        new_conn = Connections(sub_node_id = conn.sub_node_id, source_node_id = conn.source_node_id, target_node_id = conn.target_node_id, name = my_name,flow_id= conn.flow_id)
-        db.session.add(new_conn)
+        if(conn.source_node_id == conn.target_node_id):
+            # return {"message" : "Source and Target node cannot be the same"}
+            return JSONResponse(status_code = 406, content={"message":"Source and Target node cannot be the same"})
 
-    db.session.commit()
-    # return {"message":'success'}
-    return JSONResponse(status_code = 200, content = {"message": "success"})
+        #if the (source_node's + subnode's) connection exists somewhere, update other variables only. Else make a new entry
+        if(db.session.query(Connections).filter_by(flow_id=conn.flow_id).filter_by(source_node_id= conn.source_node_id).filter_by(sub_node_id = conn.sub_node_id).first() is not None):
+            db.session.query(Connections).filter(Connections.source_node_id == conn.source_node_id).filter(Connections.sub_node_id == conn.sub_node_id).\
+            update({'target_node_id':conn.target_node_id, 'name' : my_name})
+        else:
+            new_conn = Connections(sub_node_id = conn.sub_node_id, source_node_id = conn.source_node_id, target_node_id = conn.target_node_id, name = my_name,flow_id= conn.flow_id)
+            db.session.add(new_conn)
 
+        db.session.commit()
+        # return {"message":'success'}
+        return JSONResponse(status_code = 200, content = {"message": "success"})
+    except Exception as e:
+        print("Error in create connection: ", e)
+        return JSONResponse(status_code=404, content={
+            "message": "Cannot create connection. Check if node and flow ids entered correctly"})
          
 @router.post('/create_connection')
 async def create_connections(conns : List[ConnectionSchema]):
