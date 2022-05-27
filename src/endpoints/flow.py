@@ -152,7 +152,7 @@ async def get_diagram(flow_id :int):
     try:
         all_connections = db.session.query(Connections).filter_by(flow_id=flow_id).all()
         cons =[]
-        for con in cons:
+        for con in all_connections:
             get_con = {"id": con.id, "type": 'straight', "source": con.source_node_id, "sub_node": con.sub_node_id,"target": con.target_node_id, "animated": True, "label": 'edge label'}
             cons.append(get_con)
         all_custom_fileds = db.session.query(CustomFields).filter_by(flow_id=flow_id).all()
