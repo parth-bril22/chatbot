@@ -350,13 +350,10 @@ async def create_connections(conns : List[ConnectionSchema]):
 
 
 @router.delete('/delete_connection')
-async def delete_connection(flow_id: int, source_node_id: int, sub_node_id: str,
-                            target_node_id: int):  # or conn:ConnectionSchema if want parameters in body
+async def delete_connection(connection_id: int):
     try:
-
         # get connection from the database
-        connection_in_db = db.session.query(Connections).filter_by(flow_id=flow_id).filter_by(
-            source_node_id=source_node_id).filter_by(sub_node_id=sub_node_id).filter_by(target_node_id=target_node_id)
+        connection_in_db = db.session.query(Connections).filter_by(id=connection_id)
         # check if it exists or not, return error if does not exist
         if (connection_in_db.first() == None):
             return JSONResponse(status_code=404, content={"message": "Connection not found"})
