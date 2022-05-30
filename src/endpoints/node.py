@@ -499,8 +499,6 @@ async def preview(flow_id : int):
         print(e)
         return JSONResponse(status_code=404, content={"message":"Error in preview"})
 
-
-
 @router.post('/send')
 async def send(flow_id : int, my_source_node:str, my_sub_node:str):
     """
