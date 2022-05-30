@@ -81,7 +81,7 @@ async def check_conditional_logic(prop_value_json : json):
 async def check_property_dict(node: Node, prop : Dict, keys : List):
     
     prop_dict = {k: v for k, v in prop.items() if k in keys}
-    print(prop_dict)
+    # print(prop_dict)
     #necessary fields not filled
     if (len(prop_dict) != len(keys)):
         return False, Response(status_code = 204)
@@ -91,18 +91,17 @@ async def check_property_dict(node: Node, prop : Dict, keys : List):
         return False, Response(status_code = 204)
     
     # if type is conditional logic, then get the "value" field
-    if "value" in prop_dict.keys() and node.type == "conditional_logic": 
-            #load string in "value" as json
-            prop_value_json = json.loads(prop_dict['value'])
-            logic_check = await check_conditional_logic(prop_value_json)
-            if(logic_check != True):
-                return False, logic_check
+    # if "value" in prop_dict.keys() and node.type == "conditional_logic":
+    #         #load string in "value" as json
+    #         prop_value_json = json.loads(prop_dict['value'])
+    #         logic_check = await check_conditional_logic(prop_value_json)
+    #         if(logic_check != True):
+    #             return False, logic_check
     
     return True, prop_dict
 
 async def check_node_details(node:NodeSchema):
      #check if the "type" of node is actually present in the nodetype table
-    print("-----------")
     node_type_params = db.session.query(NodeType).filter(NodeType.type == node.type).first()
     #if not, return error
     if(node_type_params == None):
@@ -159,6 +158,7 @@ async def create_node(node:NodeSchema):
             i += 1
         db.session.commit()
         db.session.close()
+
         return JSONResponse(status_code = 200, content = {"message":"success"}) , my_id
     except Exception as e:
         print(e)
@@ -368,6 +368,21 @@ async def delete_connection(connection_id: int):
         return JSONResponse(status_code=404, content={
             "message": "Cannot delete connection. Check if node and flow ids entered correctly"})
 
+@router.post("/create_node_with_conn")
+async def create_node_with_conn(my_node:NodeSchema , node_id:int, sub_node_id:str):
+    try:
+        create_node_response, my_id = await create_node(node=my_node)
+        if (create_node_response.status_code != 200):
+            return create_node_response
+        create_conn = ConnectionSchema(flow_id=my_node.flow_id, source_node_id=node_id,
+                                  sub_node_id=sub_node_id,
+                                  target_node_id=my_id)
+        await create_connection(create_conn)
+        return JSONResponse(status_code=200, content={"message": "Success"})
+
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=404, content={"message": "Cannot create connections between two nodes"})
 
 @router.post('/add_connection')
 async def add_connection(my_node: NodeSchema, connection: ConnectionSchema):
@@ -418,7 +433,7 @@ async def create_custom_field(cus : CustomFieldSchema):
         ip_type = type(literal_eval(cus.value))
         if(cus.type == "number"):
             my_type = str(ip_type).split(" ")[-1][:-1].strip("\'")
-            print(my_type)
+            # print(my_type)
             if my_type != "int" and my_type != "float":
                 # return {"please check your number"}
                 return JSONResponse(status_code = 404, content={"message": "please check your number"})

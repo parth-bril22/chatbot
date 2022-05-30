@@ -18,7 +18,6 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-
 @router.post('/create_flow')
 async def create_flow(flow : FlowSchema):
     try:
@@ -174,7 +173,7 @@ async def get_diagram(flow_id :int):
 async def save_draft(flow_id:int):
     try:
         diagram = await get_diagram(flow_id)
-        print(diagram)
+        # print(diagram)
         db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(), 'diagram' : diagram})
         db.session.commit()
         db.session.close()
@@ -183,12 +182,25 @@ async def save_draft(flow_id:int):
         print(e, "at:", datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
+
 @router.post('/publish')
-async def publish(flow_id : int, user_id : int, nodes : List[NodeSchema], conns : List[ConnectionSchema], cus : List[CustomFieldSchema]):
-    await save_draft(nodes,conns,cus)
-    diagram = await get_diagram(flow_id)
-    token = db.session.query(Flow.publish_token).filter_by(id = flow_id).filter_by(user_id = user_id).first()[0]
-    return JSONResponse(status_code=200, content={"message":"success", "token": token , "diagram": encoders.jsonable_encoder(diagram)})
+async def publish(flow_id: int):
+    try:
+        # save draft of the current diagram and check if it was successful or not
+        save_draft_status = await save_draft(flow_id)
+        if (save_draft_status.status_code != 200):
+            return save_draft_status
+
+        # get the publish token of the flow and check whether it exists or not
+        token = db.session.query(Flow.publish_token).filter_by(id=flow_id).first()
+
+        if (token == None):
+            return JSONResponse(status_code=404, content={"message": "Cannot publish. Check flow_id entered"})
+
+        return JSONResponse(status_code=200, content={"message": "success", "token": token[0]})
+    except Exception as e:
+        print("Error in publish: ", e)
+        return JSONResponse(status_code=400, content={"message": "Cannot publish"})
 
 @router.post("/disable_flow")
 async def flow_disabled(flow_id:int):
