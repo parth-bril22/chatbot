@@ -186,7 +186,7 @@ async def create_nodes(nodes : List[NodeSchema]):
 async def get_node(node_id: int, flow_id : int):
     my_node = db.session.query(Node).filter_by(flow_id=flow_id).filter_by(id = node_id).first()
     if(my_node == None):
-        return JSONResponse(status_code=200, content = {"message":"Node not found"})
+        return JSONResponse(status_code=404, content = {"message":"Node not found"})
     else:
         return JSONResponse(status_code = 200, content = {"id" : my_node.id, "type" : my_node.type, "position":my_node.position, "data": {"label" : "NEW NODE", "nodeData":my_node.data} })
 
