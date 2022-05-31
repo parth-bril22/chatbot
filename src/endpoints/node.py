@@ -547,7 +547,11 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
             is_end_node = True
             db.session.query(Flow).filter_by(id = flow_id).update({"finished":local_count})
             db.session.commit()
-        
+
+        # get the previous node
+
+        previous_node = db.session.query(Node).filter_by(id = my_source_node).filter_by(flow_id=flow_id).first()
+        previous_node_json = encoders.jsonable_encoder(previous_node)
         #get all the details of next node from the ID
         next_node = db.session.query(Node).filter_by(id = next_node_row.target_node_id).filter_by(flow_id=flow_id).first()
         next_node_json = encoders.jsonable_encoder(next_node)
@@ -557,7 +561,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
         sub_nodes = encoders.jsonable_encoder(sub_nodes)
         db.session.commit()
         # db.session.close()
-        return JSONResponse(status_code=200, content={"next_node": next_node_json, "sub_nodes": sub_nodes})
+        return JSONResponse(status_code=200, content={"previous_node":previous_node_json,"next_node": next_node_json, "sub_nodes": sub_nodes})
         # return {"next_node": next_node, "sub_nodes": sub_nodes}
         # return {"next_node_type" : next_node.type, "next_node_data":(next_node.data), "next_node_row" : next_node.id, "next_node_sub_nodes": sub_nodes, "is_end_node": is_end_node}
     except Exception as e:
