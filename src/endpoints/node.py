@@ -481,7 +481,7 @@ async def create_custom_fields(cus : List[CustomFieldSchema],token = Depends(aut
     return JSONResponse(status_code = 200, content = {"message" :"success"})
 
 @router.post('/preview')
-async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
+async def preview(flow_id : int):
     """
     When user clicks on preview, start a preview chat page and return the first/start node.
     """
