@@ -205,39 +205,73 @@ async def publish(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
         print("Error in publish: ", e)
         return JSONResponse(status_code=400, content={"message": "Cannot publish"})
 
+
 @router.post("/disable_flow")
-async def flow_disabled(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def flow_disabled(flow_id: int):
     try:
-        db.session.query(Flow).filter_by(id=flow_id).update({"isEnable":False})
+        db.session.query(Flow).filter_by(id=flow_id).update(
+            {"isEnable": False, "updated_at": datetime.now(timezone.utc)})
         db.session.commit()
         db.session.close()
-        return JSONResponse(status_code=200, content={"message":"flow disabled"})
-
+        return JSONResponse(status_code=200, content={"message": "flow disabled"})
     except Exception as e:
-        print(e, "Error: at disable_flow. Time:", datetime.now())
-        return JSONResponse(status_code=400, content={"message":"please check the input"})
+        print("Error at disable_flow: ", e)
+        return JSONResponse(status_code=400, content={"message": "please check the input"})
 
-        
-@router.post('/trash/delete_forever')
-async def delete_workspace(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
+
+@router.post('/archive_flow')
+async def archive_flow(flow_id: int):
     try:
-        db.session.query(Flow).filter_by(flow_id=flow_id).delete()
+        db.session.query(Flow).filter_by(id=flow_id).update(
+            {"isEnable": False, "status": "trashed", "updated_at": datetime.now(timezone.utc)})
+
         db.session.commit()
         db.session.close()
-        return JSONResponse(status_code = 200, content = {"message": "success"})
     except Exception as e:
-        print(e, "Error: at create_flow. Time:", datetime.now())
-        return JSONResponse(status_code=400, content={"message":"please check the input"})
+        print("Error at archive flow: ", e)
+        return JSONResponse(status_code=400, content={"message": "please check the input"})
 
-@router.post('/trash/restore')
-async def restore_workspace(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
+
+@router.get('/get_trashed_flows')
+async def get_trashed_flows(user_id: int):
     try:
+        user_check = await check_user_id(user_id)
+        if user_check.status_code != 200:
+            return user_check
 
-        db.session.query(Flow).filter_by(id = flow_id).update({"status":"restored"})
-        db.session.query(Flow).filter_by(id=flow_id).update({"isEnable":True})
+        flow_ids = db.session.query(Flow).filter_by(user_id=user_id).filter_by(status="trashed").all()
+
+        ids = []
+        for fl in flow_ids:
+            ids.append(fl.id)
+        return JSONResponse(status_code=200, content={"message": "success", "flow_ids": ids})
+
+    except Exception as e:
+        print("Error at get_trashed_flows: ", e)
+        return JSONResponse(status_code=400, content={"message": "please check the input"})
+
+
+@router.delete('/trash/delete_forever')
+async def delete_flow(flow_id: int):
+    try:
+        db.session.query(Flow).filter_by(flow_id=flow_id).filter_by(isEnable=False).filter_by(status="trashed").delete()
         db.session.commit()
         db.session.close()
-        return JSONResponse(status_code = 200, content = {"message": "success"})
+        return JSONResponse(status_code=200, content={"message": "success"})
     except Exception as e:
-        print(e, "Error: at create_flow. Time:", datetime.now())
-        return JSONResponse(status_code=400, content={"message":"please check the input"})
+        print("Error at delete_forever: ", e)
+        return JSONResponse(status_code=400, content={"message": "please check the input"})
+
+
+@router.post('/trash/restore_flow')
+async def restore_flow(flow_id: int):
+    try:
+        db.session.query(Flow).filter_by(id=flow_id).update(
+            {"status": "active", "isEnable": True, "updated_at": datetime.now(timezone.utc)})
+        db.session.commit()
+        db.session.close()
+        return JSONResponse(status_code=200, content={"message": "success"})
+    except Exception as e:
+        print("Error at restore: ", e)
+        return JSONResponse(status_code=400, content={"message": "please check the input"})
+
