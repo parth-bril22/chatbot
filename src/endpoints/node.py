@@ -519,7 +519,7 @@ async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
         return JSONResponse(status_code=404, content={"message":"Error in preview"})
 
 @router.post('/send')
-async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depends(auth_handler.auth_wrapper)):
+async def send(flow_id : int, my_source_node:str, my_sub_node:str):
     """
     Enter the source node and its sub_node and get the next node according to the connections table.
     """
