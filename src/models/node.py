@@ -18,14 +18,12 @@ class Node(Base):
     node_conn = relationship("NodeType", back_populates = "node_type_conn")
     node_sub_node =  relationship("SubNode",back_populates = 'sub_node_con')
 
-
 class NodeType(Base):
     __tablename__ = 'node_type'
     id = Column(Integer, primary_key = True)
     type = Column(String, unique = True)
     params = Column(JSON)
     node_type_conn = relationship("Node", back_populates = "node_conn")
-
 
 class Connections(Base):
     __tablename__ = 'connections'
@@ -43,6 +41,7 @@ class SubNode(Base):
     data = Column(JSON)
     node_id = Column(Integer,ForeignKey("node.id", ondelete = "NO ACTION"))
     sub_node_con =  relationship("Node",back_populates = 'node_sub_node')
+    type = Column(String)
     
 class CustomFields(Base):
     __tablename__ = 'custom_fields'

@@ -22,7 +22,7 @@ router = APIRouter(
 )
 
 @router.post('/create_flow')
-async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrapper)):
+async def create_flow(flow : FlowSchema):
     try:
         
         if(flow.name == None or len(flow.name.strip()) == 0):
@@ -57,7 +57,7 @@ async def check_user_id(user_id:str):
 
 
 @router.get('/get_flow_list')
-async def get_flow_list(user_id : int,token = Depends(auth_handler.auth_wrapper)):
+async def get_flow_list(user_id : int):
     try:
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
@@ -74,7 +74,7 @@ async def get_flow_list(user_id : int,token = Depends(auth_handler.auth_wrapper)
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
 @router.get('/search_flows')
-async def search_flows(user_id : int, flow_name:str,token = Depends(auth_handler.auth_wrapper)):
+async def search_flows(user_id : int, flow_name:str):
     try:
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
@@ -94,7 +94,7 @@ async def search_flows(user_id : int, flow_name:str,token = Depends(auth_handler
 
 
 @router.get('/rename_flow')
-async def rename_flow(user_id : int, flow_id:str, new_name:str,token = Depends(auth_handler.auth_wrapper)):
+async def rename_flow(user_id : int, flow_id:str, new_name:str):
     try:
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
@@ -115,7 +115,7 @@ async def rename_flow(user_id : int, flow_id:str, new_name:str,token = Depends(a
 
 
 @router.delete('/delete_flow_list')
-async def delete_flow(user_id : int, flow_list: List[int],token = Depends(auth_handler.auth_wrapper) ):
+async def delete_flow(user_id : int, flow_list: List[int] ):
     user_check = await check_user_id(user_id)
     if user_check.status_code != 200 :
         return user_check 
@@ -130,7 +130,7 @@ async def delete_flow(user_id : int, flow_list: List[int],token = Depends(auth_h
     return JSONResponse(status_code=200, content={"message":"success"})
 
 @router.post('/duplicate_flow')
-async def duplicate_flow(user_id:int, flow_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def duplicate_flow(user_id:int, flow_id:int):
     try:
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
@@ -150,7 +150,7 @@ async def duplicate_flow(user_id:int, flow_id:int,token = Depends(auth_handler.a
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
 @router.get("/get_diagram")
-async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
+async def get_diagram(flow_id :int):
     try:
         all_connections = db.session.query(Connections).filter_by(flow_id=flow_id).all()
         cons =[]
@@ -173,7 +173,7 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
 
 
 @router.post('/save_draft')
-async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def save_draft(flow_id:int):
     try:
         diagram = await get_diagram(flow_id)
         # print(diagram)
@@ -187,7 +187,7 @@ async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
 
 
 @router.post('/publish')
-async def publish(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
+async def publish(flow_id: int):
     try:
         # save draft of the current diagram and check if it was successful or not
         save_draft_status = await save_draft(flow_id)

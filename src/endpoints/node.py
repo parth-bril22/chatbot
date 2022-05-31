@@ -148,7 +148,7 @@ async def create_node(node:NodeSchema):
         #make default sub_node for all nodes
         for item in prop_dict:
             sn_id = chr(i)
-            new_sub_node = SubNode(id = str(new_node.id) + sn_id, node_id = new_node.id, flow_id = node.flow_id, data = item)
+            new_sub_node = SubNode(id = str(new_node.id) + sn_id, node_id = new_node.id, flow_id = node.flow_id, data = item, type = node.type)
             db.session.add(new_sub_node)
             i += 1
         db.session.commit()
@@ -161,7 +161,7 @@ async def create_node(node:NodeSchema):
 
 
 @router.post('/create_node')
-async def create_nodes(nodes : List[NodeSchema],token = Depends(auth_handler.auth_wrapper)):
+async def create_nodes(nodes : List[NodeSchema]):
     try:
         ids = []
         for node in nodes:
@@ -177,7 +177,7 @@ async def create_nodes(nodes : List[NodeSchema],token = Depends(auth_handler.aut
 
 
 @router.get('/get_node')
-async def get_node(node_id: int, flow_id : int,token = Depends(auth_handler.auth_wrapper)):
+async def get_node(node_id: int, flow_id : int):
     my_node = db.session.query(Node).filter_by(flow_id=flow_id).filter_by(id = node_id).first()
     if(my_node == None):
         return JSONResponse(status_code=404, content = {"message":"Node not found"})
@@ -185,7 +185,7 @@ async def get_node(node_id: int, flow_id : int,token = Depends(auth_handler.auth
         return JSONResponse(status_code = 200, content = {"id" : my_node.id, "type" : my_node.type, "position":my_node.position, "data": {"label" : "NEW NODE", "nodeData":my_node.data} })
 
 @router.delete('/delete_node')
-async def delete_node(node_id : str, flow_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def delete_node(node_id : str, flow_id:int):
     try:
         # print([value[0] for value in db.session.query(Node.id)])
         node_in_db = db.session.query(Node).filter_by(flow_id = flow_id).filter_by(id = node_id)
@@ -205,7 +205,7 @@ async def delete_node(node_id : str, flow_id:int,token = Depends(auth_handler.au
         return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})  
 
 @router.post('/update_node')
-async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handler.auth_wrapper)):
+async def update_node(node_id:str,my_node:NodeSchema):
     try:
         #check if the node_id is in the database
         node_in_db = db.session.query(Node).filter_by(id = node_id).filter_by(flow_id=my_node.flow_id)
@@ -226,7 +226,7 @@ async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handle
          return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"}) 
 
 @router.post("/add_sub_node")
-async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapper)):
+async def add_sub_node(sub:SubNodeSchema):
     try:
         node_in_db = db.session.query(Node).filter_by(id = sub.node_id).filter_by(flow_id=sub.flow_id)
 
@@ -249,7 +249,7 @@ async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapp
         for k,v in sub.data.items():
             if(v != "" and v != None):
                 relevant_keys[k] = v
-        new_sub_node = SubNode(id = id, node_id = sub.node_id, data = encoders.jsonable_encoder(relevant_keys),flow_id = sub.flow_id)
+        new_sub_node = SubNode(id = id, node_id = sub.node_id, data = encoders.jsonable_encoder(relevant_keys),flow_id = sub.flow_id, type=node_in_db.type)
         db.session.add(new_sub_node)
         curr_node = db.session.query(Node).filter_by(id = sub.node_id).first()
 
@@ -267,7 +267,7 @@ async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapp
 
 
 @router.put('/update_subnode')
-async def update_node(my_sub_node:SubNodeSchema, sub_node_id:str = Body(...),token = Depends(auth_handler.auth_wrapper)):
+async def update_node(my_sub_node:SubNodeSchema, sub_node_id:str = Body(...)):
     try:
         #check if the node_id is in the database
         node_in_db = db.session.query(SubNode).filter_by(flow_id=my_sub_node.flow_id).filter_by(id=sub_node_id)
@@ -289,7 +289,7 @@ async def update_node(my_sub_node:SubNodeSchema, sub_node_id:str = Body(...),tok
         return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})
 
 @router.delete('/delete_sub_node')
-async def delete_sub_node(sub_node_id : str, flow_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def delete_sub_node(sub_node_id : str, flow_id:int):
     try:
         # print([value[0] for value in db.session.query(Node.id)])
         node_in_db = db.session.query(SubNode).filter_by(flow_id = flow_id).filter_by(id = sub_node_id)
@@ -344,7 +344,7 @@ async def create_connection(conn : ConnectionSchema):
             "message": "Cannot create connection. Check if node and flow ids entered correctly"})
          
 @router.post('/create_connection')
-async def create_connections(conns : List[ConnectionSchema],token = Depends(auth_handler.auth_wrapper)):
+async def create_connections(conns : List[ConnectionSchema]):
     for conn in conns:
         x = await create_connection(conn)
         if(x.status_code != 200):
@@ -352,7 +352,7 @@ async def create_connections(conns : List[ConnectionSchema],token = Depends(auth
     return JSONResponse(status_code = 200, content = {"message" :"success"})
 
 @router.delete('/delete_connection')
-async def delete_connection(connection_id: int,token = Depends(auth_handler.auth_wrapper)):
+async def delete_connection(connection_id: int):
     try:
         # get connection from the database
         connection_in_db = db.session.query(Connections).filter_by(id=connection_id)
@@ -370,7 +370,7 @@ async def delete_connection(connection_id: int,token = Depends(auth_handler.auth
             "message": "Cannot delete connection. Check if node and flow ids entered correctly"})
 
 @router.post("/create_node_with_conn")
-async def create_node_with_conn(my_node:NodeSchema , node_id:int, sub_node_id:str,token = Depends(auth_handler.auth_wrapper)):
+async def create_node_with_conn(my_node:NodeSchema , node_id:int, sub_node_id:str):
     try:
         create_node_response, my_id = await create_node(node=my_node)
         if (create_node_response.status_code != 200):
@@ -389,7 +389,7 @@ async def create_node_with_conn(my_node:NodeSchema , node_id:int, sub_node_id:st
         return JSONResponse(status_code=404, content={"message": "Cannot create connections between two nodes"})
 
 @router.post('/add_connection')
-async def add_connection(my_node: NodeSchema, connection: ConnectionSchema,token = Depends(auth_handler.auth_wrapper)):
+async def add_connection(my_node: NodeSchema, connection: ConnectionSchema):
     try:
         # create new node and get its id
         status, new_node_id = await create_node(node=my_node)
@@ -474,7 +474,7 @@ async def create_custom_field(cus : CustomFieldSchema):
         return JSONResponse(status_code = 200, content={"message" : "success"})
 
 @router.post('/create_custom_field')
-async def create_custom_fields(cus : List[CustomFieldSchema],token = Depends(auth_handler.auth_wrapper)):
+async def create_custom_fields(cus : List[CustomFieldSchema]):
     for item in cus:
         x = await create_custom_field(item)
         if(x.status_code != 200):
@@ -569,7 +569,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
         return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})
 
 @router.post('/send_diagram')
-async def send_diagram(nodes : List[NodeSchema], connections : List[ConnectionSchema], custom_fields : List[CustomFieldSchema],token = Depends(auth_handler.auth_wrapper)):
+async def send_diagram(nodes : List[NodeSchema], connections : List[ConnectionSchema], custom_fields : List[CustomFieldSchema]):
     try:
         create_nodes_response = await create_nodes(nodes)
         if(create_nodes_response.status_code != 200):
