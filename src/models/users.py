@@ -11,6 +11,7 @@ class User(Base):
     first_name = Column(String)
     last_name = Column(String)
     created_at = Column(DateTime)
+    token = Column(String)
     pwd_token = relationship("Password_tokens", back_populates = "user", uselist = False, cascade = "all, delete", passive_deletes = True)
 
 

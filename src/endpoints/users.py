@@ -65,20 +65,20 @@ async def signup(user: SchemaUser):
     validated_user = validate_user(user)
     if (validated_user != True): 
         return validated_user
-    
+
     #else register the user by adding its details to the database
     else:
         print(user.password)
         #create a hashed/encrypted password using bcrypt
         hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
-
+        token = auth_handler.encode_token(user.email)
         #create a ModelUser instance with the details entered
-        db_user = ModelUser(email = user.email, password = hashed_password.decode('utf-8'), first_name = user.first_name, last_name = user.last_name, created_at = datetime.now(timezone.utc))
+        db_user = ModelUser(email = user.email, password = hashed_password.decode('utf-8'), first_name = user.first_name, last_name = user.last_name, created_at = datetime.now(timezone.utc),token = token)
 
         #add the ModelUser object(db_user) to the database
         db.session.add(db_user)
         db.session.commit()
-        return JSONResponse(status_code=200, content = {'message': "Signup Successful"})
+        return JSONResponse(status_code=200, content = {'message': "Signup Successful",'token':token, "refresh_token" : auth_handler.create_refresh_token(user.email)})
 
 
 #get details of the user if the email_id entered is valid, else return False

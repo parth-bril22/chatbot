@@ -5,7 +5,10 @@ from ..schemas.nodeSchema import *
 from ..models.flow import *
 from ..models.node import *
 
-from fastapi import APIRouter, status, HTTPException , encoders
+from ..dependencies.auth import AuthHandler
+auth_handler = AuthHandler()
+
+from fastapi import APIRouter, Depends , encoders
 from fastapi.responses import JSONResponse, Response
 from fastapi_sqlalchemy import db
 import json
@@ -19,7 +22,7 @@ router = APIRouter(
 )
 
 @router.post('/create_flow')
-async def create_flow(flow : FlowSchema):
+async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
         
         if(flow.name == None or len(flow.name.strip()) == 0):
@@ -54,7 +57,7 @@ async def check_user_id(user_id:str):
 
 
 @router.get('/get_flow_list')
-async def get_flow_list(user_id : int):
+async def get_flow_list(user_id : int,token = Depends(auth_handler.auth_wrapper)):
     try:
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
@@ -71,7 +74,7 @@ async def get_flow_list(user_id : int):
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
 @router.get('/search_flows')
-async def search_flows(user_id : int, flow_name:str):
+async def search_flows(user_id : int, flow_name:str,token = Depends(auth_handler.auth_wrapper)):
     try:
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
@@ -91,7 +94,7 @@ async def search_flows(user_id : int, flow_name:str):
 
 
 @router.get('/rename_flow')
-async def rename_flow(user_id : int, flow_id:str, new_name:str):
+async def rename_flow(user_id : int, flow_id:str, new_name:str,token = Depends(auth_handler.auth_wrapper)):
     try:
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
@@ -112,7 +115,7 @@ async def rename_flow(user_id : int, flow_id:str, new_name:str):
 
 
 @router.delete('/delete_flow_list')
-async def delete_flow(user_id : int, flow_list: List[int] ):
+async def delete_flow(user_id : int, flow_list: List[int],token = Depends(auth_handler.auth_wrapper) ):
     user_check = await check_user_id(user_id)
     if user_check.status_code != 200 :
         return user_check 
@@ -127,7 +130,7 @@ async def delete_flow(user_id : int, flow_list: List[int] ):
     return JSONResponse(status_code=200, content={"message":"success"})
 
 @router.post('/duplicate_flow')
-async def duplicate_flow(user_id:int, flow_id:int):
+async def duplicate_flow(user_id:int, flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
@@ -147,7 +150,7 @@ async def duplicate_flow(user_id:int, flow_id:int):
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
 @router.get("/get_diagram")
-async def get_diagram(flow_id :int):
+async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
     try:
         all_connections = db.session.query(Connections).filter_by(flow_id=flow_id).all()
         cons =[]
@@ -170,7 +173,7 @@ async def get_diagram(flow_id :int):
 
 
 @router.post('/save_draft')
-async def save_draft(flow_id:int):
+async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
         diagram = await get_diagram(flow_id)
         # print(diagram)
@@ -184,7 +187,7 @@ async def save_draft(flow_id:int):
 
 
 @router.post('/publish')
-async def publish(flow_id: int):
+async def publish(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
     try:
         # save draft of the current diagram and check if it was successful or not
         save_draft_status = await save_draft(flow_id)
@@ -203,7 +206,7 @@ async def publish(flow_id: int):
         return JSONResponse(status_code=400, content={"message": "Cannot publish"})
 
 @router.post("/disable_flow")
-async def flow_disabled(flow_id:int):
+async def flow_disabled(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
         db.session.query(Flow).filter_by(id=flow_id).update({"isEnable":False})
         db.session.commit()
@@ -216,7 +219,7 @@ async def flow_disabled(flow_id:int):
 
         
 @router.post('/trash/delete_forever')
-async def delete_workspace(flow_id : int):
+async def delete_workspace(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
     try:
         db.session.query(Flow).filter_by(flow_id=flow_id).delete()
         db.session.commit()
@@ -227,7 +230,7 @@ async def delete_workspace(flow_id : int):
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
 @router.post('/trash/restore')
-async def restore_workspace(flow_id : int):
+async def restore_workspace(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
     try:
 
         db.session.query(Flow).filter_by(id = flow_id).update({"status":"restored"})
