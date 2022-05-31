@@ -550,7 +550,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
         
         #get all the details of next node from the ID
         next_node = db.session.query(Node).filter_by(id = next_node_row.target_node_id).filter_by(flow_id=flow_id).first()
-        print(next_node)
+        next_node = encoders.jsonable_encoder(next_node)
         #get the sub_nodes of the obtained node
         sub_nodes = db.session.query(SubNode).filter_by(node_id = next_node.id).filter_by(flow_id=flow_id).all()
         sub_nodes = encoders.jsonable_encoder(sub_nodes)
