@@ -614,7 +614,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
                 is_end_node = True
                 db.session.query(Flow).filter_by(id = flow_id).update({"finished":local_count})
                 db.session.commit()
-                db.close()
+                db.session.close()
                 nn = "button"
             
             #get all the details of next node from the ID
