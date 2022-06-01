@@ -243,27 +243,35 @@ async def add_sub_node(sub:SubNodeSchema):
         sub_node_list = db.session.query(SubNode.id).filter_by(node_id = sub.node_id).all()
         sub_node_list = [tuple(x) for x in list(sub_node_list)]
         sub_node_list = sorted(sub_node_list)
+        
+        #set id of new node
         if(sub_node_list != []):
-            letter = list(sub_node_list)[-1][0][-1]
-            i = ord(letter) + 1
-        else:
-            letter = 'b'
-            i = ord(letter)
-        i = chr(i)
-        id = str(sub.node_id) + i
-        relevant_keys = dict()
-        print((sub.data.items()))
-        for k,v in sub.data.items():
-            if(v != "" and v != None):
-                relevant_keys[k] = v
-        new_sub_node = SubNode(id = id, node_id = sub.node_id, data = encoders.jsonable_encoder(relevant_keys),flow_id = sub.flow_id, type=node_in_db.type)
-        db.session.add(new_sub_node)
-        curr_node = db.session.query(Node).filter_by(id = sub.node_id).first()
+            # list(sub_node_list) = [('41a',), ('41b',), ('41c',)]
+            i = int(list(sub_node_list)[-1][0][-2]) + 1
+        else:#if no subnodes
+            i = 1
+        id = str(sub.node_id) + "_" + str(i) +"b"
 
+        #get list of relevant keys for the current type of sub_node and add only those to data/properties
+        relevant_items = dict()
+        curr_node = db.session.query(Node).filter_by(id = sub.node_id).first()
+        relevant_keys = (list(curr_node.data[-1].keys())[0])
+        
+        relevant_items = dict()
+        for k,v in sub.data.items():
+            if(k in relevant_keys and v != None):
+                relevant_items[k] = v
+        
+        #add sub_node data to sub_node table
+        new_sub_node = SubNode(id = id, node_id = sub.node_id, data = encoders.jsonable_encoder(relevant_items),flow_id = sub.flow_id, type = node_in_db.first().type)
+        db.session.add(new_sub_node)
+
+        #add sub_node data to node in the Node table
         if curr_node.data == None: 
             curr_node.data = []
         curr_node.data = list(curr_node.data)
-        curr_node.data.append(relevant_keys)
+        curr_node.data.append(relevant_items)
+        
         db.session.merge(curr_node)
         db.session.commit()
         db.session.close()
