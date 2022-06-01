@@ -585,6 +585,12 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
         #get current data of current node
         previous_node = db.session.query(Node).filter_by(id = my_source_node).filter_by(flow_id=flow_id).first()
         previous_node = (encoders.jsonable_encoder(previous_node))
+        
+        nn_row = db.session.query(Connections).filter_by(source_node_id = my_source_node).filter_by(sub_node_id = my_sub_node).filter_by(flow_id=flow_id).first()
+        if(nn_row != None):
+            is_end_node = False
+        else:
+            return JSONResponse(status_code=200, content = {"previous_node":previous_node, "next_node":[], "sub_node":[]})
 
         nn = "chat"#to enter loop
         #get the next node from Connections table
