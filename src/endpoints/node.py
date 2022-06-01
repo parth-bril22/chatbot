@@ -216,12 +216,16 @@ async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handle
         if(node_check.status_code != 200):
             return node_check
         
+        db.session.query(SubNode).filter_by(node_id = node_id).delete()
+        db.session.commit()
         #update sub_node table
-        for id in range(len(node_data)):
-            db.session.query(SubNode).filter_by(node_id = node_id).filter_by(id = node_id + chr(98 + id)).update({"data":node_data[id]})
-         
+        for id in range(len(my_node.data['nodeData'])):
+            sn = SubNode(node_id = node_id, data = node_data[id], id= node_id + "_" + str(id+1) + "b", type = my_node.type, flow_id = my_node.flow_id)
+            db.session.add(sn)
+            db.session.commit()
+            
         #update node data
-        db.session.query(Node).filter(Node.id == node_id).filter_by(flow_id=my_node.flow_id).update({'position':my_node.position,'type' : my_node.type,'data' : node_data,})
+        db.session.query(Node).filter(Node.id == node_id).filter_by(flow_id=my_node.flow_id).update({'data' : node_data, 'type' : my_node.type, 'position':my_node.position})
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code = 200, content = {"message":"success"})
