@@ -161,8 +161,12 @@ async def get_diagram(flow_id :int):
         sub_nodes = db.session.query(SubNode).filter_by(flow_id=flow_id).all()
         get_list = []
         for node in all_nodes:
-            get_data = {"flow_id":flow_id,"id": node.id, "type": node.type, "position": node.position,
-             "data": { "id": node.id,"label": "NEW NODE", "nodeData": node.data}}
+            sub_nodes = db.session.query(SubNode).filter_by(node_id = node.id).all()
+            sn = []
+            for sub_node in sub_nodes:
+                sn.append(sub_node)
+            get_data = {"flow_id" : flow_id,"id": node.id, "type": node.type, "position": node.position,
+             "data": { "id": node.id,"label": "NEW NODE", "nodeData": sn}}
             get_list.append(get_data)
         # return {"nodes":list({"id" : node.id, "type" : node.type, "position":node.position, "data": {"label" : "NEW NODE", "nodeData":node.data} }),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) }
         return {"nodes": get_list,"connections": cons, "custom_fields": encoders.jsonable_encoder(all_custom_fileds),"sub_nodes:": encoders.jsonable_encoder(sub_nodes)}
