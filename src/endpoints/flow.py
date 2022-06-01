@@ -63,12 +63,11 @@ async def get_flow_list(user_id : int):
         if user_check.status_code != 200 :
             return user_check 
 
-        flow_ids = db.session.query(Flow).filter_by(user_id = user_id).all()
-        # ids = [r.id for r in db.session.query(Flow.id).filter_by(user_id = user_id).distinct()]
-        ids = []
-        for fl in flow_ids:
-            ids.append(fl.id)
-        return JSONResponse(status_code=200, content={"message": "success", "flow_ids" : ids})
+        flows = db.session.query(Flow).filter_by(user_id = user_id).filter_by(isEnable = True).all()
+        flow_list = []
+        for fl in flows:
+            flow_list.append({"flow_id":fl.id, "name":fl.name, "updated_at":encoders.jsonable_encoder(fl.updated_at),"created_at":encoders.jsonable_encoder(fl.created_at), "chats":fl.chats,"finished":fl.finished, "publish_token":fl.publish_token})
+        return JSONResponse(status_code=200, content={"flows" : flow_list})
     except Exception as e:
         print(e, "at:", datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
