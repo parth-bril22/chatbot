@@ -591,7 +591,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
         if(nn_row != None):
             is_end_node = False
         else:
-            return JSONResponse(status_code=200, content = {"next_node":[], "sub_node":[], "previous_sub_node": previous_sub_node})
+            return JSONResponse(status_code=200, content = {"next_node":[], "sub_node":[], "previous_sub_node": [previous_sub_node]})
 
         nn = "chat"#to enter loop
         #get the next node from Connections table
@@ -641,7 +641,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
 
         db.session.commit()
         db.session.close()
-        return {"next_node":nodes, "sub_node": sub_nodes,"is_end__node" : is_end_node, "previous_sub_node": previous_sub_node}
+        return {"next_node":nodes, "sub_node": sub_nodes,"is_end__node" : is_end_node, "previous_sub_node": [previous_sub_node]}
     except Exception as e:
         print("Error at send: ", e)
         return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})
