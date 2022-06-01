@@ -574,7 +574,7 @@ async def preview(flow_id : int):
 #         return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})
 
 @router.post('/send')
-async def send(flow_id : int, my_source_node:int, my_sub_node:str):
+async def send(flow_id : int, my_source_node:str, my_sub_node:str):
     """
     Enter the source node and its sub_node and get the next node according to the connections table.
     """
