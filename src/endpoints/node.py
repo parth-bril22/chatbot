@@ -272,7 +272,7 @@ async def add_sub_node(sub:SubNodeSchema):
 
 
 @router.put('/update_subnode')
-async def update_node(my_sub_node:SubNodeSchema, sub_node_id:str = Body(...)):
+async def update_sub_node(my_sub_node:SubNodeSchema, sub_node_id:str = Body(...)):
     try:
         #check if the node_id is in the database
         node_in_db = db.session.query(SubNode).filter_by(flow_id=my_sub_node.flow_id).filter_by(id=sub_node_id)

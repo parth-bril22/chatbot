@@ -13,7 +13,7 @@ class AuthHandler():
             #token issued at - present time
             'iat': datetime.utcnow(),
             #token expiration time - 2mins 30 seconds
-            'exp': datetime.utcnow() + timedelta(days=1, minutes=0,seconds=0 ),
+            'exp': datetime.utcnow() + timedelta(minutes=10,seconds=10 ),
             #token cannot be used before - present time
             'nbf': datetime.utcnow(),
             'email': email_id
