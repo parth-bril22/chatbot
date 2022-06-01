@@ -634,7 +634,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
 
         db.session.commit()
         db.session.close()
-        return {"previous node": encoders.jsonable_encoder(previous_node), "next_node":nodes, "sub_node": sub_nodes,"is_end__node" : is_end_node}
+        return {"previous_node": encoders.jsonable_encoder(previous_node), "next_node":nodes, "sub_node": sub_nodes,"is_end__node" : is_end_node}
     except Exception as e:
         print("Error at send: ", e)
         return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})
