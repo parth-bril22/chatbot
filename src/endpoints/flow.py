@@ -256,7 +256,7 @@ async def get_trashed_flows(user_id: int):
 @router.delete('/trash/delete_forever')
 async def delete_flow(flow_id: int):
     try:
-        db.session.query(Flow).filter_by(flow_id=flow_id).filter_by(isEnable=False).filter_by(status="trashed").delete()
+        db.session.query(Flow).filter_by(id=flow_id).filter_by(isEnable=False).filter_by(status="trashed").delete()
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code=200, content={"message": "success"})
