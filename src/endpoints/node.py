@@ -581,11 +581,12 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
     try:
         nodes = []
         is_end_node = False
+
+        #get current data of current node
         previous_node = db.session.query(Node).filter_by(id = my_source_node).filter_by(flow_id=flow_id).first()
         previous_node = (encoders.jsonable_encoder(previous_node))
-        # next_node_row = db.session.query(Connections).filter_by(source_node_id = my_source_node).filter_by(sub_node_id = my_sub_node).filter_by(flow_id=flow_id).first()
 
-        nn = "chat"
+        nn = "chat"#to enter loop
         #get the next node from Connections table
         while (nn != "button"):
             next_node_row = db.session.query(Connections).filter_by(source_node_id = my_source_node).filter_by(sub_node_id = my_sub_node).filter_by(flow_id=flow_id).first()
@@ -610,23 +611,29 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str):
             
             #get all the details of next node from the ID
             next_node = db.session.query(Node).filter_by(id = next_node_row.target_node_id).filter_by(flow_id=flow_id).first()
-            # if(next_node.type == "button"):
+
 
             #get the sub_nodes of the obtained node
-            sub_nodes = db.session.query(SubNode).filter_by(node_id = next_node.id).filter_by(flow_id=flow_id).all()
-            sub_nodes = encoders.jsonable_encoder(sub_nodes)
-
-            my_dict = {"next_node_type" : next_node.type, "next_node_data":(next_node.data), "next_node_id" : next_node.id }
-            nodes.append(my_dict)
+            # sub_nodes = db.session.query(SubNode).filter_by(node_id = next_node.id).filter_by(flow_id=flow_id).all()
+            # sub_nodes = encoders.jsonable_encoder(sub_nodes)
             nn = next_node.type
             my_source_node = next_node.id
             my_sub_node = str(next_node.id) + "b"
+            if(nn != "button"):
+                my_dict = {"next_node_type" : next_node.type, "next_node_data":(next_node.data), "next_node_id" : next_node.id }
+                nodes.append(my_dict)
+       
+        sub_nodes = {}#empty if no buttons
+
         if(next_node.type == "button"):
-            my_dict = {"next_node_type" : next_node.type, "next_node_data":(next_node.data), "next_node_id" : next_node.id}
-            nodes.append(my_dict)
+            # my_dict = {"next_node_type" : next_node.type, "next_node_data":(next_node.data), "next_node_id" : next_node.id}
+            # nodes.append(my_dict)
+            sub_nodes = db.session.query(SubNode).filter_by(node_id = next_node.id).filter_by(flow_id=flow_id).all()
+            sub_nodes = encoders.jsonable_encoder(sub_nodes)
+            
+
         db.session.commit()
-        # db.session.close()
-        # return {"nodes":nodes, "is_end_node": is_end_node}
+        db.session.close()
         return {"previous node": encoders.jsonable_encoder(previous_node), "next_node":nodes, "sub_node": sub_nodes,"is_end__node" : is_end_node}
     except Exception as e:
         print("Error at send: ", e)
