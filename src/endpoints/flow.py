@@ -139,7 +139,7 @@ async def duplicate_flow(user_id:int, flow_id:int):
         if (flow_data == None):
             return JSONResponse(status_code=404, content={"message":"please check the id"})   
 
-        new_flow = Flow(name = "duplicate of " + flow_data.name, user_id = flow_data.user_id, created_at = datetime.now(timezone.utc), updated_at = datetime.now(timezone.utc), diagram = flow_data.diagram)
+        new_flow = Flow(name = "duplicate of " + flow_data.name, user_id = flow_data.user_id, created_at = datetime.now(timezone.utc), updated_at = datetime.now(timezone.utc), diagram = flow_data.diagram, publish_token=my_uuid,status = "active", isEnable = True, chats = 0, finished = 0)
         db.session.add(new_flow)
         db.session.commit()
         db.session.close()
