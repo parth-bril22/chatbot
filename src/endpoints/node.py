@@ -143,14 +143,12 @@ async def create_node(node:NodeSchema):
         db.session.commit()
         my_id =  new_node.id
 
-        char = "b"
-        i = ord(char[0])
-        #make default sub_node for all nodes
+        #make sub_nodes for all nodes
+        sn_id = 1
         for item in prop_dict:
-            sn_id = chr(i)
-            new_sub_node = SubNode(id = str(new_node.id) + sn_id, node_id = new_node.id, flow_id = node.flow_id, data = item, type = node.type)
-            db.session.add(new_sub_node)
-            i += 1
+            new_sub_node = SubNode(id = str(new_node.id) + "_" + str(sn_id) + "b", node_id = new_node.id, flow_id = node.flow_id, data = item, type = node.type)
+            db.session.add(new_sub_node)                
+            sn_id += 1
         db.session.commit()
         db.session.close()
 
