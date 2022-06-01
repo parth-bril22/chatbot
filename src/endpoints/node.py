@@ -220,7 +220,7 @@ async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handle
         
         #update sub_node table
         for id in range(len(node_data)):
-            db.session.query(SubNode).filter_by(node_id = node_id).filter_by(id = node_id + chr(97 + id)).update({"data":node_data[id]})
+            db.session.query(SubNode).filter_by(node_id = node_id).filter_by(id = node_id + chr(98 + id)).update({"data":node_data[id]})
          
         #update node data
         db.session.query(Node).filter(Node.id == node_id).filter_by(flow_id=my_node.flow_id).update({'position':my_node.position,'type' : my_node.type,'data' : node_data,})
