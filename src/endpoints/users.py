@@ -75,10 +75,12 @@ async def signup(user: SchemaUser):
         #create a ModelUser instance with the details entered
         db_user = ModelUser(email = user.email, password = hashed_password.decode('utf-8'), first_name = user.first_name, last_name = user.last_name, created_at = datetime.now(timezone.utc),token = token)
 
-        #add the ModelUser object(db_user) to the database
+        #add the ModelUser object(db_user) to the databa
         db.session.add(db_user)
         db.session.commit()
-        return JSONResponse(status_code=200, content = {'message': "Signup Successful",'token':token, "refresh_token" : auth_handler.create_refresh_token(user.email)})
+
+        user_id = db.session.query(ModelUser.id).filter_by(id=db_user.id).first()
+        return JSONResponse(status_code=200, content = {'message': "Signup Successful",'token':token, "refresh_token" : auth_handler.create_refresh_token(user.email),'user_id':user_id[0]})
 
 
 #get details of the user if the email_id entered is valid, else return False
