@@ -621,7 +621,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
 
         nn = "chat"#to enter loop
         #get the next node from Connections table
-        while (nn != "button" or nn != "input"):
+        while (nn == "chat"):
             next_node_row = db.session.query(Connections).filter_by(source_node_id = my_source_node).filter_by(sub_node_id = my_sub_node).filter_by(flow_id=flow_id).first()
             if(next_node_row == None): break
             #if the type of node is end node, then complete the chat.
@@ -640,7 +640,9 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
                 is_end_node = True
                 db.session.query(Flow).filter_by(id = flow_id).update({"finished":local_count})
                 db.session.commit()
-                nn = "button"
+                # db.session.close()
+                # nn = "button"
+                break
             
             #get all the details of next node from the ID
             next_node = db.session.query(Node).filter_by(id = next_node_row.target_node_id).filter_by(flow_id=flow_id).first()
@@ -652,13 +654,13 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
             nn = next_node.type
             my_source_node = next_node.id
             my_sub_node = str(next_node.id) + "_1b"
-            if(nn != "button"):
+            if(nn == "chat"):
                 my_dict = {"type" : next_node.type, "data":(next_node.data), "id" : next_node.id, "flow_id":next_node.flow_id }
                 nodes.append(my_dict)
        
         sub_nodes = []#empty if no buttons
 
-        if(next_node.type == "button"):
+        if(next_node.type != "chat"):
             # my_dict = {"next_node_type" : next_node.type, "next_node_data":(next_node.data), "next_node_id" : next_node.id}
             # nodes.append(my_dict)
             sub_nodes = db.session.query(SubNode).filter_by(node_id = next_node.id).filter_by(flow_id=flow_id).all()
@@ -666,7 +668,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
             
 
         db.session.commit()
-        db.session.close()
+        # db.session.close()
         return {"next_node":nodes, "sub_node": sub_nodes,"is_end__node" : is_end_node, "previous_sub_node": previous_sub_node}
     except Exception as e:
         print("Error at send: ", e)
