@@ -202,7 +202,7 @@ async def delete_node(node_id : str, flow_id:int,token = Depends(auth_handler.au
         print(e)
         return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})  
 
-@router.post('/update_node',)
+@router.post('/update_node')
 async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
         #check if the node_id is in the database
