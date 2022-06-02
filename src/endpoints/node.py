@@ -657,6 +657,8 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
             if(nn == "chat"):
                 my_dict = {"type" : next_node.type, "data":(next_node.data), "id" : next_node.id, "flow_id":next_node.flow_id }
                 nodes.append(my_dict)
+            else:
+                break
        
         sub_nodes = []#empty if no buttons
 
