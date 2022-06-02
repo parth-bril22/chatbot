@@ -191,7 +191,19 @@ async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     except Exception as e:
         print(e, "at:", datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
-
+ 
+@router.post('/{my_token}/preview')
+async def tokenize_preview(my_token:str, flow_id:int):
+    try:
+        print(my_token, )
+        if(my_token in db.session.query(Flow.publish_token).filter_by(id = flow_id).first()):
+            return await preview(flow_id)
+        else:
+            return JSONResponse(status_code = 404, content={"message":"Cannot open preview"})
+    except Exception as e:
+        print("Error: in  my_token/preview")
+        return JSONResponse(status_code = 404, content={"message":"Cannot open preview"})
+    
 @router.post('/publish')
 async def publish(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
     try:
