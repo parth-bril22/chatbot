@@ -4,6 +4,7 @@ from ..schemas.flowSchema import *
 from ..schemas.nodeSchema import *
 from ..models.flow import *
 from ..models.node import *
+from src.endpoints.node import preview
 
 from ..dependencies.auth import AuthHandler
 auth_handler = AuthHandler()
