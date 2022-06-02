@@ -621,7 +621,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
 
         nn = "chat"#to enter loop
         #get the next node from Connections table
-        while (nn != "button"):
+        while (nn == "chat"):
             next_node_row = db.session.query(Connections).filter_by(source_node_id = my_source_node).filter_by(sub_node_id = my_sub_node).filter_by(flow_id=flow_id).first()
             if(next_node_row == None): break
             #if the type of node is end node, then complete the chat.
