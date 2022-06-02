@@ -201,7 +201,7 @@ async def tokenize_preview(my_token:str, flow_id:int):
         else:
             return JSONResponse(status_code = 404, content={"message":"Cannot open preview"})
     except Exception as e:
-        print("Error: in  my_token/preview")
+        print("Error: in  my_token/preview:", e)
         return JSONResponse(status_code = 404, content={"message":"Cannot open preview"})
     
 @router.post('/publish')
