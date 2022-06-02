@@ -4,6 +4,7 @@ from ..schemas.flowSchema import *
 from ..schemas.nodeSchema import *
 from ..models.flow import *
 from ..models.node import *
+from src.endpoints.node import preview
 
 from ..dependencies.auth import AuthHandler
 auth_handler = AuthHandler()
@@ -191,7 +192,20 @@ async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     except Exception as e:
         print(e, "at:", datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
+ 
+@router.post('/{my_token}/preview')
+async def tokenize_preview(my_token:str):
+    try:
+        flow_id =  db.session.query(Flow.id).filter_by(publish_token = my_token).first()[0]
 
+        if(my_token in db.session.query(Flow.publish_token).filter_by(publish_token = my_token).first()[0]):
+            return await preview(flow_id, token = Depends(auth_handler.auth_wrapper))
+        else:
+            return JSONResponse(status_code = 404, content={"message":"Cannot open preview. Token not identified"})
+    except Exception as e:
+        print("Error: in  my_token/preview", e)
+        return JSONResponse(status_code = 404, content={"message":"Cannot open preview"})
+    
 @router.post('/publish')
 async def publish(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
     try:
