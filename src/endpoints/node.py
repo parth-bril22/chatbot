@@ -547,59 +547,6 @@ async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
         return JSONResponse(status_code=404, content={"message":"Error in preview"})
 
 
-
-# @router.post('/send')
-# async def send(flow_id : int, my_source_node:str, my_sub_node:str):
-#     """
-#     Enter the source node and its sub_node and get the next node according to the connections table.
-#     """
-#     try:
-#         is_end_node = False
-#         # print(db.session.query(Node.node_type).filter_by(id=my_source_node).first()[0])
-#
-#         #get the next node from Connections table
-#         next_node_row = db.session.query(Connections).filter_by(source_node_id = my_source_node).filter_by(sub_node_id = my_sub_node).filter_by(flow_id=flow_id).all()
-#         #if the type of node is end node, then complete the chat.
-#
-#         print(next_node_row)
-#         if(db.session.query(Connections).filter_by(source_node_id = next_node_row.target_node_id).filter_by(flow_id=flow_id).first() == None):
-#             #get the current count of finish
-#             finished_count = db.session.query(Flow.finished).filter_by(id = flow_id).first()
-#             #the default value is null, in such cases initialize to 0
-#             if(finished_count[0] == None):
-#                 local_count = 0
-#             else:
-#                 local_count = finished_count[0]
-#
-#             #increase by one for present chat
-#             local_count = local_count + 1
-#             #change is_end_node value and update
-#             is_end_node = True
-#             db.session.query(Flow).filter_by(id = flow_id).update({"finished":local_count})
-#             db.session.commit()
-#
-#         # get the previous node
-#         previous_node = db.session.query(Node).filter_by(id = my_source_node).filter_by(flow_id=flow_id).first()
-#         previous_node_json = encoders.jsonable_encoder(previous_node)
-#
-#         all_next_nodes  = []
-#         #get all the details of next node from the ID
-#
-#         next_node = db.session.query(Node).filter_by(id = next_node_row.target_node_id).filter_by(flow_id=flow_id).first()
-#         next_node_json = encoders.jsonable_encoder(next_node)
-#         # print(next_node.id)
-#         #get the sub_nodes of the obtained node
-#         sub_nodes = db.session.query(SubNode).filter_by(node_id = next_node.id).filter_by(flow_id=flow_id).all()
-#         sub_nodes = encoders.jsonable_encoder(sub_nodes)
-#         db.session.commit()
-#         # db.session.close()
-#         return JSONResponse(status_code=200, content={"previous_node":previous_node_json,"next_node": next_node_json, "sub_nodes": sub_nodes})
-#         # return {"next_node": next_node, "sub_nodes": sub_nodes}
-#         # return {"next_node_type" : next_node.type, "next_node_data":(next_node.data), "next_node_row" : next_node.id, "next_node_sub_nodes": sub_nodes, "is_end_node": is_end_node}
-#     except Exception as e:
-#         print(e)
-#         return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})
-
 @router.post('/send')
 async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depends(auth_handler.auth_wrapper)):
     """
@@ -653,7 +600,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
             nn = next_node.type
             my_source_node = next_node.id
             my_sub_node = str(next_node.id) + "_1b"
-            if(nn != "button"):
+            if(nn != "button" and nn != "input"):
                 my_dict = {"type" : next_node.type, "data":(next_node.data), "id" : next_node.id, "flow_id":next_node.flow_id }
                 nodes.append(my_dict)
        
