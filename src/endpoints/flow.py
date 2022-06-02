@@ -164,7 +164,8 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
             sub_nodes = db.session.query(SubNode).filter_by(node_id = node.id).all()
             sn = []
             for sub_node in sub_nodes:
-                sn.append(sub_node)
+                sn.pop(sub_node.data)
+                # sn.append(sub_node)
             get_data = {"flow_id" : flow_id,"id": node.id, "type": node.type, "position": node.position,
              "data": { "id": node.id,"label": "NEW NODE", "nodeData": sn}}
             get_list.append(get_data)
