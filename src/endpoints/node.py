@@ -651,7 +651,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
             # sub_nodes = encoders.jsonable_encoder(sub_nodes)
             nn = next_node.type
             my_source_node = next_node.id
-            my_sub_node = str(next_node.id) + "b"
+            my_sub_node = str(next_node.id) + "_1b"
             if(nn != "button"):
                 my_dict = {"type" : next_node.type, "data":(next_node.data), "id" : next_node.id, "flow_id":next_node.flow_id }
                 nodes.append(my_dict)
