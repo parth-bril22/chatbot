@@ -194,7 +194,7 @@ async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
         return JSONResponse(status_code=400, content={"message":"please check the input"})
  
 @router.post('/{my_token}/preview')
-async def tokenize_preview(my_token:str):
+async def tokenize_preview(my_token:str,token = Depends(auth_handler.auth_wrapper)):
     try:
         flow_id =  db.session.query(Flow.id).filter_by(publish_token = my_token).first()[0]
 

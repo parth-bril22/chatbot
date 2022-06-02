@@ -175,7 +175,7 @@ async def create_nodes(nodes : List[NodeSchema],token = Depends(auth_handler.aut
 
 
 @router.get('/get_node')
-async def get_node(node_id: int, flow_id : int):
+async def get_node(node_id: int, flow_id : int,token = Depends(auth_handler.auth_wrapper)):
     my_node = db.session.query(Node).filter_by(flow_id=flow_id).filter_by(id = node_id).first()
     if(my_node == None):
         return JSONResponse(status_code=404, content = {"message":"Node not found"})
@@ -379,7 +379,7 @@ async def create_connections(conns : List[ConnectionSchema],token = Depends(auth
     return JSONResponse(status_code = 200, content = {"message" :"success"})
 
 @router.delete('/delete_connection')
-async def delete_connection(connection_id: int):
+async def delete_connection(connection_id: int,token = Depends(auth_handler.auth_wrapper)):
     try:
         # get connection from the database
         connection_in_db = db.session.query(Connections).filter_by(id=connection_id)
