@@ -659,13 +659,11 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
        
         sub_nodes = []#empty if no buttons
 
-        if(next_node.type == "button" ):
+        if(next_node.type == "button" or next_node.type == "input"):
             # my_dict = {"next_node_type" : next_node.type, "next_node_data":(next_node.data), "next_node_id" : next_node.id}
             # nodes.append(my_dict)
             sub_nodes = db.session.query(SubNode).filter_by(node_id = next_node.id).filter_by(flow_id=flow_id).all()
             sub_nodes = encoders.jsonable_encoder(sub_nodes)
-        elif(next_node.type == "input"):
-            nodes[-1]["sub_node_id"] = str(next_node.id) + "_1b"
             
 
         db.session.commit()
