@@ -216,12 +216,15 @@ async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handle
         if(node_check.status_code != 200):
             return node_check
         
-        # db.session.query(SubNode).filter_by(node_id = node_id).delete()
-        # db.session.commit()
+        relevant_fields = db.session.query(SubNode.data).filter_by(node_id=node_id).first()
+        relevant_fields = (relevant_fields)[0].keys()
+        db.session.commit()
+
         #update sub_node table
-        for id in range(len(my_node.data['nodeData'])):
-            sn = SubNode(node_id = node_id, data = node_data[id], id= node_id + "_" + str(id+1) + "b", type = my_node.type, flow_id = my_node.flow_id)
-            db.session.add(sn)
+        for sn in my_node.data['nodeData']:
+            to_include_items = [x for x in sn.items() if x[0] in relevant_fields]
+            to_include_items =  dict(to_include_items)
+            db.session.query(SubNode).filter_by(node_id = node_id).filter_by(id = sn['id']).update({"data":to_include_items})
             db.session.commit()
             
         #update node data
