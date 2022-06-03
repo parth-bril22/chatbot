@@ -105,8 +105,8 @@ async def check_node_details(node:NodeSchema):
     if(node_type_params == None):
         return JSONResponse(status_code = 404, content = {"message": "incorrect type field"}), node.data
     props = []
-    print(node.data['nodeData'])
-    print(node_type_params)
+    # print(node.data['nodeData'])
+    # print(node_type_params)
     #make a dict of data(prop_dict) which will take only the relevant key-value pairs according to the type of node
     for property in node.data['nodeData']:
         bool_val, prop_dict = await check_property_dict(node, property,list(node_type_params.params.keys()))
@@ -126,8 +126,8 @@ async def create_node(node:NodeSchema):
         print(node)
         #check if values in node are correct
         node_check, node_data = await check_node_details(node)
-        print(node_check.status_code)
-        print(node_data)
+        # print(node_check.status_code)
+        # print(node_data)
         if(node_check.status_code != 200):
             return node_check
 
