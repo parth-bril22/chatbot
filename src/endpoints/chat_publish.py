@@ -42,7 +42,8 @@ async def preview(flow_id : int):
         start_node = None
         for node in nodes:
             if(node['type'] == "special" and node['flow_id'] == flow_id):
-                start_node = node
+                start_node = {"data": node['data']['nodeData'], "flow_id":flow_id,"id":node['id'], "type":node['type']}
+
         
         if(start_node == None):#NEED TO CHECK THIS FOR JSON
             return JSONResponse(status_code=400, content={"message":"Error: No valid node found in this id"})
