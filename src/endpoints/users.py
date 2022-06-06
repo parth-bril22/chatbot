@@ -107,7 +107,7 @@ async def authenticate_user(input_user: lg):
     else:   
         #generate/encode and return JWT token 
         token = auth_handler.encode_token(input_user.email)
-        user_id = db.session.query(ModelUser.id).filter_by(id=input_user.id).first()
+        user_id = db.session.query(ModelUser.id).filter_by(email=input_user.email).first()
         return JSONResponse(status_code=200, content={"message" : "success", 'token':token, "refresh_token" : auth_handler.create_refresh_token(input_user.email),'user_id':user_id[0]})#valid for 1 minute and 30 seconds, change expiration time in auth.py
 
 
