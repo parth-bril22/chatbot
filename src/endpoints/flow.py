@@ -155,7 +155,7 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
         all_connections = db.session.query(Connections).filter_by(flow_id=flow_id).all()
         cons =[]
         for con in all_connections:
-            get_con = {"id": con.id, "markerEnd": {"type": "arrowClosed",},"type": 'smoothstep', "source": con.source_node_id, "sourceHandle": con.sub_node_id,"target": con.target_node_id, "animated": True, "label": 'edge label', "flow_id":flow_id}
+            get_con = {"id": con.id, "markerEnd": {"type": "arrow",},"type": 'smoothstep', "source": con.source_node_id, "sourceHandle": con.sub_node_id,"target": con.target_node_id, "animated": True, "label": 'edge label', "flow_id":flow_id}
             cons.append(get_con)
         all_custom_fileds = db.session.query(CustomFields).filter_by(flow_id=flow_id).all()
         all_nodes = db.session.query(Node).filter_by(flow_id=flow_id).all()
@@ -165,14 +165,17 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
             sub_nodes = db.session.query(SubNode).filter_by(node_id = node.id).all()
             sn = []
             for sub_node in sub_nodes:
+                print(sub_node)
                 fields = dict(sub_node.data.items())#get fields of data(text,btn,...)
                 my_dict = {"flow_id":sub_node.flow_id, "node_id":sub_node.node_id,"type":sub_node.type,"id":sub_node.id}
                 for key,value in fields.items():
                     my_dict[key] = value
                 sn.append(my_dict)
+            print(sn)
             get_data = {"flow_id" : flow_id,"id": node.id, "type": node.type, "position": node.position,
              "data": { "id": node.id,"label": "NEW NODE", "nodeData": sn}}
             get_list.append(get_data)
+            print(get_list)
         # return {"nodes":list({"id" : node.id, "type" : node.type, "position":node.position, "data": {"label" : "NEW NODE", "nodeData":node.data} }),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) }
         return {"nodes": get_list,"connections": cons, "custom_fields": encoders.jsonable_encoder(all_custom_fileds),"sub_nodes:": encoders.jsonable_encoder(sub_nodes)}
     except Exception as e:
@@ -206,8 +209,27 @@ async def tokenize_preview(my_token:str,token = Depends(auth_handler.auth_wrappe
         print("Error: in  my_token/preview", e)
         return JSONResponse(status_code = 404, content={"message":"Cannot open preview"})
     
+# @router.post('/publish')
+# async def publish(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
+#     try:
+#         # save draft of the current diagram and check if it was successful or not
+#         save_draft_status = await save_draft(flow_id)
+#         if (save_draft_status.status_code != 200):
+#             return save_draft_status
+
+#         # get the publish token of the flow and check whether it exists or not
+#         token = db.session.query(Flow.publish_token).filter_by(id=flow_id).first()
+
+#         if (token == None):
+#             return JSONResponse(status_code=404, content={"message": "Cannot publish. Check flow_id entered"})
+
+#         return JSONResponse(status_code=200, content={"message": "success", "token": token[0]})
+#     except Exception as e:
+#         print("Error in publish: ", e)
+#         return JSONResponse(status_code=400, content={"message": "Cannot publish"})
+
 @router.post('/publish')
-async def publish(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
+async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_wrapper)):
     try:
         # save draft of the current diagram and check if it was successful or not
         save_draft_status = await save_draft(flow_id)
@@ -217,6 +239,11 @@ async def publish(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
         # get the publish token of the flow and check whether it exists or not
         token = db.session.query(Flow.publish_token).filter_by(id=flow_id).first()
 
+        #get the diagram and update the diagram in flow table
+        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(), 'diagram' : diagram})
+        db.session.commit()
+        db.session.close()
+
         if (token == None):
             return JSONResponse(status_code=404, content={"message": "Cannot publish. Check flow_id entered"})
 
@@ -224,7 +251,6 @@ async def publish(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
     except Exception as e:
         print("Error in publish: ", e)
         return JSONResponse(status_code=400, content={"message": "Cannot publish"})
-
 
 @router.post("/disable_flow")
 async def flow_disabled(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
