@@ -37,7 +37,10 @@ async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrappe
         print(flow_id)
         
         default_node = Node(name = "Welcome", type = "special", data = {"text": "Welcome Node"}, position = {"x": "180","y": "260"},flow_id=flow_id[0])
-        db.session.merge(default_node)
+        db.session.add(default_node)
+        db.session.commit()
+        default_subnode = SubNode(id = str(default_node.id) + "_" + str(1) + "b", node_id = default_node.id, flow_id = default_node.flow_id, data = default_node.data, type = default_node.type)
+        db.session.add(default_subnode)
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code = 200, content = {"message": "success"})
@@ -165,17 +168,14 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
             sub_nodes = db.session.query(SubNode).filter_by(node_id = node.id).all()
             sn = []
             for sub_node in sub_nodes:
-                print(sub_node)
                 fields = dict(sub_node.data.items())#get fields of data(text,btn,...)
                 my_dict = {"flow_id":sub_node.flow_id, "node_id":sub_node.node_id,"type":sub_node.type,"id":sub_node.id}
                 for key,value in fields.items():
                     my_dict[key] = value
                 sn.append(my_dict)
-            print(sn)
             get_data = {"flow_id" : flow_id,"id": node.id, "type": node.type, "position": node.position,
              "data": { "id": node.id,"label": "NEW NODE", "nodeData": sn}}
             get_list.append(get_data)
-            print(get_list)
         # return {"nodes":list({"id" : node.id, "type" : node.type, "position":node.position, "data": {"label" : "NEW NODE", "nodeData":node.data} }),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) }
         return {"nodes": get_list,"connections": cons, "custom_fields": encoders.jsonable_encoder(all_custom_fileds),"sub_nodes:": encoders.jsonable_encoder(sub_nodes)}
     except Exception as e:
