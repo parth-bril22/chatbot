@@ -143,12 +143,21 @@ async def create_node(node:NodeSchema):
         db.session.commit()
         my_id =  new_node.id
 
+
+
         #make sub_nodes for all nodes
         sn_id = 1
-        for item in prop_dict:
-            new_sub_node = SubNode(id = str(new_node.id) + "_" + str(sn_id) + "b", node_id = new_node.id, flow_id = node.flow_id, data = item, type = node.type)
-            db.session.add(new_sub_node)                
-            sn_id += 1
+        if node.type == "conditional_logic":
+            for item in prop_dict:
+                first_sub_node = SubNode(id=str(new_node.id) + "_" + str(sn_id) + "b", node_id=new_node.id,flow_id=node.flow_id, data=item, type=node.type)
+                second_sub_node = SubNode(id=str(new_node.id) + "_" + str(sn_id + 1) + "b", node_id=new_node.id,flow_id=node.flow_id, data=item, type=node.type)
+                db.session.add(first_sub_node)
+                db.session.add(second_sub_node)
+        else:
+            for item in prop_dict:
+                new_sub_node = SubNode(id=str(new_node.id) + "_" + str(sn_id) + "b", node_id=new_node.id,flow_id=node.flow_id, data=item, type=node.type)
+                db.session.add(new_sub_node)
+                sn_id += 1
         db.session.commit()
         db.session.close()
 
