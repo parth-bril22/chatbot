@@ -25,7 +25,6 @@ router = APIRouter(
 @router.post('/create_flow')
 async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
-        
         if(flow.name == None or len(flow.name.strip()) == 0):
             return Response(status_code=204)
         my_uuid = uuid.uuid4()
@@ -35,11 +34,11 @@ async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrappe
 
         flow_id = db.session.query(Flow.id).filter_by(id = new_flow.id).first()
         print(flow_id)
-        
-        default_node = Node(name = "Welcome", type = "special", data = {"text": "Welcome Node"}, position = {"x": "180","y": "260"},flow_id=flow_id[0])
+        node_data = [{"text": "Welcome","button":"Start"}]
+        default_node = Node(name = "Welcome", type = "special", data = node_data, position = {"x": "180","y": "260"},flow_id=flow_id[0])
         db.session.add(default_node)
         db.session.commit()
-        default_subnode = SubNode(id = str(default_node.id) + "_" + str(1) + "b", node_id = default_node.id, flow_id = default_node.flow_id, data = default_node.data, type = default_node.type)
+        default_subnode = SubNode(id = str(default_node.id) + "_" + str(1) + "b", node_id = default_node.id, flow_id = default_node.flow_id, data = node_data[0], type = default_node.type)
         db.session.add(default_subnode)
         db.session.commit()
         db.session.close()

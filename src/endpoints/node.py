@@ -601,8 +601,10 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
             nn = next_node.type
             my_source_node = next_node.id
             my_sub_node = str(next_node.id) + "_1b"
+            next_node=[]
+            next_node.append(next_node.data)
             if nn not in type_list:
-                my_dict = {"type" : next_node.type, "data":(next_node.data), "id" : next_node.id, "flow_id":next_node.flow_id }
+                my_dict = {"type" : next_node.type, "data":next_node, "id" : next_node.id, "flow_id":next_node.flow_id }
                 nodes.append(my_dict)
        
         sub_nodes = []#empty if no buttons
