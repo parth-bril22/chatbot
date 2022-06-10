@@ -601,13 +601,13 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
             nn = next_node.type
             my_source_node = next_node.id
             my_sub_node = str(next_node.id) + "_1b"
-            if(nn != "button" and nn != "input"):
+            if nn not in type_list:
                 my_dict = {"type" : next_node.type, "data":(next_node.data), "id" : next_node.id, "flow_id":next_node.flow_id }
                 nodes.append(my_dict)
        
         sub_nodes = []#empty if no buttons
 
-        if(next_node.type == "button" or next_node.type == "input"):
+        if next_node.type in type_list:
             # my_dict = {"next_node_type" : next_node.type, "next_node_data":(next_node.data), "next_node_id" : next_node.id}
             # nodes.append(my_dict)
             sub_nodes = db.session.query(SubNode).filter_by(node_id = next_node.id).filter_by(flow_id=flow_id).all()
