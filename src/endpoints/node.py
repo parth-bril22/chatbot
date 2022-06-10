@@ -567,7 +567,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
             return JSONResponse(status_code=200, content = {"next_node":[], "sub_node":[], "previous_sub_node": previous_sub_node})
 
         nn = "chat"#to enter loop
-        type_list = ["button","phone","text","email","number","url","date"]
+        type_list = ["button","phone","text","email","number","url","date","file"]
         #get the next node from Connections table
         # while (nn != "button" and nn != "input"):
         while (nn not in type_list):
