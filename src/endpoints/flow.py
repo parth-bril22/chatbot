@@ -236,6 +236,8 @@ async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_
         if (save_draft_status.status_code != 200):
             return save_draft_status
 
+        if (diagram ==None):
+            return JSONResponse(status_code=404, content={"message": "diagram field is empty!!"})
         # get the publish token of the flow and check whether it exists or not
         token = db.session.query(Flow.publish_token).filter_by(id=flow_id).first()
 
