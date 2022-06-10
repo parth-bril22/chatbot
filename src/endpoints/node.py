@@ -88,14 +88,6 @@ async def check_property_dict(node: Node, prop : Dict, keys : List):
     #For Empty entries return error. string.strip() can be used for spaces later.
     if "" in node.dict().values( ) or "" in prop_dict.values(): 
         return False, Response(status_code = 204)
-    
-    # if type is conditional logic, then get the "value" field
-    # if "value" in prop_dict.keys() and node.type == "conditional_logic":
-    #         #load string in "value" as json
-    #         prop_value_json = json.loads(prop_dict['value'])
-    #         logic_check = await check_conditional_logic(prop_value_json)
-    #         if(logic_check != True):
-    #             return False, logic_check
     return True, prop_dict
 
 async def check_node_details(node:NodeSchema):
@@ -105,8 +97,6 @@ async def check_node_details(node:NodeSchema):
     if(node_type_params == None):
         return JSONResponse(status_code = 404, content = {"message": "incorrect type field"}), node.data
     props = []
-    # print(node.data['nodeData'])
-    # print(node_type_params)
     #make a dict of data(prop_dict) which will take only the relevant key-value pairs according to the type of node
     for property in node.data['nodeData']:
         bool_val, prop_dict = await check_property_dict(node, property,list(node_type_params.params.keys()))
@@ -114,7 +104,6 @@ async def check_node_details(node:NodeSchema):
             return prop_dict,{}
         else:
             props.append(prop_dict)
-    #  "{\"||\" : {\"args\":[{\"==\":{\"arg1\":\"1\", \"arg2\" : \"2\"}}, {\"<\":{\"arg1\":\"1\", \"arg2\" : \"2\"}}]}}"
     return JSONResponse(status_code=200), props
 
 #create a new node
@@ -142,9 +131,6 @@ async def create_node(node:NodeSchema):
         db.session.add(new_node)
         db.session.commit()
         my_id =  new_node.id
-
-
-
         #make sub_nodes for all nodes
         sn_id = 1
         if node.type == "conditional_logic":
@@ -578,7 +564,6 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
         nn = "chat"#to enter loop
         type_list = ["button","phone","text","email","number","url","date","file"]
         #get the next node from Connections table
-        # while (nn != "button" and nn != "input"):
         while (nn not in type_list):
             next_node_row = db.session.query(Connections).filter_by(source_node_id = my_source_node).filter_by(sub_node_id = my_sub_node).filter_by(flow_id=flow_id).first()
             if(next_node_row == None): break
