@@ -159,15 +159,15 @@ async def create_node(node:NodeSchema):
 
 
 @router.post('/create_node')
-async def create_nodes(nodes : List[NodeSchema],token = Depends(auth_handler.auth_wrapper)):
+async def create_nodes(node : NodeSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
         ids = []
-        for node in nodes:
-            create_node_response, my_id = await create_node(node)
-            if(create_node_response.status_code!=200):
-                return create_node_response
-            else:
-                ids.append(my_id)
+        # for node in nodes:
+        create_node_response, my_id = await create_node(node)
+        if (create_node_response.status_code != 200):
+            return create_node_response
+        else:
+            ids.append(my_id)
         return JSONResponse(status_code=200,content={"message":"success","ids":ids})
     except Exception as e:
         print(e,'at create_node')
