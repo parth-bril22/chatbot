@@ -590,7 +590,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
                 db.session.query(Flow).filter_by(id = flow_id).update({"finished":local_count})
                 db.session.commit()
                 # db.session.close()
-                nn = "button"
+                nn
             
             #get all the details of next node from the ID
             next_node = db.session.query(Node).filter_by(id = next_node_row.target_node_id).filter_by(flow_id=flow_id).first()
