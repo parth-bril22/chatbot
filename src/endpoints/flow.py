@@ -34,7 +34,8 @@ async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrappe
 
         flow_id = db.session.query(Flow.id).filter_by(id = new_flow.id).first()
         print(flow_id)
-        node_data = [{"text": "Welcome","button":"Start"}]
+        node_data = []
+        node_data.append({"text": "Welcome","button":"Start"})
         default_node = Node(name = "Welcome", type = "special", data = node_data, position = {"x": "180","y": "260"},flow_id=flow_id[0])
         db.session.add(default_node)
         db.session.commit()
@@ -95,7 +96,7 @@ async def search_flows(user_id : int, flow_name:str,token = Depends(auth_handler
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
 
-@router.get('/rename_flow')
+@router.post('/rename_flow')
 async def rename_flow(user_id : int, flow_id:str, new_name:str,token = Depends(auth_handler.auth_wrapper)):
     try:
         user_check = await check_user_id(user_id)
@@ -266,7 +267,7 @@ async def flow_disabled(flow_id: int,token = Depends(auth_handler.auth_wrapper))
         return JSONResponse(status_code=400, content={"message": "please check the input"})
 
 
-@router.post('/archive_flow')
+@router.patch('/archive_flow')
 async def archive_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
     try:
         db.session.query(Flow).filter_by(id=flow_id).update(
