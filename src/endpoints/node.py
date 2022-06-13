@@ -617,7 +617,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
 
 
 @router.post('/send_new')
-async def send_diagram_to_execution(flow_id:int):
+async def send_diagram_to_execution(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
         data = db.session.query(Flow).filter_by(id=flow_id).first()
         return data.diagram
