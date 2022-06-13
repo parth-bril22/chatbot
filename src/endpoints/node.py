@@ -616,7 +616,14 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
         return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})
 
 
-
+@router.post('/send_new')
+async def send_diagram_to_execution(flow_id:int):
+    try:
+        data = db.session.query(Flow).filter_by(id=flow_id).first()
+        return data.diagram
+    except Exception as e:
+        print(e,"at:", datetime.datetime.now())
+        return JSONResponse(status_code=400, content={"message":"please chcek the input"})
 @router.post('/send_diagram')
 async def send_diagram(nodes : List[NodeSchema], connections : List[ConnectionSchema], custom_fields : List[CustomFieldSchema],token = Depends(auth_handler.auth_wrapper)):
     try:
