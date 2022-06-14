@@ -4,6 +4,7 @@ from ..schemas.flowSchema import *
 from ..schemas.nodeSchema import *
 from ..models.flow import *
 from ..models.node import *
+from ..models.users import *
 from src.endpoints.node import preview
 
 from ..dependencies.auth import AuthHandler
@@ -22,9 +23,19 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+async def token_validate(user_id:int,token:str):
+    user_info = db.session.query(User).filter_by(id=user_id).first()
+    if (user_info.email == token):
+        return token
+    else:
+        return None
+
 @router.post('/create_flow')
 async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
+        check_token = await token_validate(flow.user_id, token)
+        if (check_token == None):
+            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         if(flow.name == None or len(flow.name.strip()) == 0):
             return Response(status_code=204)
         my_uuid = uuid.uuid4()
@@ -63,6 +74,9 @@ async def check_user_id(user_id:str):
 @router.get('/get_flow_list')
 async def get_flow_list(user_id : int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        check_token = await token_validate(user_id, token)
+        if (check_token == None):
+            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
             return user_check 
@@ -79,6 +93,9 @@ async def get_flow_list(user_id : int,token = Depends(auth_handler.auth_wrapper)
 @router.get('/search_flows')
 async def search_flows(user_id : int, flow_name:str,token = Depends(auth_handler.auth_wrapper)):
     try:
+        check_token = await token_validate(user_id, token)
+        if (check_token == None):
+            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
             return user_check 
@@ -99,6 +116,9 @@ async def search_flows(user_id : int, flow_name:str,token = Depends(auth_handler
 @router.post('/rename_flow')
 async def rename_flow(user_id : int, flow_id:str, new_name:str,token = Depends(auth_handler.auth_wrapper)):
     try:
+        check_token = await token_validate(user_id, token)
+        if (check_token == None):
+            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
             return user_check 
@@ -119,22 +139,34 @@ async def rename_flow(user_id : int, flow_id:str, new_name:str,token = Depends(a
 
 @router.delete('/delete_flow_list')
 async def delete_flow(user_id : int, flow_list: List[int],token = Depends(auth_handler.auth_wrapper) ):
-    user_check = await check_user_id(user_id)
-    if user_check.status_code != 200 :
-        return user_check 
+    try:
+        check_token = await token_validate(user_id, token)
+        if (check_token == None):
+            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+        user_check = await check_user_id(user_id)
+        if user_check.status_code != 200:
+            return user_check
 
-    for flow_id in flow_list:
-        if (db.session.query(Flow).filter_by(id = flow_id).first() == None):
-            return JSONResponse(status_code=404, content={"message":"no flows with this id"})    
-        db.session.query(Flow).filter_by(id = flow_id).update({"status":"trashed"})
+        for flow_id in flow_list:
+            if (db.session.query(Flow).filter_by(id=flow_id).first() == None):
+                return JSONResponse(status_code=404, content={"message": "no flows with this id"})
+            db.session.query(Flow).filter_by(id=flow_id).update({"status": "trashed"})
 
-    db.session.commit()
-    db.session.close()
-    return JSONResponse(status_code=200, content={"message":"success"})
+        db.session.commit()
+        db.session.close()
+        return JSONResponse(status_code=200, content={"message": "success"})
+
+    except Exception as e:
+        print(e, "at:", datetime.now())
+        return JSONResponse(status_code=400, content={"message": "please check the input"})
+
 
 @router.post('/duplicate_flow')
 async def duplicate_flow(user_id:int, flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        check_token = await token_validate(user_id, token)
+        if (check_token == None):
+            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
             return user_check 
@@ -153,8 +185,11 @@ async def duplicate_flow(user_id:int, flow_id:int,token = Depends(auth_handler.a
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
 @router.get("/get_diagram")
-async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
+async def get_diagram(flow_id :int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        check_token = await token_validate(user_id, token)
+        if (check_token == None):
+            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         all_connections = db.session.query(Connections).filter_by(flow_id=flow_id).all()
         cons =[]
         for con in all_connections:
@@ -184,8 +219,11 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
 
 
 @router.post('/save_draft')
-async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def save_draft(flow_id:int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        check_token = await token_validate(user_id, token)
+        if (check_token == None):
+            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         diagram = await get_diagram(flow_id)
         # print(diagram)
         db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(), 'diagram' : diagram})
@@ -229,8 +267,11 @@ async def tokenize_preview(my_token:str,token = Depends(auth_handler.auth_wrappe
 #         return JSONResponse(status_code=400, content={"message": "Cannot publish"})
 
 @router.post('/publish')
-async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_wrapper)):
+async def publish(flow_id: int,diagram : Dict,user_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        check_token = await token_validate(user_id, token)
+        if (check_token == None):
+            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         # save draft of the current diagram and check if it was successful or not
         save_draft_status = await save_draft(flow_id)
         if (save_draft_status.status_code != 200):
@@ -255,8 +296,11 @@ async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_
         return JSONResponse(status_code=400, content={"message": "Cannot publish"})
 
 @router.post("/disable_flow")
-async def flow_disabled(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
+async def flow_disabled(flow_id: int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        check_token = await token_validate(user_id, token)
+        if (check_token == None):
+            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         db.session.query(Flow).filter_by(id=flow_id).update(
             {"isEnable": False, "updated_at": datetime.now(timezone.utc)})
         db.session.commit()
@@ -268,8 +312,11 @@ async def flow_disabled(flow_id: int,token = Depends(auth_handler.auth_wrapper))
 
 
 @router.patch('/archive_flow')
-async def archive_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
+async def archive_flow(flow_id: int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        check_token = await token_validate(user_id, token)
+        if (check_token == None):
+            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         db.session.query(Flow).filter_by(id=flow_id).update(
             {"isEnable": False, "status": "trashed", "updated_at": datetime.now(timezone.utc)})
 
@@ -283,6 +330,9 @@ async def archive_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
 @router.get('/get_trashed_flows')
 async def get_trashed_flows(user_id: int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        check_token = await token_validate(user_id, token)
+        if (check_token == None):
+            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200:
             return user_check
@@ -300,8 +350,11 @@ async def get_trashed_flows(user_id: int,token = Depends(auth_handler.auth_wrapp
 
 
 @router.delete('/trash/delete_forever')
-async def delete_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
+async def delete_flow(flow_id: int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        check_token = await token_validate(user_id, token)
+        if (check_token == None):
+            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         db.session.query(Flow).filter_by(id=flow_id).filter_by(isEnable=False).filter_by(status="trashed").delete()
         db.session.commit()
         db.session.close()
@@ -312,8 +365,11 @@ async def delete_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
 
 
 @router.post('/trash/restore_flow')
-async def restore_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
+async def restore_flow(flow_id: int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        check_token = await token_validate(user_id, token)
+        if (check_token == None):
+            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         db.session.query(Flow).filter_by(id=flow_id).update(
             {"status": "active", "isEnable": True, "updated_at": datetime.now(timezone.utc)})
         db.session.commit()
