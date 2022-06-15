@@ -171,19 +171,19 @@ async def create_nodes(user_id:int,nodes : List[NodeSchema],token = Depends(auth
     try:
 
         # check user token
-        check_token = await token_validate(user_id, token)
+        # check_token = await token_validate(user_id, token)
         # print(check_token.status_code)
-        if (check_token.status_code !=200):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
-        else:
-            ids = []
-            for node in nodes:
-                create_node_response, my_id = await create_node(node)
-                if (create_node_response.status_code != 200):
-                    return create_node_response
-                else:
-                    ids.append(my_id)
-            return JSONResponse(status_code=200, content={"message": "success", "ids": ids})
+        # if (check_token.status_code !=200):
+        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+        # else:
+        ids = []
+        for node in nodes:
+            create_node_response, my_id = await create_node(node)
+            if (create_node_response.status_code != 200):
+                return create_node_response
+            else:
+                ids.append(my_id)
+        return JSONResponse(status_code=200, content={"message": "success", "ids": ids})
     except Exception as e:
         print(e,'at create_node')
         return JSONResponse(status_code=404, content={"message":"Error in creating node"})
