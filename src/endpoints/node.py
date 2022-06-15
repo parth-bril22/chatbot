@@ -316,11 +316,11 @@ async def add_sub_node(sub:SubNodeSchema,user_id:int,token = Depends(auth_handle
 
 
 @router.put('/update_subnode')
-async def update_sub_node(my_sub_node:SubNodeSchema, user_id:int,sub_node_id:str = Body(...),token = Depends(auth_handler.auth_wrapper)):
+async def update_sub_node(my_sub_node:SubNodeSchema,sub_node_id:str = Body(...),token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+        # check_token = await token_validate(user_id, token)
+        # if (check_token == None):
+        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         #check if the node_id is in the database
         node_in_db = db.session.query(SubNode).filter_by(flow_id=my_sub_node.flow_id).filter_by(id=sub_node_id)
         #if there is no node with given id, return 404
@@ -408,10 +408,10 @@ async def create_connection(conn : ConnectionSchema):
             "message": "Cannot create connection. Check if node and flow ids entered correctly"})
          
 @router.post('/create_connection')
-async def create_connections(conns : List[ConnectionSchema],user_id:int,token = Depends(auth_handler.auth_wrapper)):
-    check_token = await token_validate(user_id, token)
-    if (check_token == None):
-        return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+async def create_connections(conns : List[ConnectionSchema],token = Depends(auth_handler.auth_wrapper)):
+    # check_token = await token_validate(user_id, token)
+    # if (check_token == None):
+    #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
     for conn in conns:
         x = await create_connection(conn)
         if(x.status_code != 200):
@@ -419,11 +419,11 @@ async def create_connections(conns : List[ConnectionSchema],user_id:int,token = 
     return JSONResponse(status_code = 200, content = {"message" :"success"})
 
 @router.delete('/delete_connection')
-async def delete_connection(connection_id: int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def delete_connection(connection_id: int,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+        # check_token = await token_validate(user_id, token)
+        # if (check_token == None):
+        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         # get connection from the database
         connection_in_db = db.session.query(Connections).filter_by(id=connection_id)
         # check if it exists or not, return error if does not exist
@@ -440,11 +440,11 @@ async def delete_connection(connection_id: int,user_id:int,token = Depends(auth_
             "message": "Cannot delete connection. Check if node and flow ids entered correctly"})
 
 @router.post("/create_node_with_conn")
-async def create_node_with_conn(my_node:NodeSchema,user_id:int,node_id:int, sub_node_id:str,token = Depends(auth_handler.auth_wrapper)):
+async def create_node_with_conn(my_node:NodeSchema,node_id:int, sub_node_id:str,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+        # check_token = await token_validate(user_id, token)
+        # if (check_token == None):
+        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         create_node_response, my_id = await create_node(node=my_node)
         if (create_node_response.status_code != 200):
             return create_node_response
@@ -561,14 +561,14 @@ async def create_custom_fields(cus : List[CustomFieldSchema],user_id:int,token =
     return JSONResponse(status_code = 200, content = {"message" :"success"})
 
 @router.post('/preview')
-async def preview(flow_id : int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
     """
     When user clicks on preview, start a preview chat page and return the first/start node.
     """
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+        # check_token = await token_validate(user_id, token)
+        # if (check_token == None):
+        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         #get start node and encode it to JSON
         start_node = db.session.query(Node.data, Node.flow_id, Node.id, Node.type).filter_by(type = "special").filter_by(flow_id=flow_id).first()#first() and not all(), need to take care of multiple startnodes in the DB
         start_node = encoders.jsonable_encoder(start_node)
