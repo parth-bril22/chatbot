@@ -167,7 +167,7 @@ async def create_node(node:NodeSchema):
 
 
 @router.post('/create_node/')
-async def create_nodes(nodes : List[NodeSchema],token = Depends(auth_handler.auth_wrapper)):
+async def create_nodes(node : NodeSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
 
         # check user token
@@ -176,14 +176,11 @@ async def create_nodes(nodes : List[NodeSchema],token = Depends(auth_handler.aut
         # if (check_token.status_code !=200):
         #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         # else:
-        ids = []
-        for node in nodes:
-            create_node_response, my_id = await create_node(node)
-            if (create_node_response.status_code != 200):
-                return create_node_response
-            else:
-                ids.append(my_id)
-        return JSONResponse(status_code=200, content={"message": "success", "ids": ids})
+        create_node_response, my_id = await create_node(node)
+        if (create_node_response.status_code != 200):
+            return create_node_response
+
+        return JSONResponse(status_code=200, content={"message": "success", "ids": my_id})
     except Exception as e:
         print(e,'at create_node')
         return JSONResponse(status_code=404, content={"message":"Error in creating node"})
@@ -440,7 +437,7 @@ async def delete_connection(connection_id: int,token = Depends(auth_handler.auth
             "message": "Cannot delete connection. Check if node and flow ids entered correctly"})
 
 @router.post("/create_node_with_conn")
-async def create_node_with_conn(my_node:List[NodeSchema],node_id:int, sub_node_id:str,token = Depends(auth_handler.auth_wrapper)):
+async def create_node_with_conn(my_node:NodeSchema,node_id:int, sub_node_id:str,token = Depends(auth_handler.auth_wrapper)):
     try:
         # check_token = await token_validate(user_id, token)
         # if (check_token == None):
