@@ -167,7 +167,7 @@ async def create_node(node:NodeSchema):
 
 
 @router.post('/create_node/')
-async def create_nodes(user_id:int,nodes : List[NodeSchema],token = Depends(auth_handler.auth_wrapper)):
+async def create_nodes(nodes : List[NodeSchema],token = Depends(auth_handler.auth_wrapper)):
     try:
 
         # check user token
@@ -205,11 +205,11 @@ async def get_node(node_id: int, flow_id : int,user_id:int,token = Depends(auth_
 
 
 @router.delete('/delete_node/')
-async def delete_node(node_id : str, flow_id:int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def delete_node(node_id : str, flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+        # check_token = await token_validate(user_id, token)
+        # if (check_token == None):
+        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         # print([value[0] for value in db.session.query(Node.id)])
         node_in_db = db.session.query(Node).filter_by(flow_id = flow_id).filter_by(id = node_id)
 
@@ -228,11 +228,11 @@ async def delete_node(node_id : str, flow_id:int,user_id:int,token = Depends(aut
         return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})  
 
 @router.put('/update_node/')
-async def update_node(node_id:str,my_node:NodeSchema,user_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+        # check_token = await token_validate(user_id, token)
+        # if (check_token == None):
+        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         #check if the node_id is in the database
         node_in_db = db.session.query(Node).filter_by(id = node_id).filter_by(flow_id=my_node.flow_id)
         #if there is no node with given id, return 404
@@ -462,11 +462,11 @@ async def create_node_with_conn(my_node:NodeSchema,user_id:int,node_id:int, sub_
         return JSONResponse(status_code=404, content={"message": "Cannot create connections between two nodes"})
 
 @router.post('/add_connection')
-async def add_connection(my_node: NodeSchema, user_id:int,connection: ConnectionSchema,token = Depends(auth_handler.auth_wrapper)):
+async def add_connection(my_node: NodeSchema, connection: ConnectionSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+        # check_token = await token_validate(user_id, token)
+        # if (check_token == None):
+        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         # create new node and get its id
         status, new_node_id = await create_node(node=my_node)
         # check for errors
@@ -602,14 +602,14 @@ async def preview(flow_id : int,user_id:int,token = Depends(auth_handler.auth_wr
 
 
 @router.post('/send')
-async def send(flow_id : int, my_source_node:str, my_sub_node:str,user_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depends(auth_handler.auth_wrapper)):
     """
     Enter the source node and its sub_node and get the next node according to the connections table.
     """
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+        # check_token = await token_validate(user_id, token)
+        # if (check_token == None):
+        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         nodes = []
         #get current data of current node
         previous_sub_node = db.session.query(SubNode).filter_by(node_id = my_source_node).filter_by(flow_id=flow_id).filter_by(id = my_sub_node).first()
