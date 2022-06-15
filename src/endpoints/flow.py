@@ -185,11 +185,11 @@ async def duplicate_flow(user_id:int, flow_id:int,token = Depends(auth_handler.a
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
 @router.get("/get_diagram")
-async def get_diagram(flow_id :int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+        # check_token = await token_validate(user_id, token)
+        # if (check_token == None):
+        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         all_connections = db.session.query(Connections).filter_by(flow_id=flow_id).all()
         cons =[]
         for con in all_connections:
