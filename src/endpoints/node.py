@@ -22,12 +22,16 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-async def token_validate(user_id:int,token:str):
-    user_info = db.session.query(User).filter_by(id=user_id).first()
-    if (user_info.email == token):
-        return token
-    else:
-        return None
+async def token_validate(user_id:int,token):
+    try:
+        user_info = db.session.query(User).filter_by(id=user_id).first()
+        if (user_info.email == token):
+            return JSONResponse(status_code=200, content={"message": "Authorized Successfully!"})
+        else:
+            return JSONResponse(status_code=401, content={"message": "Not Authorized"})
+    except Exception as e:
+        print(e,"at:")
+        return JSONResponse(status_code=404, content={"message": "Please enter user_id or token correctly"})
 
 async def check_conditional_logic(prop_value_json : json):
     """
@@ -162,38 +166,45 @@ async def create_node(node:NodeSchema):
         return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})
 
 
-@router.post('/create_node/{id}')
+@router.post('/create_node/')
 async def create_nodes(user_id:int,nodes : List[NodeSchema],token = Depends(auth_handler.auth_wrapper)):
     try:
+
         # check user token
         check_token = await token_validate(user_id, token)
-        if (check_token == None):
+        # print(check_token.status_code)
+        if (check_token.status_code !=200):
             return JSONResponse(status_code=401, content={"message": "Not authoraized"})
-        ids = []
-        for node in nodes:
-            create_node_response, my_id = await create_node(node)
-            if(create_node_response.status_code!=200):
-                return create_node_response
-            else:
-                ids.append(my_id)
-        return JSONResponse(status_code=200,content={"message":"success","ids":ids})
+        else:
+            ids = []
+            for node in nodes:
+                create_node_response, my_id = await create_node(node)
+                if (create_node_response.status_code != 200):
+                    return create_node_response
+                else:
+                    ids.append(my_id)
+            return JSONResponse(status_code=200, content={"message": "success", "ids": ids})
     except Exception as e:
         print(e,'at create_node')
-        return JSONResponse(status_code=404, content={"message":"Error in creating node"}) 
+        return JSONResponse(status_code=404, content={"message":"Error in creating node"})
 
 
-@router.get('/get_node/{id}')
+@router.get('/get_node/')
 async def get_node(node_id: int, flow_id : int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
     check_token = await token_validate(user_id, token)
-    if (check_token == None):
+    if (check_token.status_code != 200):
         return JSONResponse(status_code=401, content={"message": "Not authoraized"})
-    my_node = db.session.query(Node).filter_by(flow_id=flow_id).filter_by(id = node_id).first()
-    if(my_node == None):
-        return JSONResponse(status_code=404, content = {"message":"Node not found"})
     else:
-        return JSONResponse(status_code = 200, content = {"id" : my_node.id, "type" : my_node.type, "position":my_node.position, "data": {"label" : "NEW NODE", "nodeData":my_node.data} })
+        my_node = db.session.query(Node).filter_by(flow_id=flow_id).filter_by(id=node_id).first()
+        if (my_node == None):
+            return JSONResponse(status_code=404, content={"message": "Node not found"})
+        else:
+            return JSONResponse(status_code=200,
+                                content={"id": my_node.id, "type": my_node.type, "position": my_node.position,
+                                         "data": {"label": "NEW NODE", "nodeData": my_node.data}})
 
-@router.delete('/delete_node/{id}')
+
+@router.delete('/delete_node/')
 async def delete_node(node_id : str, flow_id:int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
         check_token = await token_validate(user_id, token)
@@ -704,14 +715,14 @@ async def send_diagram(nodes : List[NodeSchema], connections : List[ConnectionSc
         print(e, "at:", datetime.datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
-# @router.post("/check_token_per_user/{user_id}")
-# async def check_user_token(user_id:int,token = Depends(auth_handler.auth_wrapper)):
-#     try:
-#         check_token = await token_validate(user_id,token)
-#         if (check_token == None):
-#             return  JSONResponse(status_code=401, content={"message":"Not authoraized"})
-#         return  JSONResponse(status_code=200, content={"message":""})
-#     except Exception as e:
-#         print(e,"at:",datetime.datetime.now())
-#         return JSONResponse(status_code=400,content={"message":"please check input"})
+@router.post("/check_token_per_user/{user_id}")
+async def check_user_token(user_id:int,token = Depends(auth_handler.auth_wrapper)):
+    try:
+        check_token = await token_validate(user_id,token)
+        if (check_token == None):
+            return  JSONResponse(status_code=401, content={"message":"Not authoraized"})
+        return  JSONResponse(status_code=200, content={"message":""})
+    except Exception as e:
+        print(e,"at:",datetime.datetime.now())
+        return JSONResponse(status_code=400,content={"message":"please check input"})
 
