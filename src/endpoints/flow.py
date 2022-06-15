@@ -267,11 +267,11 @@ async def tokenize_preview(my_token:str,token = Depends(auth_handler.auth_wrappe
 #         return JSONResponse(status_code=400, content={"message": "Cannot publish"})
 
 @router.post('/publish')
-async def publish(flow_id: int,diagram : Dict,user_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+        # check_token = await token_validate(user_id, token)
+        # if (check_token == None):
+        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         # save draft of the current diagram and check if it was successful or not
         save_draft_status = await save_draft(flow_id)
         if (save_draft_status.status_code != 200):
