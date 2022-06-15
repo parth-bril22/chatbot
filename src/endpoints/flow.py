@@ -219,11 +219,11 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
 
 
 @router.post('/save_draft')
-async def save_draft(flow_id:int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+        # check_token = await token_validate(user_id, token)
+        # if (check_token == None):
+        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         diagram = await get_diagram(flow_id)
         # print(diagram)
         db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(), 'diagram' : diagram})
