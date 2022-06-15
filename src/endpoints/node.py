@@ -440,7 +440,7 @@ async def delete_connection(connection_id: int,token = Depends(auth_handler.auth
             "message": "Cannot delete connection. Check if node and flow ids entered correctly"})
 
 @router.post("/create_node_with_conn")
-async def create_node_with_conn(my_node:NodeSchema,node_id:int, sub_node_id:str,token = Depends(auth_handler.auth_wrapper)):
+async def create_node_with_conn(my_node:List[NodeSchema],node_id:int, sub_node_id:str,token = Depends(auth_handler.auth_wrapper)):
     try:
         # check_token = await token_validate(user_id, token)
         # if (check_token == None):
