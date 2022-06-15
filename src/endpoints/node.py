@@ -560,46 +560,58 @@ async def create_custom_fields(cus : List[CustomFieldSchema],user_id:int,token =
             return x
     return JSONResponse(status_code = 200, content = {"message" :"success"})
 
+# @router.post('/preview')
+# async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
+#     """
+#     When user clicks on preview, start a preview chat page and return the first/start node.
+#     """
+#     try:
+#         # check_token = await token_validate(user_id, token)
+#         # if (check_token == None):
+#         #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+#         #get start node and encode it to JSON
+#         start_node = db.session.query(Node.data, Node.flow_id, Node.id, Node.type).filter_by(type = "special").filter_by(flow_id=flow_id).first()#first() and not all(), need to take care of multiple startnodes in the DB
+#         start_node = encoders.jsonable_encoder(start_node)
+#
+#         if(start_node == None):
+#             return JSONResponse(status_code=400, content={"message":"Error: No valid node found in this id"})
+#
+#         #get sub nodes of the obtained start node and convert to JSON
+#         sub_nodes = db.session.query(SubNode).filter_by(node_id = start_node['id']).filter_by(flow_id=flow_id).all()
+#         sub_nodes = encoders.jsonable_encoder(sub_nodes)
+#
+#         if(sub_nodes == None):
+#             return JSONResponse(status_code=400, content={"message":"Error: No sub node found with this id"})
+#
+#
+#         chat_count = db.session.query(Flow.chats).filter_by(id = flow_id).first()
+#         if(chat_count[0] == None):
+#             local_count = 0
+#         else:
+#             local_count = chat_count[0]
+#
+#         local_count = local_count + 1
+#         db.session.query(Flow).filter_by(id = flow_id).update({"chats":local_count})
+#         db.session.commit()
+#         db.session.close()
+#
+#         return JSONResponse(status_code=200,content={"start_node": start_node, "sub_nodes":sub_nodes})
+#     except Exception as e:
+#         print(e)
+#         return JSONResponse(status_code=404, content={"message":"Error in preview"})
+
+
 @router.post('/preview')
 async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
-    """
-    When user clicks on preview, start a preview chat page and return the first/start node.
-    """
     try:
-        # check_token = await token_validate(user_id, token)
-        # if (check_token == None):
-        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
-        #get start node and encode it to JSON
-        start_node = db.session.query(Node.data, Node.flow_id, Node.id, Node.type).filter_by(type = "special").filter_by(flow_id=flow_id).first()#first() and not all(), need to take care of multiple startnodes in the DB
-        start_node = encoders.jsonable_encoder(start_node)
+        get_diagram = db.session.query(Flow).filter_by(id=flow_id).first()
+        if (get_diagram == None):
+            return JSONResponse(status_code=404, content="please publish first")
+        return get_diagram.diagram
 
-        if(start_node == None):
-            return JSONResponse(status_code=400, content={"message":"Error: No valid node found in this id"})
-        
-        #get sub nodes of the obtained start node and convert to JSON
-        sub_nodes = db.session.query(SubNode).filter_by(node_id = start_node['id']).filter_by(flow_id=flow_id).all()
-        sub_nodes = encoders.jsonable_encoder(sub_nodes)
-
-        if(sub_nodes == None):
-            return JSONResponse(status_code=400, content={"message":"Error: No sub node found with this id"})
-
-
-        chat_count = db.session.query(Flow.chats).filter_by(id = flow_id).first()
-        if(chat_count[0] == None):
-            local_count = 0
-        else:
-            local_count = chat_count[0]
-        
-        local_count = local_count + 1
-        db.session.query(Flow).filter_by(id = flow_id).update({"chats":local_count})
-        db.session.commit()
-        db.session.close()
-
-        return JSONResponse(status_code=200,content={"start_node": start_node, "sub_nodes":sub_nodes})
     except Exception as e:
-        print(e)
-        return JSONResponse(status_code=404, content={"message":"Error in preview"})
-
+        return print("Error at send: ", e)
+        return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})
 
 @router.post('/send')
 async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depends(auth_handler.auth_wrapper)):
