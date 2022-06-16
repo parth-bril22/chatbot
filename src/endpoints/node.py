@@ -261,11 +261,11 @@ async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handle
          return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"}) 
 
 @router.post("/add_sub_node")
-async def add_sub_node(sub:SubNodeSchema,user_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+        # check_token = await token_validate(user_id, token)
+        # if (check_token == None):
+        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         node_in_db = db.session.query(Node).filter_by(id = sub.node_id).filter_by(flow_id=sub.flow_id)
 
         if(node_in_db.first() == None):
