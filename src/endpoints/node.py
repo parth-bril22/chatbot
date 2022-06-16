@@ -227,9 +227,6 @@ async def delete_node(node_id : str, flow_id:int,token = Depends(auth_handler.au
 @router.put('/update_node')
 async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
-        # check_token = await token_validate(user_id, token)
-        # if (check_token == None):
-        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         #check if the node_id is in the database
         node_in_db = db.session.query(Node).filter_by(id = node_id).filter_by(flow_id=my_node.flow_id)
         #if there is no node with given id, return 404
