@@ -166,7 +166,7 @@ async def create_node(node:NodeSchema):
         return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})
 
 
-@router.post('/create_node/')
+@router.post('/create_node')
 async def create_nodes(node : NodeSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
 
@@ -186,7 +186,7 @@ async def create_nodes(node : NodeSchema,token = Depends(auth_handler.auth_wrapp
         return JSONResponse(status_code=404, content={"message":"Error in creating node"})
 
 
-@router.get('/get_node/')
+@router.get('/get_node')
 async def get_node(node_id: int, flow_id : int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
     check_token = await token_validate(user_id, token)
     if (check_token.status_code != 200):
@@ -201,7 +201,7 @@ async def get_node(node_id: int, flow_id : int,user_id:int,token = Depends(auth_
                                          "data": {"label": "NEW NODE", "nodeData": my_node.data}})
 
 
-@router.delete('/delete_node/')
+@router.delete('/delete_node')
 async def delete_node(node_id : str, flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
         # check_token = await token_validate(user_id, token)
@@ -224,7 +224,7 @@ async def delete_node(node_id : str, flow_id:int,token = Depends(auth_handler.au
         print(e)
         return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"})  
 
-@router.put('/update_node/')
+@router.put('/update_node')
 async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
         # check_token = await token_validate(user_id, token)
