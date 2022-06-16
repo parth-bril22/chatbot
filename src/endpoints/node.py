@@ -312,10 +312,6 @@ async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapp
 @router.put('/update_subnode')
 async def update_sub_node(my_sub_node:SubNodeSchema,sub_node_id:str = Body(...),token = Depends(auth_handler.auth_wrapper)):
     try:
-        # check_token = await token_validate(user_id, token)
-        # if (check_token == None):
-        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
-        #check if the node_id is in the database
         node_in_db = db.session.query(SubNode).filter_by(flow_id=my_sub_node.flow_id).filter_by(id=sub_node_id)
         #if there is no node with given id, return 404
         if(node_in_db.first() == None):
@@ -334,7 +330,7 @@ async def update_sub_node(my_sub_node:SubNodeSchema,sub_node_id:str = Body(...),
         node_data = []
         for sub_node in sub_nodes:
             node_data.append(sub_node.data)
-        db.session.query(Node).filter_by(flow_id=my_sub_node.flow_id).filter_by(id = sub_node.node_id).update({'data':node_data})
+        # db.session.query(Node).filter_by(flow_id=my_sub_node.flow_id).filter_by(id = sub_node.node_id).update({'data':node_data})
         
         db.session.commit()
         db.session.close()
