@@ -283,15 +283,13 @@ async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapp
         #get list of relevant keys for the current type of sub_node and add only those to data/properties
         relevant_items = dict()
         curr_node = db.session.query(Node).filter_by(id = sub.node_id).first()
-        relevant_keys = (list(curr_node.data[-1].keys())[0])
-        
         relevant_items = dict()
         for k,v in sub.data.items():
-            if(k in relevant_keys and v != None):
+            if(k and v != None):
                 relevant_items[k] = v
         
         #add sub_node data to sub_node table
-        new_sub_node = SubNode(id = id, node_id = sub.node_id, data = encoders.jsonable_encoder(relevant_items),flow_id = sub.flow_id, type = node_in_db.first().type)
+        new_sub_node = SubNode(id = id, node_id = sub.node_id, data = encoders.jsonable_encoder(relevant_items),flow_id = sub.flow_id, type = list(curr_node.data[-1].keys())[0])
         db.session.add(new_sub_node)
 
         #add sub_node data to node in the Node table
