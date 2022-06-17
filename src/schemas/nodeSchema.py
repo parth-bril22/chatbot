@@ -25,6 +25,7 @@ class SubNodeSchema(BaseModel):
     _id : str
     node_id : int
     flow_id: int
+    type: str
     data : Dict = {"text":""}
     class Config:
         orm_mode = True

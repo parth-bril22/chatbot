@@ -288,8 +288,9 @@ async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapp
             if(k and v != None):
                 relevant_items[k] = v
         
+        print(list(curr_node.data[-1].keys())[0])
         #add sub_node data to sub_node table
-        new_sub_node = SubNode(id = id, node_id = sub.node_id, data = encoders.jsonable_encoder(relevant_items),flow_id = sub.flow_id, type = list(curr_node.data[-1].keys())[0])
+        new_sub_node = SubNode(id = id, node_id = sub.node_id, data = encoders.jsonable_encoder(relevant_items),flow_id = sub.flow_id, type = sub.type)
         db.session.add(new_sub_node)
 
         #add sub_node data to node in the Node table
