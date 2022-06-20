@@ -188,7 +188,7 @@ async def duplicate_flow(user_id:int, flow_id:int,token = Depends(auth_handler.a
 async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
     try:
         # check the status of the flow 
-        flow_data = db.session.query(Flow).filter_by(id=flow_id).filter_by(status="trashed").all()
+        flow_data = db.session.query(Flow).filter_by(id=flow_id).filter_by(status="trashed").first()
 
         if (flow_data != None):
             return JSONResponse(status_code=201,content={"message":"flow is not found"})
