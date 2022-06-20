@@ -338,15 +338,27 @@ async def get_trashed_flows(user_id: int,token = Depends(auth_handler.auth_wrapp
         if (check_token == None):
             return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         user_check = await check_user_id(user_id)
-        if user_check.status_code != 200:
-            return user_check
+        if user_check.status_code != 200 :
+            return user_check 
 
-        flow_ids = db.session.query(Flow).filter_by(user_id=user_id).filter_by(status="trashed").all()
+        flows = db.session.query(Flow).filter_by(user_id = user_id).filter_by(isEnable = True).all()
+        flow_list = []
+        for fl in flows:
+            flow_list.append({"flow_id":fl.id, "name":fl.name, "updated_at":encoders.jsonable_encoder(fl.updated_at),"created_at":encoders.jsonable_encoder(fl.created_at), "chats":fl.chats,"finished":fl.finished, "publish_token":fl.publish_token})
+        return JSONResponse(status_code=200, content={"flows" : flow_list})
+        # check_token = await token_validate(user_id, token)
+        # if (check_token == None):
+        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+        # user_check = await check_user_id(user_id)
+        # if user_check.status_code != 200:
+        #     return user_check
 
-        ids = []
-        for fl in flow_ids:
-            ids.append(fl.id)
-        return JSONResponse(status_code=200, content={"message": "success", "flow_ids": ids})
+        # flow_ids = db.session.query(Flow).filter_by(user_id=user_id).filter_by(status="trashed").all()
+
+        # ids = []
+        # for fl in flow_ids:
+        #     ids.append(fl.id)
+        # return JSONResponse(status_code=200, content={"message": "success", "flow_ids": ids})
 
     except Exception as e:
         print("Error at get_trashed_flows: ", e)
