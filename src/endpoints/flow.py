@@ -187,9 +187,12 @@ async def duplicate_flow(user_id:int, flow_id:int,token = Depends(auth_handler.a
 @router.get("/get_diagram")
 async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
     try:
-        # check_token = await token_validate(user_id, token)
-        # if (check_token == None):
-        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
+        # check the status of the flow 
+        flow_data = db.session.query(Flow).filter_by(id=flow_id).filter_by(status="trashed").all()
+
+        if (flow_data != None):
+            return JSONResponse(status_code=201,content={"message":"flow is not found"})
+        
         all_connections = db.session.query(Connections).filter_by(flow_id=flow_id).all()
         cons =[]
         for con in all_connections:
@@ -322,6 +325,7 @@ async def archive_flow(flow_id: int,user_id:int,token = Depends(auth_handler.aut
 
         db.session.commit()
         db.session.close()
+        return JSONResponse(status_code=200,content={"message" : "flow moved into trash folder"})
     except Exception as e:
         print("Error at archive flow: ", e)
         return JSONResponse(status_code=400, content={"message": "please check the input"})
