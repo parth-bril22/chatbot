@@ -79,16 +79,9 @@ async def check_conditional_logic(prop_value_json : json):
     return True
 
 
-async def check_property_dict(node: Node, prop : Dict, keys : List):
+async def check_property_dict(prop : Dict, keys : List):
     
     prop_dict = {k: v for k, v in prop.items() if k in keys}
-    #check that all necessary fields not filled or not
-    if (len(prop_dict) != len(keys)):
-        return False, Response(status_code = 204)
-    
-    #For Empty entries return error. string.strip() can be used for spaces later.
-    if "" in node.dict().values( ) or "" in prop_dict.values(): 
-        return False, Response(status_code = 204)
     return True, prop_dict
 
 async def check_node_details(node:NodeSchema):
@@ -100,7 +93,7 @@ async def check_node_details(node:NodeSchema):
     props = []
     #make a dict of data(prop_dict) which will take only the relevant key-value pairs according to the type of node
     for property in node.data['nodeData']:
-        bool_val, prop_dict = await check_property_dict(node, property,list(node_type_params.params.keys()))
+        bool_val, prop_dict = await check_property_dict(property,list(node_type_params.params.keys()))
         if(bool_val == False):
             return prop_dict,{}
         else:
@@ -624,12 +617,26 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
         return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})
 
 
-@router.post("/check_token_per_user/")
-async def check_user_token(user_id:int,token):
+@router.post("/authenticate_user/")
+async def check_user_token(user_id:int,token=Depends(auth_handler.auth_wrapper)):
     try:
-        get_user = db.session.query(User).filter_by(email=token)
-        return  JSONResponse(status_code=200, content={"message":""})
+        get_user = db.session.query(User).filter_by(email=token).first()
+        flow_ids = db.session.query(Flow).filter_by(user_id=user_id).all()
+
+        ids = []
+        for fl in flow_ids:
+            ids.append(fl.id)
+        return  JSONResponse(status_code=200, content={"message":""}),ids
     except Exception as e:
         print(e,"at:",datetime.datetime.now())
         return JSONResponse(status_code=400,content={"message":"please check input"})
 
+async def check_user_id(user_id:str):
+    try:
+        if(db.session.query(Flow).filter_by(user_id = user_id).first() == None):
+            return JSONResponse(status_code=404, content={"message":"no flows at this id"})
+        else:
+            return JSONResponse(status_code=200)
+    except Exception as e:
+        print(e, "at:", datetime.now())
+        return JSONResponse(status_code=400, content={"message":"please check the user id input"})
