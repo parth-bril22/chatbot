@@ -1,5 +1,6 @@
 
 import uuid
+
 from ..schemas.flowSchema import *
 from ..schemas.nodeSchema import *
 from ..models.flow import *
@@ -23,23 +24,12 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-async def token_validate(user_id:int,token:str):
-    user_info = db.session.query(User).filter_by(id=user_id).first()
-    if (user_info.email == token):
-        return token
-    else:
-        return None
-
 @router.post('/create_flow')
 async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(flow.user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         if(flow.name == None or len(flow.name.strip()) == 0):
             return Response(status_code=204)
-        my_uuid = uuid.uuid4()
-        new_flow = Flow(name = flow.name, user_id = flow.user_id, created_at = datetime.now(timezone.utc), updated_at = datetime.now(timezone.utc),publish_token=my_uuid,status = "active", isEnable = True,chats =0, finished=0)
+        new_flow = Flow(name = flow.name, user_id = flow.user_id, created_at = datetime.now(timezone.utc), updated_at = datetime.now(timezone.utc),publish_token=None,status = "active", isEnable = True,chats =0, finished=0)
         db.session.add(new_flow)
         db.session.commit()
 
@@ -74,9 +64,6 @@ async def check_user_id(user_id:str):
 @router.get('/get_flow_list')
 async def get_flow_list(user_id : int,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
             return user_check 
@@ -93,9 +80,6 @@ async def get_flow_list(user_id : int,token = Depends(auth_handler.auth_wrapper)
 @router.get('/search_flows')
 async def search_flows(user_id : int, flow_name:str,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
             return user_check 
@@ -116,9 +100,6 @@ async def search_flows(user_id : int, flow_name:str,token = Depends(auth_handler
 @router.post('/rename_flow')
 async def rename_flow(user_id : int, flow_id:str, new_name:str,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
             return user_check 
@@ -140,9 +121,6 @@ async def rename_flow(user_id : int, flow_id:str, new_name:str,token = Depends(a
 @router.delete('/delete_flow_list')
 async def delete_flow(user_id : int, flow_list: List[int],token = Depends(auth_handler.auth_wrapper) ):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200:
             return user_check
@@ -164,9 +142,6 @@ async def delete_flow(user_id : int, flow_list: List[int],token = Depends(auth_h
 @router.post('/duplicate_flow')
 async def duplicate_flow(user_id:int, flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
             return user_check 
@@ -224,9 +199,6 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
 @router.post('/save_draft')
 async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
-        # check_token = await token_validate(user_id, token)
-        # if (check_token == None):
-        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         diagram = await get_diagram(flow_id)
         # print(diagram)
         db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(), 'diagram' : diagram})
@@ -237,63 +209,40 @@ async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
         print(e, "at:", datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
  
-@router.post('/{my_token}/preview')
-async def tokenize_preview(my_token:str,token = Depends(auth_handler.auth_wrapper)):
-    try:
-        flow_id =  db.session.query(Flow.id).filter_by(publish_token = my_token).first()[0]
-
-        if(my_token in db.session.query(Flow.publish_token).filter_by(publish_token = my_token).first()[0]):
-            return await preview(flow_id, token = Depends(auth_handler.auth_wrapper))
-        else:
-            return JSONResponse(status_code = 404, content={"message":"Cannot open preview. Token not identified"})
-    except Exception as e:
-        print("Error: in  my_token/preview", e)
-        return JSONResponse(status_code = 404, content={"message":"Cannot open preview"})
-    
-# @router.post('/publish')
-# async def publish(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
+# @router.post('/preview')
+# async def tokenize_preview(flow_id,token = Depends(auth_handler.auth_wrapper)):
 #     try:
-#         # save draft of the current diagram and check if it was successful or not
-#         save_draft_status = await save_draft(flow_id)
-#         if (save_draft_status.status_code != 200):
-#             return save_draft_status
+#         flow_id =  db.session.query(Flow.id).filter_by(publish_token = my_token).first()[0]
 
-#         # get the publish token of the flow and check whether it exists or not
-#         token = db.session.query(Flow.publish_token).filter_by(id=flow_id).first()
-
-#         if (token == None):
-#             return JSONResponse(status_code=404, content={"message": "Cannot publish. Check flow_id entered"})
-
-#         return JSONResponse(status_code=200, content={"message": "success", "token": token[0]})
+#         if(my_token in db.session.query(Flow.publish_token).filter_by(publish_token = my_token).first()[0]):
+#             return await preview(flow_id, token = Depends(auth_handler.auth_wrapper))
+#         else:
+#             return JSONResponse(status_code = 404, content={"message":"Cannot open preview. Token not identified"})
 #     except Exception as e:
-#         print("Error in publish: ", e)
-#         return JSONResponse(status_code=400, content={"message": "Cannot publish"})
-
+#         print("Error: in  my_token/preview", e)
+#         return JSONResponse(status_code = 404, content={"message":"Cannot open preview"})
+    
 @router.post('/publish')
 async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_wrapper)):
     try:
-        # check_token = await token_validate(user_id, token)
-        # if (check_token == None):
-        #     return JSONResponse(status_code=401, content={"message": "Not authoraized"})
-        # save draft of the current diagram and check if it was successful or not
         save_draft_status = await save_draft(flow_id)
         if (save_draft_status.status_code != 200):
             return save_draft_status
 
+        # create token
+        my_uuid = uuid.uuid4()
         if (diagram ==None):
             return JSONResponse(status_code=404, content={"message": "diagram field is empty!!"})
-        # get the publish token of the flow and check whether it exists or not
-        token = db.session.query(Flow.publish_token).filter_by(id=flow_id).first()
 
         #get the diagram and update the diagram in flow table
-        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(), 'diagram' : diagram})
+        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(), 'diagram' : diagram,'publish_token': my_uuid})
         db.session.commit()
         db.session.close()
 
         if (token == None):
             return JSONResponse(status_code=404, content={"message": "Cannot publish. Check flow_id entered"})
 
-        return JSONResponse(status_code=200, content={"message": "success", "token": token[0]})
+        return JSONResponse(status_code=200, content={"message": "success", "token": my_uuid})
     except Exception as e:
         print("Error in publish: ", e)
         return JSONResponse(status_code=400, content={"message": "Cannot publish"})
@@ -301,9 +250,6 @@ async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_
 @router.post("/disable_flow")
 async def flow_disabled(flow_id: int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         db.session.query(Flow).filter_by(id=flow_id).update(
             {"isEnable": False, "updated_at": datetime.now(timezone.utc)})
         db.session.commit()
@@ -315,11 +261,8 @@ async def flow_disabled(flow_id: int,user_id:int,token = Depends(auth_handler.au
 
 
 @router.patch('/archive_flow')
-async def archive_flow(flow_id: int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def archive_flow(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         db.session.query(Flow).filter_by(id=flow_id).update(
             {"isEnable": False, "status": "trashed", "updated_at": datetime.now(timezone.utc)})
 
@@ -343,24 +286,14 @@ async def get_trashed_flows(user_id: int,token = Depends(auth_handler.auth_wrapp
         for fl in flows:
             flow_list.append({"flow_id":fl.id, "name":fl.name, "updated_at":encoders.jsonable_encoder(fl.updated_at),"created_at":encoders.jsonable_encoder(fl.created_at), "chats":fl.chats,"finished":fl.finished, "publish_token":fl.publish_token})
         return JSONResponse(status_code=200, content={"flows" : flow_list})
-        # flow_ids = db.session.query(Flow).filter_by(user_id=user_id).filter_by(status="trashed").all()
-
-        # ids = []
-        # for fl in flow_ids:
-        #     ids.append(fl.id)
-        # return JSONResponse(status_code=200, content={"message": "success", "flow_ids": ids})
-
     except Exception as e:
         print("Error at get_trashed_flows: ", e)
         return JSONResponse(status_code=400, content={"message": "please check the input"})
 
 
 @router.delete('/trash/delete_forever')
-async def delete_flow(flow_id: int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def delete_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         db.session.query(Flow).filter_by(id=flow_id).filter_by(isEnable=False).filter_by(status="trashed").delete()
         db.session.commit()
         db.session.close()
@@ -371,11 +304,8 @@ async def delete_flow(flow_id: int,user_id:int,token = Depends(auth_handler.auth
 
 
 @router.post('/trash/restore_flow')
-async def restore_flow(flow_id: int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def restore_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
     try:
-        check_token = await token_validate(user_id, token)
-        if (check_token == None):
-            return JSONResponse(status_code=401, content={"message": "Not authoraized"})
         db.session.query(Flow).filter_by(id=flow_id).update(
             {"status": "active", "isEnable": True, "updated_at": datetime.now(timezone.utc)})
         db.session.commit()
@@ -385,3 +315,13 @@ async def restore_flow(flow_id: int,user_id:int,token = Depends(auth_handler.aut
         print("Error at restore: ", e)
         return JSONResponse(status_code=400, content={"message": "please check the input"})
 
+
+@router.get("/flow_detail")
+async def get_flow_detail(flow_id:int):
+    try:
+        db_name =  db.session.query(Flow).filter_by(id=flow_id).first()
+        token = db.session.query(Flow.publish_token).first()[0]
+        return JSONResponse(status_code=200,content={"name":db_name.name,"publish_token":token})
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=400,content={"message":"something is wrong"})
