@@ -40,8 +40,10 @@ async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrappe
         default_node = Node(name = "Welcome", type = "special", data = node_data, position = {"x": "180","y": "260"},flow_id=flow_id[0])
         db.session.add(default_node)
         db.session.commit()
-        default_subnode = SubNode(id = str(default_node.id) + "_" + str(1) + "b", node_id = default_node.id, flow_id = default_node.flow_id, data = node_data[0], type = default_node.type)
-        db.session.add(default_subnode)
+        chat_subnode = SubNode(id = str(default_node.id) + "_" + str(1) + "b", node_id = default_node.id, flow_id = default_node.flow_id, data = node_data[0], type = "chat")
+        btn_subnode = SubNode(id = str(default_node.id) + "_" + str(2) + "b", node_id = default_node.id, flow_id = default_node.flow_id, data = node_data[1], type = "button")
+        db.session.add(chat_subnode)
+        db.session.add(btn_subnode)
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code = 200, content = {"message": "success"})
@@ -242,7 +244,7 @@ async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_
         if (token == None):
             return JSONResponse(status_code=404, content={"message": "Cannot publish. Check flow_id entered"})
 
-        return JSONResponse(status_code=200, content={"message": "success", "token": my_uuid})
+        return {"message": "success", "token": my_uuid}
     except Exception as e:
         print("Error in publish: ", e)
         return JSONResponse(status_code=400, content={"message": "Cannot publish"})
