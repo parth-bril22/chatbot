@@ -29,7 +29,7 @@ async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrappe
     try:
         if(flow.name == None or len(flow.name.strip()) == 0):
             return Response(status_code=204)
-        new_flow = Flow(name = flow.name, user_id = flow.user_id, created_at = datetime.now(timezone.utc), updated_at = datetime.now(timezone.utc),publish_token=None,status = "active", isEnable = True,chats =0, finished=0)
+        new_flow = Flow(name = flow.name, user_id = flow.user_id, created_at = datetime.now(timezone.utc), updated_at = datetime.now(timezone.utc),publish_token=None,status = "active", isEnable = True,chats =0, finished=0, workspace_id=0)
         db.session.add(new_flow)
         db.session.commit()
 
@@ -40,10 +40,8 @@ async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrappe
         default_node = Node(name = "Welcome", type = "special", data = node_data, position = {"x": "180","y": "260"},flow_id=flow_id[0])
         db.session.add(default_node)
         db.session.commit()
-        chat_subnode = SubNode(id = str(default_node.id) + "_" + str(1) + "b", node_id = default_node.id, flow_id = default_node.flow_id, data = node_data[0], type = "chat")
-        btn_subnode = SubNode(id = str(default_node.id) + "_" + str(2) + "b", node_id = default_node.id, flow_id = default_node.flow_id, data = node_data[1], type = "button")
-        db.session.add(chat_subnode)
-        db.session.add(btn_subnode)
+        default_subnode = SubNode(id = str(default_node.id) + "_" + str(1) + "b", node_id = default_node.id, flow_id = default_node.flow_id, data = node_data[0], type = default_node.type)
+        db.session.add(default_subnode)
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code = 200, content = {"message": "success"})
