@@ -29,7 +29,7 @@ async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrappe
     try:
         if(flow.name == None or len(flow.name.strip()) == 0):
             return Response(status_code=204)
-        new_flow = Flow(name = flow.name, user_id = flow.user_id, created_at = datetime.now(timezone.utc), updated_at = datetime.now(timezone.utc),publish_token=None,status = "active", isEnable = True,chats =0, finished=0, workspace_id=0)
+        new_flow = Flow(name = flow.name, user_id = flow.user_id, created_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),publish_token=None,status = "active", isEnable = True,chats =0, finished=0, workspace_id=0)
         db.session.add(new_flow)
         db.session.commit()
 
@@ -201,7 +201,7 @@ async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
         diagram = await get_diagram(flow_id)
         # print(diagram)
-        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(), 'diagram' : diagram})
+        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.today().isoformat(), 'diagram' : diagram})
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code=200, content={"message":"success"})
@@ -228,6 +228,11 @@ async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_
         save_draft_status = await save_draft(flow_id)
         if (save_draft_status.status_code != 200):
             return save_draft_status
+
+        #update time
+        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.today().isoformat()})
+        db.session.commit()
+        db.session.close()
 
         # create token
         my_uuid = uuid.uuid4()
@@ -265,7 +270,7 @@ async def archive_flow(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
         db.session.query(Flow).filter_by(id=flow_id).update(
             {"isEnable": False, "status": "trashed", "updated_at": datetime.now(timezone.utc)})
-
+        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.today().isoformat()})
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code=200,content={"message" : "flow moved into trash folder"})
