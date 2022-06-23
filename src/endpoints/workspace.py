@@ -5,13 +5,13 @@ from ..schemas.workspaceSchema import *
 from ..models.flow import Flow
 from ..models.workspace import Worksapce
 from fastapi.responses import JSONResponse
-
+from ..endpoints.flow import check_user_id
 
 
 from ..dependencies.auth import AuthHandler
 auth_handler = AuthHandler()
 
-from fastapi import APIRouter,Depends
+from fastapi import APIRouter,Depends, encoders
 import datetime
 from fastapi_sqlalchemy import db
 
@@ -25,9 +25,6 @@ router = APIRouter(
 async def create_workspace(space : WorkSpaceSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
         new_wksp = Worksapce(name = space.name, user_id = space.user_id, deleted = False)
-        print(space.name)
-        print(space.user_id)
-        print(new_wksp)
         db.session.add(new_wksp)
         db.session.commit()
         db.session.close()
@@ -50,6 +47,23 @@ async def create_workspace(user_id : int,token = Depends(auth_handler.auth_wrapp
         print(e, "Error: at create_flow. Time:", datetime.datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
+@router.get('/get_workspace_flow_list')
+async def create_workspace(user_id:int,workspace_id : int,token = Depends(auth_handler.auth_wrapper)):
+    try:
+        user_check = await check_user_id(user_id)
+        if user_check.status_code != 200 :
+            return user_check 
+
+        flows = db.session.query(Flow).filter_by(user_id = user_id).filter_by(workspace_id = workspace_id).all()
+        flow_list = []
+        for fl in flows:
+            flow_list.append({"flow_id":fl.id, "name":fl.name, "updated_at":encoders.jsonable_encoder(fl.updated_at),"created_at":encoders.jsonable_encoder(fl.created_at), "chats":fl.chats,"finished":fl.finished, "publish_token":fl.publish_token})
+        return JSONResponse(status_code=200, content={"flows" : flow_list})
+    except Exception as e:
+        print(e, "at:", datetime.now())
+        return JSONResponse(status_code=400, content={"message":"please check the input"})
+
+        
 @router.post('/move_flow')
 async def move_flow(flow_id:int, workspace_id : int,token = Depends(auth_handler.auth_wrapper)):
     try:
