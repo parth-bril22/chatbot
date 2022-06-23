@@ -25,6 +25,9 @@ router = APIRouter(
 async def create_workspace(space : WorkSpaceSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
         new_wksp = Worksapce(name = space.name, user_id = space.user_id, deleted = False)
+        print(space.name)
+        print(space.user_id)
+        print(new_wksp)
         db.session.add(new_wksp)
         db.session.commit()
         db.session.close()
@@ -34,7 +37,7 @@ async def create_workspace(space : WorkSpaceSchema,token = Depends(auth_handler.
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
 
-@router.post('/get_workspace')
+@router.get('/get_workspace')
 async def create_workspace(user_id : int,token = Depends(auth_handler.auth_wrapper)):
     try:
         all_ws = db.session.query(Worksapce).filter_by(user_id=user_id).all()
