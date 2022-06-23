@@ -37,7 +37,7 @@ async def create_workspace(space : WorkSpaceSchema,token = Depends(auth_handler.
 @router.get('/get_workspace')
 async def create_workspace(user_id : int,token = Depends(auth_handler.auth_wrapper)):
     try:
-        all_ws = db.session.query(Worksapce).filter_by(user_id=user_id).all()
+        all_ws = db.session.query(Worksapce).filter_by(user_id=user_id).filter_by(deleted=False).all()
         ws =[]
         for workspace in all_ws:
             get_workspace = {"id":workspace.id,"name":workspace.name}
@@ -54,6 +54,9 @@ async def create_workspace(user_id:int,workspace_id : int,token = Depends(auth_h
         if user_check.status_code != 200 :
             return user_check 
 
+        if (db.session.query(Worksapce).filter_by(id=workspace_id).first()) == True:
+            return JSONResponse(status_code=404,content={"message":"workspace not found"})
+
         flows = db.session.query(Flow).filter_by(user_id = user_id).filter_by(workspace_id = workspace_id).all()
         flow_list = []
         for fl in flows:
@@ -63,7 +66,7 @@ async def create_workspace(user_id:int,workspace_id : int,token = Depends(auth_h
         print(e, "at:", datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
-        
+
 @router.post('/move_flow')
 async def move_flow(flow_id:int, workspace_id : int,token = Depends(auth_handler.auth_wrapper)):
     try:
