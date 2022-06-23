@@ -207,18 +207,11 @@ async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handle
         relevant_fields = db.session.query(SubNode.data).filter_by(node_id=node_id).first()
         relevant_fields = (relevant_fields)[0].keys()
         db.session.commit()
-
-        #update sub_node table
-        for sn in my_node.data['nodeData']:
-            to_include_items = [x for x in sn.items() if x[0] in relevant_fields]
-            to_include_item =  dict(to_include_items)
-            print(sn['id'])
-            db.session.query(SubNode).filter_by(node_id = node_id).filter_by(id = sn['id']).update({"data":to_include_item})
-            db.session.commit()
             
         #update node data
         db.session.query(Node).filter(Node.id == node_id).filter_by(flow_id=my_node.flow_id).update({'data' : node_data, 'type' : my_node.type, 'position':my_node.position})
         db.session.commit()
+        db.session.close()
         return JSONResponse(status_code = 200, content = {"message":"success"})
     except:
          return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"}) 
