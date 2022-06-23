@@ -8,4 +8,3 @@ class WorkSpaceSchema(BaseModel):
 
     class Config:
         orm_mode = True
-        underscore_attrs_are_private = True
