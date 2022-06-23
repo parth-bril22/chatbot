@@ -211,8 +211,9 @@ async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handle
         #update sub_node table
         for sn in my_node.data['nodeData']:
             to_include_items = [x for x in sn.items() if x[0] in relevant_fields]
-            to_include_items =  dict(to_include_items)
-            db.session.query(SubNode).filter_by(node_id = node_id).filter_by(id = sn['id']).update({"data":to_include_items})
+            to_include_item =  dict(to_include_items)
+            print(sn['id'])
+            db.session.query(SubNode).filter_by(node_id = node_id).filter_by(id = sn['id']).update({"data":to_include_item})
             db.session.commit()
             
         #update node data
@@ -542,9 +543,6 @@ async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
         get_diagram = db.session.query(Flow).filter_by(id=flow_id).first()
         if (get_diagram == None):
             return JSONResponse(status_code=404, content="please publish first")
-        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.today().isoformat()})
-        db.session.commit()
-        db.session.close()
         return get_diagram.diagram
 
     except Exception as e:
