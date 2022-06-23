@@ -3,7 +3,7 @@ from src.schemas.flowSchema import *
 from ..schemas.nodeSchema import *
 from ..schemas.workspaceSchema import *
 from ..models.flow import Flow
-from ..models.workspace import Worksapce, Trash
+from ..models.workspace import Worksapce
 from fastapi.responses import JSONResponse
 
 
