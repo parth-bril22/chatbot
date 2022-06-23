@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from fastapi import APIRouter, status, HTTPException ,encoders , Response, Body,Depends
 from typing import List
 import json
-import datetime
+from datetime import datetime
 import secrets
 from ast import literal_eval
 from fastapi_sqlalchemy import db
@@ -217,9 +217,7 @@ async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handle
             
         #update node data
         db.session.query(Node).filter(Node.id == node_id).filter_by(flow_id=my_node.flow_id).update({'data' : node_data, 'type' : my_node.type, 'position':my_node.position})
-        db.session.query(Flow).filter_by(id = my_node.flow_id).update({'updated_at' : datetime.today().isoformat()})
         db.session.commit()
-        db.session.close()
         return JSONResponse(status_code = 200, content = {"message":"success"})
     except:
          return JSONResponse(status_code=404, content={"message":"Please enter node_id correctly"}) 
@@ -550,8 +548,8 @@ async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
         return get_diagram.diagram
 
     except Exception as e:
-        return print("Error at send: ", e)
-        return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})
+        print("Error at send: ", e)
+        return JSONResponse(status_code=404, content={"message": "Send Chat data Not Found"})
 
 @router.post('/send')
 async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depends(auth_handler.auth_wrapper)):
