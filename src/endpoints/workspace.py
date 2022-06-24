@@ -92,6 +92,18 @@ async def remove_workspace(user_id:int, workspace_id : int,token = Depends(auth_
         print(e, "Error: at create_flow. Time:", datetime.datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
+
+@router.patch('/remove_from_workspace')
+async def remove_workspace(user_id:int, flow_id : int,token = Depends(auth_handler.auth_wrapper)):
+    try:
+
+        db.session.query(Flow).filter_by(user_id=user_id).filter_by(id = flow_id).update({"workspace_id":0})  
+        db.session.commit()
+        db.session.close()
+        return JSONResponse(status_code = 200, content = {"message": "success"})
+    except Exception as e:
+        print(e, "Error: at create_flow. Time:", datetime.datetime.now())
+        return JSONResponse(status_code=400, content={"message":"please check the input"})
 # @router.post('/trash/delete_forever')
 # async def delete_workspace(wksp_id : int):
 #     try:
