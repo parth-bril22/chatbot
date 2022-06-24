@@ -8,7 +8,7 @@ from .users import User, Base
 
 # Base  = declarative_base()
 
-class Worksapce(Base):
+class Workspace(Base):
     __tablename__ = 'workspace'
     id = Column(Integer, primary_key = True)
     user_id = Column(Integer, ForeignKey("user_info.id", ondelete = "CASCADE"))

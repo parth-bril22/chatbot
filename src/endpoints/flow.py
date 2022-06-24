@@ -5,6 +5,7 @@ from ..schemas.flowSchema import *
 from ..schemas.nodeSchema import *
 from ..models.flow import *
 from ..models.node import *
+from ..models.workspace import *
 from ..models.users import *
 from src.endpoints.node import preview
 
@@ -29,12 +30,11 @@ async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrappe
     try:
         if(flow.name == None or len(flow.name.strip()) == 0):
             return Response(status_code=204)
-        new_flow = Flow(name = flow.name, user_id = flow.user_id, created_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),publish_token=None,status = "active", isEnable = True,chats =0, finished=0, workspace_id=0)
+        new_flow = Flow(name = flow.name, user_id = flow.user_id, created_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),publish_token=None,status = "active", isEnable = True,chats =0, finished=0, workspace_id=0,workspace_name=None)
         db.session.add(new_flow)
         db.session.commit()
 
         flow_id = db.session.query(Flow.id).filter_by(id = new_flow.id).first()
-        print(flow_id)
         node_data = []
         node_data.append({"text": "Welcome","button":"Start"})
         default_node = Node(name = "Welcome", type = "special", data = node_data, position = {"x": "180","y": "260"},flow_id=flow_id[0])
@@ -69,9 +69,11 @@ async def get_flow_list(user_id : int,token = Depends(auth_handler.auth_wrapper)
             return user_check 
 
         flows = db.session.query(Flow).filter_by(user_id = user_id).filter_by(isEnable = True).all()
+
+        # get the workspace id & list 
         flow_list = []
         for fl in flows:
-            flow_list.append({"flow_id":fl.id, "name":fl.name, "updated_at":encoders.jsonable_encoder(fl.updated_at),"created_at":encoders.jsonable_encoder(fl.created_at), "chats":fl.chats,"finished":fl.finished, "publish_token":fl.publish_token})
+            flow_list.append({"flow_id":fl.id, "name":fl.name, "updated_at":encoders.jsonable_encoder(fl.updated_at),"created_at":encoders.jsonable_encoder(fl.created_at), "chats":fl.chats,"finished":fl.finished, "publish_token":fl.publish_token,"workspace_id":fl.workspace_id,"workspace_name":fl.workspace_name})
         return JSONResponse(status_code=200, content={"flows" : flow_list})
     except Exception as e:
         print(e, "at:", datetime.now())

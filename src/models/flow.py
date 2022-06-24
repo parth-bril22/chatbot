@@ -18,3 +18,4 @@ class Flow(Base):
     isEnable = Column(Boolean)
     status = Column(String)
     workspace_id = Column(Integer)
+    workspace_name = Column(String)
