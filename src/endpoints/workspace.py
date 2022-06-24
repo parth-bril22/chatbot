@@ -84,9 +84,16 @@ async def move_flow(flow_id:int, workspace_id : int,token = Depends(auth_handler
 async def remove_workspace(user_id:int, workspace_id : int,token = Depends(auth_handler.auth_wrapper)):
     try:
 
-        db.session.query(Worksapce).filter_by(user_id=user_id).filter_by(id = workspace_id).update({"deleted":True})  
+        db.session.query(Worksapce).filter_by(user_id=user_id).filter_by(id = workspace_id).update({"deleted":True}) 
         db.session.commit()
-        db.session.close()
+
+        # get the all flows from the table 
+        get_flow_ids = db.session.query(Flow.id).filter_by(workspace_id=workspace_id).all()
+        for id in get_flow_ids:
+            db.session.query(Flow).filter_by(id=id[0]).update({"workspace_id":0})
+            db.session.commit()
+            db.session.close()
+       
         return JSONResponse(status_code = 200, content = {"message": "success"})
     except Exception as e:
         print(e, "Error: at create_flow. Time:", datetime.datetime.now())
