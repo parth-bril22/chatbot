@@ -1,5 +1,5 @@
 # import libraries and packages
-import email
+from src.endpoints.users import get_user_by_email
 from ..schemas.flowSchema import *
 from ..schemas.nodeSchema import *
 from ..models.node import Node, NodeType , Connections,CustomFieldTypes, CustomFields, SubNode
@@ -617,15 +617,13 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
 
 
 @router.post("/authenticate_user/")
-async def check_user_token(user_id:int,token=Depends(auth_handler.auth_wrapper)):
+async def check_user_token(token=Depends(auth_handler.auth_wrapper)):
     try:
-        get_user = db.session.query(User).filter_by(email=token).first()
-        flow_ids = db.session.query(Flow).filter_by(user_id=user_id).all()
-
-        ids = []
-        for fl in flow_ids:
-            ids.append(fl.id)
-        return  JSONResponse(status_code=200, content={"message":""}),ids
+       get_user_id = db.session.query(User).filter_by(email=token).first()  
+       # print(get_user_id.id)
+       flows =  db.session.query(Flow.id).filter_by(user_id=get_user_id.id).all()
+       flow_ids = [i[0] for i in flows]
+       return flow_ids
     except Exception as e:
         print(e,"at:",datetime.datetime.now())
         return JSONResponse(status_code=400,content={"message":"please check input"})

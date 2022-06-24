@@ -20,7 +20,7 @@ from datetime import timezone, datetime
 from typing import List
 
 router = APIRouter(
-    prefix="/flow",
+    prefix="/flow/v1",
     tags=["Flow"],
     responses={404: {"description": "Not found"}},
 )
@@ -324,7 +324,7 @@ async def restore_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
 
 
 @router.get("/flow_detail")
-async def get_flow_detail(flow_id:int):
+async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
         db_name =  db.session.query(Flow).filter_by(id=flow_id).first()
         token = db.session.query(Flow.publish_token).first()[0]
