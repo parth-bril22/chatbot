@@ -24,16 +24,16 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-async def check_user_token(workspace_id:int,token=Depends(auth_handler.auth_wrapper)):
+async def check_user_token(flow_id:int,token=Depends(auth_handler.auth_wrapper)):
     try:
        get_user_id = db.session.query(User).filter_by(email=token).first()  
-       workspace_ids = [i[0] for i in db.session.query(Flow.id).filter_by(user_id=get_user_id.id).all()]
-       if workspace_id in workspace_ids:
+       flow_ids = [i[0] for i in db.session.query(Flow.id).filter_by(user_id=get_user_id.id).all()]
+       if flow_id in flow_ids:
            return JSONResponse(status_code=200,content={"message":"flow is exists"})
        else:
            return JSONResponse(status_code=404,content={"message":"flow not exists for this user"})
     except Exception as e:
-        print(e,"at:",datetime.datetime.now())
+        print(e,"at:",datetime.now())
         return JSONResponse(status_code=400,content={"message":"please check input"})
 
 @router.post('/create_flow')
@@ -111,7 +111,7 @@ async def search_flows(user_id : int, flow_name:str,token = Depends(auth_handler
 
 
 @router.post('/rename_flow')
-async def rename_flow(user_id : int, flow_id:str, new_name:str,token = Depends(auth_handler.auth_wrapper)):
+async def rename_flow(user_id : int, flow_id:int, new_name:str,token = Depends(auth_handler.auth_wrapper)):
     try:
         valid_user = await check_user_token(flow_id,token)
         if (valid_user.status_code != 200):
@@ -185,9 +185,6 @@ async def duplicate_flow(user_id:int, flow_id:int,token = Depends(auth_handler.a
 @router.get("/get_diagram")
 async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
     try:
-        valid_user = await check_user_token(flow_id,token)
-        if (valid_user.status_code != 200):
-            return valid_user
         # check the status of the flow 
         flow_data = db.session.query(Flow).filter_by(id=flow_id).filter_by(status="trashed").first()
 
@@ -225,12 +222,9 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
 @router.post('/save_draft')
 async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
-        valid_user = await check_user_token(flow_id,token)
-        if (valid_user.status_code != 200):
-            return valid_user
         diagram = await get_diagram(flow_id)
         # print(diagram)
-        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.today().isoformat(), 'diagram' : diagram})
+        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(timezone.utc), 'diagram' : diagram})
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code=200, content={"message":"success"})
