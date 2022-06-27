@@ -1,4 +1,6 @@
 # import libraries and packages
+from os import stat
+from pickletools import StackObject
 from src.endpoints.users import get_user_by_email
 from ..schemas.flowSchema import *
 from ..schemas.nodeSchema import *
@@ -22,6 +24,18 @@ router = APIRouter(
     tags=["Node"],
     responses={404: {"description": "Not found"}},
 )
+
+async def check_user_token(flow_id:int,token=Depends(auth_handler.auth_wrapper)):
+    try:
+       get_user_id = db.session.query(User).filter_by(email=token).first()  
+       flow_ids = [i[0] for i in db.session.query(Flow.id).filter_by(user_id=get_user_id.id).all()]
+       if flow_id in flow_ids:
+           return JSONResponse(status_code=200,content={"message":"flow is exists"})
+       else:
+           return JSONResponse(status_code=404,content={"message":"flow not exists for this user"})
+    except Exception as e:
+        print(e,"at:",datetime.datetime.now())
+        return JSONResponse(status_code=400,content={"message":"please check input"})
 
 async def check_conditional_logic(prop_value_json : json):
     """
@@ -151,6 +165,9 @@ async def create_node(node:NodeSchema):
 @router.post('/create_node')
 async def create_nodes(node : NodeSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(node.flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         create_node_response, my_id = await create_node(node)
         if (create_node_response.status_code != 200):
             return create_node_response
@@ -174,6 +191,9 @@ async def create_nodes(node : NodeSchema,token = Depends(auth_handler.auth_wrapp
 @router.delete('/delete_node')
 async def delete_node(node_id : str, flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         node_in_db = db.session.query(Node).filter_by(flow_id = flow_id).filter_by(id = node_id)
 
         if(node_in_db.first() == None):
@@ -193,6 +213,9 @@ async def delete_node(node_id : str, flow_id:int,token = Depends(auth_handler.au
 @router.put('/update_node')
 async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(my_node.flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         #check if the node_id is in the database
         node_in_db = db.session.query(Node).filter_by(id = node_id).filter_by(flow_id=my_node.flow_id)
         #if there is no node with given id, return 404
@@ -219,6 +242,9 @@ async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handle
 @router.post("/add_sub_node")
 async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(sub.flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         node_in_db = db.session.query(Node).filter_by(id = sub.node_id).filter_by(flow_id=sub.flow_id)
 
         if(node_in_db.first() == None):
@@ -268,6 +294,9 @@ async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapp
 @router.put('/update_subnode')
 async def update_sub_node(my_sub_node:SubNodeSchema,sub_node_id:str = Body(...),token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(my_sub_node.flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         node_in_db = db.session.query(SubNode).filter_by(flow_id=my_sub_node.flow_id).filter_by(id=sub_node_id)
         #if there is no node with given id, return 404
         if(node_in_db.first() == None):
@@ -297,6 +326,9 @@ async def update_sub_node(my_sub_node:SubNodeSchema,sub_node_id:str = Body(...),
 @router.delete('/delete_sub_node')
 async def delete_sub_node(sub_node_id : str,flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         # print([value[0] for value in db.session.query(Node.id)])
         node_in_db = db.session.query(SubNode).filter_by(flow_id = flow_id).filter_by(id = sub_node_id)
         if(node_in_db.first() == None):
@@ -351,16 +383,26 @@ async def create_connection(conn : ConnectionSchema):
             "message": "Cannot create connection. Check if node and flow ids entered correctly"})
          
 @router.post('/create_connection')
-async def create_connections(conns : List[ConnectionSchema],token = Depends(auth_handler.auth_wrapper)):
-    for conn in conns:
+async def create_connections(conn : ConnectionSchema,token = Depends(auth_handler.auth_wrapper)):
+    try:
+        valid_user = await check_user_token(conn.flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         x = await create_connection(conn)
         if(x.status_code != 200):
             return x
-    return JSONResponse(status_code = 200, content = {"message" :"success"})
-
+        return JSONResponse(status_code = 200, content = {"message" :"success"})
+    except Exception as e:
+        print("Error in delete connection: ", e)
+        return JSONResponse(status_code=404, content={
+            "message": "Cannot create connection. Check if node and flow ids entered correctly"})
+    
 @router.delete('/delete_connection')
-async def delete_connection(connection_id: int,token = Depends(auth_handler.auth_wrapper)):
+async def delete_connection(connection_id: int,flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         # get connection from the database
         connection_in_db = db.session.query(Connections).filter_by(id=connection_id)
         # check if it exists or not, return error if does not exist
@@ -380,6 +422,9 @@ async def delete_connection(connection_id: int,token = Depends(auth_handler.auth
 @router.post("/create_node_with_conn")
 async def create_node_with_conn(my_node:NodeSchema,node_id:int, sub_node_id:str,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(my_node.flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         create_node_response, my_id = await create_node(node=my_node)
         if (create_node_response.status_code != 200):
             return create_node_response
@@ -399,6 +444,9 @@ async def create_node_with_conn(my_node:NodeSchema,node_id:int, sub_node_id:str,
 @router.post('/add_connection')
 async def add_connection(my_node: NodeSchema, connection: ConnectionSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(my_node.flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         # create new node and get its id
         status, new_node_id = await create_node(node=my_node)
         # check for errors
@@ -482,12 +530,18 @@ async def create_custom_field(cus : CustomFieldSchema):
         return JSONResponse(status_code = 200, content={"message" : "success"})
 
 @router.post('/create_custom_field')
-async def create_custom_fields(cus : List[CustomFieldSchema],token = Depends(auth_handler.auth_wrapper)):
-    for item in cus:
-        x = await create_custom_field(item)
+async def create_custom_fields(cus : CustomFieldSchema,token = Depends(auth_handler.auth_wrapper)):
+    try:
+        valid_user = await check_user_token(cus.flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
+        x = await create_custom_field(cus)
         if(x.status_code != 200):
             return x
-    return JSONResponse(status_code = 200, content = {"message" :"success"})
+        return JSONResponse(status_code = 200, content = {"message" :"success"})
+    except Exception as e:
+        print("Error in update_connection: ", e)
+        return JSONResponse(status_code=404, content={"message": "can't create custom field"})
 
 # @router.post('/preview')
 # async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
@@ -533,6 +587,9 @@ async def create_custom_fields(cus : List[CustomFieldSchema],token = Depends(aut
 @router.post('/preview')
 async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         get_diagram = db.session.query(Flow).filter_by(id=flow_id).first()
         if (get_diagram == None):
             return JSONResponse(status_code=404, content="please publish first")
@@ -548,6 +605,9 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
     Enter the source node and its sub_node and get the next node according to the connections table.
     """
     try:
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         nodes = []
         #get current data of current node
         previous_sub_node = db.session.query(SubNode).filter_by(node_id = my_source_node).filter_by(flow_id=flow_id).filter_by(id = my_sub_node).first()
@@ -615,25 +675,3 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
         print("Error at send: ", e)
         return JSONResponse(status_code=404, content={"message": "Send Chat data : Not Found"})
 
-
-@router.post("/authenticate_user/")
-async def check_user_token(token=Depends(auth_handler.auth_wrapper)):
-    try:
-       get_user_id = db.session.query(User).filter_by(email=token).first()  
-       # print(get_user_id.id)
-       flows =  db.session.query(Flow.id).filter_by(user_id=get_user_id.id).all()
-       flow_ids = [i[0] for i in flows]
-       return flow_ids
-    except Exception as e:
-        print(e,"at:",datetime.datetime.now())
-        return JSONResponse(status_code=400,content={"message":"please check input"})
-
-async def check_user_id(user_id:str):
-    try:
-        if(db.session.query(Flow).filter_by(user_id = user_id).first() == None):
-            return JSONResponse(status_code=404, content={"message":"no flows at this id"})
-        else:
-            return JSONResponse(status_code=200)
-    except Exception as e:
-        print(e, "at:", datetime.now())
-        return JSONResponse(status_code=400, content={"message":"please check the user id input"})

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from src.endpoints import users, node, flow, chat_publish, workspace
+from src.endpoints import users, node, flow, workspace
 router = APIRouter()
 router.include_router(users.router)
 router.include_router(node.router)
