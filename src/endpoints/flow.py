@@ -25,6 +25,18 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+async def check_user_token(workspace_id:int,token=Depends(auth_handler.auth_wrapper)):
+    try:
+       get_user_id = db.session.query(User).filter_by(email=token).first()  
+       workspace_ids = [i[0] for i in db.session.query(Flow.id).filter_by(user_id=get_user_id.id).all()]
+       if workspace_id in workspace_ids:
+           return JSONResponse(status_code=200,content={"message":"flow is exists"})
+       else:
+           return JSONResponse(status_code=404,content={"message":"flow not exists for this user"})
+    except Exception as e:
+        print(e,"at:",datetime.datetime.now())
+        return JSONResponse(status_code=400,content={"message":"please check input"})
+
 @router.post('/create_flow')
 async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
@@ -102,6 +114,9 @@ async def search_flows(user_id : int, flow_name:str,token = Depends(auth_handler
 @router.post('/rename_flow')
 async def rename_flow(user_id : int, flow_id:str, new_name:str,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
             return user_check 
@@ -123,6 +138,10 @@ async def rename_flow(user_id : int, flow_id:str, new_name:str,token = Depends(a
 @router.delete('/delete_flow_list')
 async def delete_flow(user_id : int, flow_list: List[int],token = Depends(auth_handler.auth_wrapper) ):
     try:
+        for flow_id in flow_list:
+            valid_user = await check_user_token(flow_id,token)
+            if (valid_user.status_code != 200):
+                return valid_user
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200:
             return user_check
@@ -144,6 +163,9 @@ async def delete_flow(user_id : int, flow_list: List[int],token = Depends(auth_h
 @router.post('/duplicate_flow')
 async def duplicate_flow(user_id:int, flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
             return user_check 
@@ -164,6 +186,9 @@ async def duplicate_flow(user_id:int, flow_id:int,token = Depends(auth_handler.a
 @router.get("/get_diagram")
 async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         # check the status of the flow 
         flow_data = db.session.query(Flow).filter_by(id=flow_id).filter_by(status="trashed").first()
 
@@ -201,6 +226,9 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
 @router.post('/save_draft')
 async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         diagram = await get_diagram(flow_id)
         # print(diagram)
         db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.today().isoformat(), 'diagram' : diagram})
@@ -214,6 +242,9 @@ async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
 @router.post('/{my_token}/preview')
 async def tokenize_preview(my_token:str,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         flow_id =  db.session.query(Flow.id).filter_by(publish_token = my_token).first()[0]
 
         if(my_token in db.session.query(Flow.publish_token).filter_by(publish_token = my_token).first()[0]):
@@ -227,6 +258,9 @@ async def tokenize_preview(my_token:str,token = Depends(auth_handler.auth_wrappe
 @router.post('/publish')
 async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         save_draft_status = await save_draft(flow_id)
         if (save_draft_status.status_code != 200):
             return save_draft_status
@@ -257,6 +291,9 @@ async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_
 @router.post("/disable_flow")
 async def flow_disabled(flow_id: int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         db.session.query(Flow).filter_by(id=flow_id).update(
             {"isEnable": False, "updated_at": datetime.now(timezone.utc)})
         db.session.commit()
@@ -270,6 +307,9 @@ async def flow_disabled(flow_id: int,user_id:int,token = Depends(auth_handler.au
 @router.patch('/archive_flow')
 async def archive_flow(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         db.session.query(Flow).filter_by(id=flow_id).update(
             {"isEnable": False, "status": "trashed", "updated_at": datetime.now(timezone.utc)})
         db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.today().isoformat()})
@@ -301,6 +341,9 @@ async def get_trashed_flows(user_id: int,token = Depends(auth_handler.auth_wrapp
 @router.delete('/trash/delete_forever')
 async def delete_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         db.session.query(Flow).filter_by(id=flow_id).filter_by(isEnable=False).filter_by(status="trashed").delete()
         db.session.commit()
         db.session.close()
@@ -313,6 +356,9 @@ async def delete_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
 @router.post('/trash/restore_flow')
 async def restore_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         db.session.query(Flow).filter_by(id=flow_id).update(
             {"status": "active", "isEnable": True, "updated_at": datetime.now(timezone.utc)})
         db.session.commit()
@@ -326,6 +372,9 @@ async def restore_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
 @router.get("/flow_detail")
 async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         db_name =  db.session.query(Flow).filter_by(id=flow_id).first()
         token = db.session.query(Flow.publish_token).first()[0]
         return JSONResponse(status_code=200,content={"name":db_name.name,"publish_token":token})
