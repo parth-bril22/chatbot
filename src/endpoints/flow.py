@@ -231,13 +231,21 @@ async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     except Exception as e:
         print(e, "at:", datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
- 
+
+async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
+    try:
+        get_diagram = db.session.query(Flow).filter_by(id=flow_id).first()
+        if (get_diagram == None):
+            return JSONResponse(status_code=404, content="please publish first")
+        return get_diagram.diagram
+
+    except Exception as e:
+        print("Error at send: ", e)
+        return JSONResponse(status_code=404, content={"message": "Send Chat data Not Found"})
+
 @router.post('/{my_token}/preview')
 async def tokenize_preview(my_token:str,token = Depends(auth_handler.auth_wrapper)):
     try:
-        valid_user = await check_user_token(flow_id,token)
-        if (valid_user.status_code != 200):
-            return valid_user
         flow_id =  db.session.query(Flow.id).filter_by(publish_token = my_token).first()[0]
 
         if(my_token in db.session.query(Flow.publish_token).filter_by(publish_token = my_token).first()[0]):

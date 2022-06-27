@@ -34,7 +34,7 @@ async def check_user_token(flow_id:int,token=Depends(auth_handler.auth_wrapper))
        else:
            return JSONResponse(status_code=404,content={"message":"flow not exists for this user"})
     except Exception as e:
-        print(e,"at:",datetime.datetime.now())
+        print(e,"at:",datetime.now())
         return JSONResponse(status_code=400,content={"message":"please check input"})
 
 async def check_conditional_logic(prop_value_json : json):
@@ -506,7 +506,7 @@ async def create_custom_field(cus : CustomFieldSchema):
             try:
                 print("date")
                 format = "%Y-%m-%d"
-                datetime.datetime.strptime(cus.value, format)
+                datetime.strptime(cus.value, format)
             except ValueError:
                 # return {"message" : "This is the incorrect date string format. It should be YYYY-MM-DD"}
                 return JSONResponse(status_code = 404, content={"message" : "This is the incorrect date string format. It should be YYYY-MM-DD"})
@@ -583,21 +583,6 @@ async def create_custom_fields(cus : CustomFieldSchema,token = Depends(auth_hand
 #         print(e)
 #         return JSONResponse(status_code=404, content={"message":"Error in preview"})
 
-
-@router.post('/preview')
-async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
-    try:
-        valid_user = await check_user_token(flow_id,token)
-        if (valid_user.status_code != 200):
-            return valid_user
-        get_diagram = db.session.query(Flow).filter_by(id=flow_id).first()
-        if (get_diagram == None):
-            return JSONResponse(status_code=404, content="please publish first")
-        return get_diagram.diagram
-
-    except Exception as e:
-        print("Error at send: ", e)
-        return JSONResponse(status_code=404, content={"message": "Send Chat data Not Found"})
 
 @router.post('/send')
 async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depends(auth_handler.auth_wrapper)):
