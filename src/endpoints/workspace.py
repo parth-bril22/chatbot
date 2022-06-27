@@ -3,6 +3,7 @@ from src.schemas.flowSchema import *
 from ..schemas.nodeSchema import *
 from ..schemas.workspaceSchema import *
 from ..models.flow import Flow
+from ..models.users import User
 from ..models.workspace import Workspace
 from fastapi.responses import JSONResponse
 from ..endpoints.flow import check_user_id
@@ -20,6 +21,18 @@ router = APIRouter(
     tags=["Workspaces"],
     responses={404: {"description": "Not found"}},
 )
+
+async def check_user_token(workspace_id:int,token=Depends(auth_handler.auth_wrapper)):
+    try:
+       get_user_id = db.session.query(User).filter_by(email=token).first()  
+       workspace_ids = [i[0] for i in db.session.query(Workspace.id).filter_by(user_id=get_user_id.id).all()]
+       if workspace_id in workspace_ids:
+           return JSONResponse(status_code=200,content={"message":"workspace is exists"})
+       else:
+           return JSONResponse(status_code=404,content={"message":"workspace not exists for this user"})
+    except Exception as e:
+        print(e,"at:",datetime.datetime.now())
+        return JSONResponse(status_code=400,content={"message":"please check input"})
 
 @router.post('/create_workspace')
 async def create_workspace(space : WorkSpaceSchema,token = Depends(auth_handler.auth_wrapper)):
