@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from fastapi import APIRouter, status, HTTPException ,encoders , Response, Body,Depends
 from typing import List
 import json
-from datetime import datetime
+from datetime import datetime,timezone
 import secrets
 from ast import literal_eval
 from fastapi_sqlalchemy import db
@@ -127,7 +127,7 @@ async def create_node(node:NodeSchema):
         if(node_check.status_code != 200):
             return node_check
 
-        db.session.query(Flow).filter_by(id = node.flow_id).update({'updated_at' : datetime.today().isoformat()})
+        db.session.query(Flow).filter_by(id = node.flow_id).update({'updated_at' : datetime.now(timezone.utc)})
         db.session.commit()
         #get dictionary of node Can be changed to data  
         prop_dict = node_data
@@ -202,7 +202,7 @@ async def delete_node(node_id : str, flow_id:int,token = Depends(auth_handler.au
         node_in_db.delete()
         #delete all connections of deleted node from connections table(if matched at source node or target node)
         db.session.query(Connections).filter((Connections.source_node_id == node_id) | (Connections.target_node_id == node_id)).delete()
-        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.today().isoformat()})
+        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(timezone.utc)})
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code = 200, content = {'message': 'Node deleted'})
@@ -282,7 +282,7 @@ async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapp
         curr_node.data.append(relevant_items)
         
         db.session.merge(curr_node)
-        db.session.query(Flow).filter_by(id = sub.flow_id).update({'updated_at' : datetime.today().isoformat()})
+        db.session.query(Flow).filter_by(id = sub.flow_id).update({'updated_at' : datetime.now(timezone.utc)})
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code = 200, content = {"message" : "Sub node addedd"})
@@ -315,7 +315,7 @@ async def update_sub_node(my_sub_node:SubNodeSchema,sub_node_id:str = Body(...),
         node_data = []
         for sub_node in sub_nodes:
             node_data.append(sub_node.data)    
-        db.session.query(Flow).filter_by(id = my_sub_node.flow_id).update({'updated_at' : datetime.today().isoformat()})
+        db.session.query(Flow).filter_by(id = my_sub_node.flow_id).update({'updated_at' : datetime.now(timezone.utc)})
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code = 200, content = {"message":"success"})
@@ -337,7 +337,7 @@ async def delete_sub_node(sub_node_id : str,flow_id:int,token = Depends(auth_han
         node_in_db.delete()
         #delete all connections of deleted node from connections table(if matched at source node or target node)
         db.session.query(Connections).filter(Connections.sub_node_id == sub_node_id).delete()
-        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.today().isoformat()})
+        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(timezone.utc)})
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code = 200, content = {'message': 'Sub Node deleted'})
@@ -373,7 +373,7 @@ async def create_connection(conn : ConnectionSchema):
         else:
             new_conn = Connections(sub_node_id = conn.sub_node_id, source_node_id = conn.source_node_id, target_node_id = conn.target_node_id, name = my_name,flow_id= conn.flow_id)
             db.session.add(new_conn)
-        db.session.query(Flow).filter_by(id = conn.flow_id).update({'updated_at' : datetime.today().isoformat()})
+        db.session.query(Flow).filter_by(id = conn.flow_id).update({'updated_at' : datetime.now(timezone.utc)})
         db.session.commit()
         # return {"message":'success'}
         return JSONResponse(status_code = 200, content = {"message": "success"})
@@ -410,7 +410,7 @@ async def delete_connection(connection_id: int,flow_id:int,token = Depends(auth_
             return JSONResponse(status_code=404, content={"message": "Connection not found"})
         # delete connection
         connection_in_db.delete()
-        db.session.query(Flow).filter_by(id = connection_in_db.flow_id).update({'updated_at' : datetime.today().isoformat()})
+        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(timezone.utc)})
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code=200, content={'message': 'Connection deleted'})
@@ -667,7 +667,7 @@ async def send(flow_id : int, my_source_node:str, my_sub_node:str,token = Depend
             sub_nodes = db.session.query(SubNode).filter_by(node_id = next_node.id).filter_by(flow_id=flow_id).all()
             sub_nodes = encoders.jsonable_encoder(sub_nodes)
             
-        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.today().isoformat()})
+        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(timezone.utc)})
         db.session.commit()
         # db.session.close()
         return {"next_node":nodes, "sub_node": sub_nodes,"is_end__node" : is_end_node, "previous_sub_node": previous_sub_node}
