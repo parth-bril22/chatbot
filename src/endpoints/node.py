@@ -302,10 +302,10 @@ async def update_sub_node(my_sub_node:SubNodeSchema,sub_node_id:str = Body(...),
             return JSONResponse(status_code=404, content={"message":"Node not found"})
         #take only relevant fields
         my_data={}
-        data_keys = node_in_db.first().data.keys()
+        # node_type_params = db.session.query(NodeType).filter(NodeType.type == my_sub_node.type).first()
+        # data_keys = node_in_db.first().data.keys()
         for key,value in my_sub_node.data.items():
-            if(key in data_keys):
-                my_data[key] = value
+            my_data[key] = value
         db.session.query(SubNode).filter_by(flow_id=my_sub_node.flow_id).filter_by(id = sub_node_id).update({'data' : my_data})
         db.session.commit()
         
