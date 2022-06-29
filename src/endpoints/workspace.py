@@ -159,7 +159,7 @@ async def remove_workspace(user_id:int, flow_id : int,token = Depends(auth_handl
 #         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
 @router.patch('/rename_workspace')
-async def rename_workspace(user_id : int, workspace_id:str, new_name:str,token = Depends(auth_handler.auth_wrapper)):
+async def rename_workspace(user_id : int, workspace_id:int, new_name:str,token = Depends(auth_handler.auth_wrapper)):
     try:
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
