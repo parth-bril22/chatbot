@@ -74,10 +74,6 @@ async def check_user_id(user_id:str):
 @router.get('/get_flow_list')
 async def get_flow_list(user_id : int,token = Depends(auth_handler.auth_wrapper)):
     try:
-        user_check = await check_user_id(user_id)
-        if user_check.status_code != 200 :
-            return user_check 
-
         flows = db.session.query(Flow).filter_by(user_id = user_id).filter_by(isEnable = True).all()
 
         # get the workspace id & list 
