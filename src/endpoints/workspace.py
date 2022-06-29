@@ -161,9 +161,6 @@ async def remove_workspace(user_id:int, flow_id : int,token = Depends(auth_handl
 @router.patch('/rename_workspace')
 async def rename_workspace(user_id : int, workspace_id:int, new_name:str,token = Depends(auth_handler.auth_wrapper)):
     try:
-        user_check = await check_user_id(user_id)
-        if user_check.status_code != 200 :
-            return user_check 
         wksp = db.session.query(Workspace).filter_by(id = workspace_id)
         if(wksp.first() == None):
             return JSONResponse(status_code=404, content={"message":"no flows with this name"})
