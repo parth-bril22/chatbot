@@ -1,5 +1,6 @@
 # import libraries and packages
 
+from xml.sax.handler import property_interning_dict
 from src.endpoints.users import get_user_by_email
 from ..schemas.flowSchema import *
 from ..schemas.nodeSchema import *
@@ -300,13 +301,11 @@ async def update_sub_node(my_sub_node:SubNodeSchema,sub_node_id:str = Body(...),
         #if there is no node with given id, return 404
         if(node_in_db.first() == None):
             return JSONResponse(status_code=404, content={"message":"Node not found"})
-        #take only relevant fields
-        my_data={}
-        # node_type_params = db.session.query(NodeType).filter(NodeType.type == my_sub_node.type).first()
-        # data_keys = node_in_db.first().data.keys()
+        #Change with existing data
+        existing_data = node_in_db.first().data
         for key,value in my_sub_node.data.items():
-            my_data[key] = value
-        db.session.query(SubNode).filter_by(flow_id=my_sub_node.flow_id).filter_by(id = sub_node_id).update({'data' : my_data})
+            existing_data[key] = value
+        db.session.query(SubNode).filter_by(flow_id=my_sub_node.flow_id).filter_by(id = sub_node_id).update({'data' : existing_data})
         db.session.commit()
         
         #update data in Node table
@@ -314,7 +313,7 @@ async def update_sub_node(my_sub_node:SubNodeSchema,sub_node_id:str = Body(...),
         node_data = []
         for sub_node in sub_nodes:
             node_data.append(sub_node.data)  
-        db.session.query(Node).filter_by(flow_id=my_sub_node.flow_id).filter_by(id = my_sub_node.node_id).update({'data' : my_data})
+        db.session.query(Node).filter_by(flow_id=my_sub_node.flow_id).filter_by(id = my_sub_node.node_id).update({'data' : existing_data})
         db.session.commit()  
         db.session.query(Flow).filter_by(id = my_sub_node.flow_id).update({'updated_at' : datetime.now(timezone.utc)})
         db.session.commit()
