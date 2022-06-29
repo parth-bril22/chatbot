@@ -42,7 +42,7 @@ def validate_user(user:ModelUser):
     if(bool(db.session.query(ModelUser).filter_by(email = user.email).first())):
         return JSONResponse(status_code=404, content = {"message" : 'Mail already exists'})
 
-    elif not (re.fullmatch(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+$', user.email)):
+    elif not (re.fullmatch(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', user.email)):
         return JSONResponse(status_code=404, content = {"message" : 'Enter valid email'})
 
     elif (len(user.password) < 7):
