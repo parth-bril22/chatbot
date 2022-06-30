@@ -102,7 +102,7 @@ async def authenticate_user(input_user: lg):
     user = await get_user_by_email(input_user.email)
 
     if (not user) or (not bcrypt.checkpw(input_user.password.encode('utf-8'), user.password.encode('utf-8'))):
-        return JSONResponse(status_code=401, content = {"message" : 'Invalid username or password'})
+        return JSONResponse(status_code=401, content = {"errorMessage" : 'Invalid username or password'})
 
     else:   
         #generate/encode and return JWT token 
