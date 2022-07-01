@@ -325,7 +325,7 @@ async def archive_flow(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
             return valid_user
         db.session.query(Flow).filter_by(id=flow_id).update(
             {"isEnable": False, "status": "trashed"})
-        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.today().isoformat()})
+        db.session.query(Flow).filter_by(id = flow_id).update({"workspace_id":0,'workspace_name': None})
         db.session.commit()
         db.session.close()
 
