@@ -394,10 +394,10 @@ async def create_node_with_conn(my_node:NodeSchema,node_id:int, sub_node_id:str,
         sub_node = db.session.query(SubNode.id).filter_by(node_id=node_id).filter_by(id=sub_node_id).first()
         if (sub_node == None):
             return JSONResponse(status_code=404, content={"message": "No such subnode exists"})
-        create_connection = Connections(flow_id=my_node.flow_id, source_node_id=node_id,
+        create_conn = ConnectionSchema(flow_id=my_node.flow_id, source_node_id=node_id,
                                   sub_node_id=sub_node_id,
                                   target_node_id=my_id)
-        await create_connection(create_connection)
+        await create_connection(create_conn)
 
         return JSONResponse(status_code=200, content={"message": "Success"})
     except Exception as e:
