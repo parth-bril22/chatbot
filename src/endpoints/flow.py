@@ -1,21 +1,18 @@
-
 import uuid
-
-from ..schemas.flowSchema import *
-from ..schemas.nodeSchema import *
-from ..models.flow import *
-from ..models.node import *
-from ..models.workspace import *
-from ..models.users import *
-
-from ..dependencies.auth import AuthHandler
-auth_handler = AuthHandler()
-
 from fastapi import APIRouter, Depends , encoders
 from fastapi.responses import JSONResponse, Response
 from fastapi_sqlalchemy import db
 from datetime import timezone, datetime
-from typing import List
+from typing import List,Dict
+
+from ..schemas.flowSchema import FlowSchema
+from ..models.flow import Flow
+from ..models.node import Node,SubNode,CustomFields,Connections
+from ..models.users import User
+from ..endpoints.node import check_user_token
+
+from ..dependencies.auth import AuthHandler
+auth_handler = AuthHandler()
 
 router = APIRouter(
     prefix="/flow/v1",
@@ -23,20 +20,24 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-async def check_user_token(flow_id:int,token=Depends(auth_handler.auth_wrapper)):
+async def check_user_id(user_id:str):
+    """
+    Check User using Id to give  permission
+    """
     try:
-       get_user_id = db.session.query(User).filter_by(email=token).first()  
-       flow_ids = [i[0] for i in db.session.query(Flow.id).filter_by(user_id=get_user_id.id).all()]
-       if flow_id in flow_ids:
-           return JSONResponse(status_code=200,content={"message":"flow is exists"})
-       else:
-           return JSONResponse(status_code=404,content={"message":"flow not exists for this user"})
+        if(db.session.query(Flow).filter_by(user_id = user_id).first() == None):
+            return JSONResponse(status_code=404, content={"message":"no flows at this id"})
+        else:
+            return JSONResponse(status_code=200)
     except Exception as e:
-        print(e,"at:",datetime.now())
-        return JSONResponse(status_code=400,content={"message":"please check input"})
+        print(e, "at:", datetime.now())
+        return JSONResponse(status_code=400, content={"message":"please check the user id input"})
 
 @router.post('/create_flow')
 async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Create a flow as per user requirements 
+    """
     try:
         if(flow.name == None or len(flow.name.strip()) == 0):
             return Response(status_code=204)
@@ -59,23 +60,13 @@ async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrappe
         print(e, "at:", datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
-
-async def check_user_id(user_id:str):
-    try:
-        if(db.session.query(Flow).filter_by(user_id = user_id).first() == None):
-            return JSONResponse(status_code=404, content={"message":"no flows at this id"})
-        else:
-            return JSONResponse(status_code=200)
-    except Exception as e:
-        print(e, "at:", datetime.now())
-        return JSONResponse(status_code=400, content={"message":"please check the user id input"})
-
-
 @router.get('/get_flow_list')
 async def get_flow_list(user_id : int,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Get the flow list using user id
+    """
     try:
         flows = db.session.query(Flow).filter_by(user_id = user_id).filter_by(isEnable = True).all()
-
         # get the workspace id & list 
         flow_list = []
         for fl in flows:
@@ -87,6 +78,9 @@ async def get_flow_list(user_id : int,token = Depends(auth_handler.auth_wrapper)
 
 @router.get('/search_flows')
 async def search_flows(user_id : int, flow_name:str,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Serach flow by it's name
+    """
     try:
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
@@ -107,6 +101,9 @@ async def search_flows(user_id : int, flow_name:str,token = Depends(auth_handler
 
 @router.post('/rename_flow')
 async def rename_flow(user_id : int, flow_id:int, new_name:str,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Rename flow
+    """
     try:
         valid_user = await check_user_token(flow_id,token)
         if (valid_user.status_code != 200):
@@ -130,7 +127,10 @@ async def rename_flow(user_id : int, flow_id:int, new_name:str,token = Depends(a
 
 
 @router.delete('/delete_flow_list')
-async def delete_flow(user_id : int, flow_list: List[int],token = Depends(auth_handler.auth_wrapper) ):
+async def delete_flow(user_id : int, flow_list: List[int],token = Depends(auth_handler.auth_wrapper)):
+    """
+    Delete one flow or multiple flows at a time 
+    """
     try:
         for flow_id in flow_list:
             valid_user = await check_user_token(flow_id,token)
@@ -156,6 +156,9 @@ async def delete_flow(user_id : int, flow_list: List[int],token = Depends(auth_h
 
 @router.post('/duplicate_flow')
 async def duplicate_flow(user_id:int, flow_id:int,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Create a copy(duplicate) flow with same characteristics
+    """
     try:
         valid_user = await check_user_token(flow_id,token)
         if (valid_user.status_code != 200):
@@ -179,36 +182,39 @@ async def duplicate_flow(user_id:int, flow_id:int,token = Depends(auth_handler.a
 
 @router.get("/get_diagram")
 async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Get the diagram which contain all nodes, connections, sub_nodes with data
+    """
     try:
-        # check the status of the flow 
-        flow_data = db.session.query(Flow).filter_by(id=flow_id).filter_by(status="trashed").first()
-        
+        flow_data = db.session.query(Flow).filter_by(id=flow_id).filter_by(status="trashed").first()        
         if (flow_data != None):
             return JSONResponse(status_code=201,content={"message":"flow is not found"})
         
         all_connections = db.session.query(Connections).filter_by(flow_id=flow_id).all()
-        cons =[]
-        for con in all_connections:
-            get_con = {"id": con.id, "markerEnd": {"type": "MarkerType.ArrowClosed",},"type": 'buttonedge', "source": con.source_node_id, "sourceHandle": con.sub_node_id,"target": con.target_node_id, "animated": True, "label": 'edge label', "flow_id":flow_id}
-            cons.append(get_con)
+        connections_list =[]
+        for conn in all_connections:
+            get_conn = {"id": conn.id, "markerEnd": {"type": "MarkerType.ArrowClosed",},"type": 'buttonedge', "source": conn.source_node_id, "sourceHandle": conn.sub_node_id,"target": conn.target_node_id, "animated": True, "label": 'edge label', "flow_id":flow_id}
+            connections_list.append(get_conn)
         all_custom_fileds = db.session.query(CustomFields).filter_by(flow_id=flow_id).all()
         all_nodes = db.session.query(Node).filter_by(flow_id=flow_id).all()
         sub_nodes = db.session.query(SubNode).filter_by(flow_id=flow_id).all()
-        get_list = []
+
+        node_list = []
         for node in all_nodes:
             sub_nodes = db.session.query(SubNode).filter_by(node_id = node.id).all()
-            sn = []
+
+            sub_node_list = []
             for sub_node in sub_nodes:
-                fields = dict(sub_node.data.items())#get fields of data(text,btn,...)
+                fields = dict(sub_node.data.items()) #get fields of data(text,btn,...)
                 my_dict = {"flow_id":sub_node.flow_id, "node_id":sub_node.node_id,"type":sub_node.type,"id":sub_node.id}
                 for key,value in fields.items():
                     my_dict[key] = value
-                sn.append(my_dict)
+                sub_node_list.append(my_dict)
             get_data = {"flow_id" : flow_id,"id": node.id, "type": node.type, "position": node.position,
-             "data": { "id": node.id,"label": "NEW NODE", "nodeData": sn}}
-            get_list.append(get_data)
-        # return {"nodes":list({"id" : node.id, "type" : node.type, "position":node.position, "data": {"label" : "NEW NODE", "nodeData":node.data} }),"connections":encoders.jsonable_encoder(all_connections),"Custom Fields": encoders.jsonable_encoder(all_custom_fileds), "Sub Nodes:" : encoders.jsonable_encoder(sub_nodes) }
-        return {"nodes": get_list,"connections": cons, "custom_fields": encoders.jsonable_encoder(all_custom_fileds),"sub_nodes:": encoders.jsonable_encoder(sub_nodes)}
+             "data": { "id": node.id,"label": "NEW NODE", "nodeData": sub_node_list}}
+            node_list.append(get_data)
+
+        return {"nodes": node_list,"connections": connections_list, "custom_fields": encoders.jsonable_encoder(all_custom_fileds),"sub_nodes:": encoders.jsonable_encoder(sub_nodes)}
     except Exception as e:
         print(e, ": at get diagram")
         return JSONResponse(status_code=400, content={"message": "Cannot get diagram"})
@@ -216,10 +222,12 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
 
 @router.post('/save_draft')
 async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Save the diagram in database
+    """
     try:
         diagram = await get_diagram(flow_id)
-        # print(diagram)
-        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(timezone.utc), 'diagram' : diagram})
+        db.session.query(Flow).filter_by(id = flow_id).update({'diagram' : diagram})
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code=200, content={"message":"success"})
@@ -228,6 +236,9 @@ async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
 async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Retun the diagram for the preview (user conversion)
+    """
     try:
         get_diagram = db.session.query(Flow).filter_by(id=flow_id).first()
         if (get_diagram == None):
@@ -240,6 +251,9 @@ async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
 
 @router.post('/{my_token}/preview')
 async def tokenize_preview(my_token:str,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Retun the diagram for the preview using valid token(user conversion)
+    """
     try:
         flow_id =  db.session.query(Flow.id).filter_by(publish_token = my_token).first()[0]
 
@@ -253,6 +267,9 @@ async def tokenize_preview(my_token:str,token = Depends(auth_handler.auth_wrappe
     
 @router.post('/publish')
 async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Save latest diagram(nodes,connections,sub_nodes) with token in database
+    """
     try:
         valid_user = await check_user_token(flow_id,token)
         if (valid_user.status_code != 200):
@@ -261,18 +278,11 @@ async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_
         if (save_draft_status.status_code != 200):
             return save_draft_status
 
-        #update time
-        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.today().isoformat()})
-        db.session.commit()
-        db.session.close()
-
-        # create token
         my_uuid = uuid.uuid4()
         if (diagram ==None):
             return JSONResponse(status_code=404, content={"message": "diagram field is empty!!"})
 
-        #get the diagram and update the diagram in flow table
-        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(), 'diagram' : diagram,'publish_token': my_uuid})
+        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(timezone.utc), 'diagram' : diagram,'publish_token': my_uuid})
         db.session.commit()
         db.session.close()
 
@@ -286,14 +296,18 @@ async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_
 
 @router.post("/disable_flow")
 async def flow_disabled(flow_id: int,user_id:int,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Disable flow means it can't be publish 
+    """
     try:
         valid_user = await check_user_token(flow_id,token)
         if (valid_user.status_code != 200):
             return valid_user
         db.session.query(Flow).filter_by(id=flow_id).update(
-            {"isEnable": False, "updated_at": datetime.now(timezone.utc)})
+            {"isEnable": False})
         db.session.commit()
         db.session.close()
+
         return JSONResponse(status_code=200, content={"message": "flow disabled"})
     except Exception as e:
         print("Error at disable_flow: ", e)
@@ -302,15 +316,19 @@ async def flow_disabled(flow_id: int,user_id:int,token = Depends(auth_handler.au
 
 @router.patch('/archive_flow')
 async def archive_flow(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Move into trash folder
+    """
     try:
         valid_user = await check_user_token(flow_id,token)
         if (valid_user.status_code != 200):
             return valid_user
         db.session.query(Flow).filter_by(id=flow_id).update(
-            {"isEnable": False, "status": "trashed", "updated_at": datetime.now(timezone.utc)})
+            {"isEnable": False, "status": "trashed"})
         db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.today().isoformat()})
         db.session.commit()
         db.session.close()
+
         return JSONResponse(status_code=200,content={"message" : "flow moved into trash folder"})
     except Exception as e:
         print("Error at archive flow: ", e)
@@ -319,6 +337,9 @@ async def archive_flow(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
 
 @router.get('/get_trashed_flows')
 async def get_trashed_flows(user_id: int,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Get the list of flows which in trash folder
+    """
     try:
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
@@ -328,6 +349,7 @@ async def get_trashed_flows(user_id: int,token = Depends(auth_handler.auth_wrapp
         flow_list = []
         for fl in flows:
             flow_list.append({"flow_id":fl.id, "name":fl.name, "updated_at":encoders.jsonable_encoder(fl.updated_at),"created_at":encoders.jsonable_encoder(fl.created_at), "chats":fl.chats,"finished":fl.finished, "publish_token":fl.publish_token})
+
         return JSONResponse(status_code=200, content={"flows" : flow_list})
     except Exception as e:
         print("Error at get_trashed_flows: ", e)
@@ -336,6 +358,9 @@ async def get_trashed_flows(user_id: int,token = Depends(auth_handler.auth_wrapp
 
 @router.delete('/trash/delete_forever')
 async def delete_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Delete permanently flow
+    """
     try:
         valid_user = await check_user_token(flow_id,token)
         if (valid_user.status_code != 200):
@@ -351,6 +376,9 @@ async def delete_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
 
 @router.post('/trash/restore_flow')
 async def restore_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Restore any flow and use it 
+    """
     try:
         valid_user = await check_user_token(flow_id,token)
         if (valid_user.status_code != 200):
@@ -367,6 +395,9 @@ async def restore_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
 
 @router.get("/flow_detail")
 async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Get flow details name and publish_token
+    """
     try:
         valid_user = await check_user_token(flow_id,token)
         if (valid_user.status_code != 200):

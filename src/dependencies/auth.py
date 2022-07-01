@@ -1,4 +1,3 @@
-# import jwt
 import jwt
 from fastapi import HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -10,11 +9,8 @@ class AuthHandler():
     secret = 'brIlwORkS'
     def encode_token(self, email_id):
         payload = {
-            #token issued at - present time
             'iat': datetime.utcnow(),
-            #token expiration time - 2mins 30 seconds
             'exp': datetime.utcnow() + timedelta(days=1),
-            #token cannot be used before - present time
             'nbf': datetime.utcnow(),
             'email': email_id
         }
@@ -41,13 +37,9 @@ class AuthHandler():
 
     def create_access_token(self, email_id, expire_time):
         payload = {
-            #token issued at - present time
             'iat': datetime.utcnow(),
-            #token expiration time
             'exp': datetime.utcnow() + expire_time,
-            #token cannot be used before - present time
             'nbf': datetime.utcnow(),
-            #email is extra field- email will be referred as auth.credentials now
             'email': email_id
         }
         return jwt.encode(payload,self.secret,algorithm='HS256')

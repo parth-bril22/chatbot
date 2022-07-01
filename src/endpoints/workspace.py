@@ -1,20 +1,16 @@
-from sqlalchemy import JSON
-from src.schemas.flowSchema import *
-from ..schemas.nodeSchema import *
-from ..schemas.workspaceSchema import *
+from fastapi import APIRouter,Depends, encoders
+from datetime import datetime,timezone
+from fastapi_sqlalchemy import db
+
+from ..schemas.workspaceSchema import WorkSpaceSchema
 from ..models.flow import Flow
 from ..models.users import User
 from ..models.workspace import Workspace
 from fastapi.responses import JSONResponse
 from ..endpoints.flow import check_user_id
 
-
 from ..dependencies.auth import AuthHandler
 auth_handler = AuthHandler()
-
-from fastapi import APIRouter,Depends, encoders
-import datetime
-from fastapi_sqlalchemy import db
 
 router = APIRouter(
     prefix="/workspaces/v1",
@@ -23,6 +19,9 @@ router = APIRouter(
 )
 
 async def check_user_token(workspace_id:int,token=Depends(auth_handler.auth_wrapper)):
+    """
+    Check user has rights to change worksapce functinality using token
+    """
     try:
        get_user_id = db.session.query(User).filter_by(email=token).first()  
        workspace_ids = [i[0] for i in db.session.query(Workspace.id).filter_by(user_id=get_user_id.id).all()]
@@ -31,37 +30,47 @@ async def check_user_token(workspace_id:int,token=Depends(auth_handler.auth_wrap
        else:
            return JSONResponse(status_code=404,content={"message":"workspace not exists for this user"})
     except Exception as e:
-        print(e,"at:",datetime.datetime.now())
+        print(e,"at:",datetime.now())
         return JSONResponse(status_code=400,content={"message":"please check input"})
 
 @router.post('/create_workspace')
 async def create_workspace(space : WorkSpaceSchema,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Create a workspace as per requirements
+    """
     try:
-        new_wksp = Workspace(name = space.name, user_id = space.user_id, deleted = False)
-        db.session.add(new_wksp)
+        new_workspace = Workspace(name = space.name, user_id = space.user_id, deleted = False)
+        db.session.add(new_workspace)
         db.session.commit()
         db.session.close()
+
         return JSONResponse(status_code = 200, content = {"message": "success"})
     except Exception as e:
-        print(e, "Error: at create_flow. Time:", datetime.datetime.now())
+        print(e, "Error: at create_flow. Time:", datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
-
 
 @router.get('/get_workspace')
 async def create_workspace(user_id : int,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Get all workspaces list per user
+    """
     try:
-        all_ws = db.session.query(Workspace).filter_by(user_id=user_id).filter_by(deleted=False).all()
-        ws =[]
-        for workspace in all_ws:
+        all_workspaces = db.session.query(Workspace).filter_by(user_id=user_id).filter_by(deleted=False).all()
+        workspace_list =[]
+        for workspace in all_workspaces:
             get_workspace = {"id":workspace.id,"name":workspace.name}
-            ws.append(get_workspace)
-        return {"workspace":ws}
+            workspace_list.append(get_workspace)
+
+        return {"workspace":workspace_list}
     except Exception as e:
-        print(e, "Error: at create_flow. Time:", datetime.datetime.now())
+        print(e, "Error: at create_flow. Time:", datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
 @router.get('/get_workspace_flow_list')
 async def create_workspace(user_id:int,workspace_id : int,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Get list of flows which are stored in workspace
+    """
     try:
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
@@ -82,6 +91,9 @@ async def create_workspace(user_id:int,workspace_id : int,token = Depends(auth_h
 
 @router.post('/move_flow')
 async def move_flow(flow_id:int, workspace_id : int,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Move flow into selected workspace
+    """
     try:
         if (db.session.query(Flow).filter_by(id=flow_id).first()) == None:
             return JSONResponse(status_code=404,content={"message":"Flow not found"})
@@ -91,13 +103,16 @@ async def move_flow(flow_id:int, workspace_id : int,token = Depends(auth_handler
         db.session.close()
         return JSONResponse(status_code = 200, content = {"message": "success"})
     except Exception as e:
-        print(e, "Error: at create_flow. Time:", datetime.datetime.now())
+        print(e, "Error: at create_flow. Time:", datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
 
 
 @router.delete('/remove_workspace')
 async def remove_workspace(user_id:int, workspace_id : int,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Delete workspace
+    """
     try:
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
@@ -116,12 +131,15 @@ async def remove_workspace(user_id:int, workspace_id : int,token = Depends(auth_
        
         return JSONResponse(status_code = 200, content = {"message": "success"})
     except Exception as e:
-        print(e, "Error: at create_flow. Time:", datetime.datetime.now())
+        print(e, "Error: at create_flow. Time:", datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
 
 @router.patch('/remove_from_workspace')
 async def remove_workspace(user_id:int, flow_id : int,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Remove flow from selected workspace
+    """
     try:
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
@@ -131,41 +149,20 @@ async def remove_workspace(user_id:int, flow_id : int,token = Depends(auth_handl
         db.session.close()
         return JSONResponse(status_code = 200, content = {"message": "success"})
     except Exception as e:
-        print(e, "Error: at create_flow. Time:", datetime.datetime.now())
+        print(e, "Error: at create_flow. Time:", datetime.now())
         return JSONResponse(status_code=400, content={"message":"please check the input"})
-# @router.post('/trash/delete_forever')
-# async def delete_workspace(wksp_id : int):
-#     try:
-
-#         db.session.query(Trash).filter_by(wksp_id=wksp_id).delete()
-#         db.session.commit()
-#         db.session.close()
-#         return JSONResponse(status_code = 200, content = {"message": "success"})
-#     except Exception as e:
-#         print(e, "Error: at create_flow. Time:", datetime.datetime.now())
-#         return JSONResponse(status_code=400, content={"message":"please check the input"})
-
-# @router.post('/trash/restore')
-# async def restore_workspace(user_id:int, wksp_id : int):
-#     try:
-
-#         db.session.query(Worksapce).filter_by(user_id=user_id).filter_by(id = wksp_id).update({"deleted":False})
-#         db.session.query(Trash).filter_by(wksp_id = wksp_id).delete()
-#         db.session.commit()
-#         db.session.close()
-#         return JSONResponse(status_code = 200, content = {"message": "success"})
-#     except Exception as e:
-#         print(e, "Error: at create_flow. Time:", datetime.datetime.now())
-#         return JSONResponse(status_code=400, content={"message":"please check the input"})
 
 @router.patch('/rename_workspace')
 async def rename_workspace(user_id : int, workspace_id:int, new_name:str,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Rename selected workspace
+    """
     try:
-        wksp = db.session.query(Workspace).filter_by(id = workspace_id)
-        if(wksp.first() == None):
+        db_workspace = db.session.query(Workspace).filter_by(id = workspace_id)
+        if(db_workspace.first() == None):
             return JSONResponse(status_code=404, content={"message":"no flows with this name"})
         else:
-            wksp.update({'name' : new_name})
+            db_workspace.update({'name' : new_name})
             get_flow_ids = db.session.query(Flow.id).filter_by(workspace_id=workspace_id).all()
             for id in get_flow_ids:
                 db.session.query(Flow).filter_by(id=id[0]).update({'workspace_name': new_name})
