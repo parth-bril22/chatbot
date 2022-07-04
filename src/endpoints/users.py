@@ -72,7 +72,7 @@ async def get_user_by_email(my_email: str):
 async def authenticate_user(input_user: lg):
     user = await get_user_by_email(input_user.email)
     if (not user) or (not bcrypt.checkpw(input_user.password.encode('utf-8'), user.password.encode('utf-8'))):
-        return JSONResponse(status_code=401, content = {"message" : 'Invalid username or password'})
+        return JSONResponse(status_code=401, content = {"errorMessage" : 'Invalid username or password'})
     else:   
         token = auth_handler.encode_token(input_user.email)
         user_id = db.session.query(ModelUser.id).filter_by(email=input_user.email).first()

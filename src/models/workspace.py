@@ -6,6 +6,6 @@ Base  = declarative_base()
 class Workspace(Base):
     __tablename__ = 'workspace'
     id = Column(Integer, primary_key = True)
-    user_id = Column(Integer, ForeignKey("user_info.id", ondelete = "CASCADE"))
+    user_id = Column(Integer)
     name = Column(String)
     deleted = Column(Boolean)
