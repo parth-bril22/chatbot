@@ -189,9 +189,7 @@ async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handle
         if (validate_user.status_code != 200):
             return validate_user
 
-        node_in_db = db.session.query(Node).filter_by(id = node_id).filter_by(flow_id=my_node.flow_id)
-       
-        if(node_in_db.first() == None):
+        if(db.session.query(Node).filter_by(id = node_id).filter_by(flow_id=my_node.flow_id).first() == None):
             return JSONResponse(status_code=404, content={"message":"Node not found"})
         
         node_check, node_data = await check_node_details(my_node)
@@ -216,9 +214,8 @@ async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapp
         validate_user = await check_user_token(sub.flow_id,token)
         if (validate_user.status_code != 200):
             return validate_user
-        node_in_db = db.session.query(Node).filter_by(id = sub.node_id).filter_by(flow_id=sub.flow_id)
-
-        if(node_in_db.first() == None):
+            
+        if(db.session.query(Node).filter_by(id = sub.node_id).filter_by(flow_id=sub.flow_id).first() == None):
             return JSONResponse(status_code=404, content={"message":"Node or flow id not found"})
 
         sub_node_list = db.session.query(SubNode.id).filter_by(node_id = sub.node_id).all()
