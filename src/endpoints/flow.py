@@ -116,7 +116,7 @@ async def rename_flow(user_id : int, flow_id:int, new_name:str,token = Depends(a
         if(flows.first() == None):
             return JSONResponse(status_code=404, content={"message":"no flows with this name"})
         else:
-            flows.update({'name' : new_name,"updated_at": datetime.now(timezone.utc)}})
+            flows.update({'name' : new_name,"updated_at": datetime.now(timezone.utc)})
             db.session.commit()
             db.session.close()
             return JSONResponse(status_code=200, content={"message": "success"})
