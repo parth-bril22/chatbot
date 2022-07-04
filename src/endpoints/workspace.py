@@ -114,9 +114,6 @@ async def remove_workspace(user_id:int, workspace_id : int,token = Depends(auth_
     Delete workspace
     """
     try:
-        user_check = await check_user_id(user_id)
-        if user_check.status_code != 200 :
-            return user_check 
         if (db.session.query(Workspace).filter_by(id=workspace_id).first()) == None:
             return JSONResponse(status_code=404,content={"message":"workspace not found"})
         db.session.query(Workspace).filter_by(user_id=user_id).filter_by(id = workspace_id).update({"deleted":True}) 
