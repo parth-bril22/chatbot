@@ -210,7 +210,7 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
                 for key,value in fields.items():
                     my_dict[key] = value
                 sub_node_list.append(my_dict)
-            get_data = {"flow_id" : flow_id,"id": node.id, "type": node.type, "position": node.position,
+            get_data = {"flow_id" : flow_id,"id": str(node.id), "type": node.type, "position": node.position,
              "data": { "id": node.id,"label": "NEW NODE", "nodeData": sub_node_list}}
             node_list.append(get_data)
 
