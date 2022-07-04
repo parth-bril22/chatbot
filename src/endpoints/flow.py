@@ -202,7 +202,6 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
         node_list = []
         for node in all_nodes:
             sub_nodes = db.session.query(SubNode).filter_by(node_id = node.id).all()
-
             sub_node_list = []
             for sub_node in sub_nodes:
                 fields = dict(sub_node.data.items()) #get fields of data(text,btn,...)
