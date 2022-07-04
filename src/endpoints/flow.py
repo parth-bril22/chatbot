@@ -116,7 +116,7 @@ async def rename_flow(user_id : int, flow_id:int, new_name:str,token = Depends(a
         if(flows.first() == None):
             return JSONResponse(status_code=404, content={"message":"no flows with this name"})
         else:
-            flows.update({'name' : new_name})
+            flows.update({'name' : new_name,"updated_at": datetime.now(timezone.utc)}})
             db.session.commit()
             db.session.close()
             return JSONResponse(status_code=200, content={"message": "success"})
@@ -241,6 +241,7 @@ async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
     """
     try:
         get_diagram = db.session.query(Flow).filter_by(id=flow_id).first()
+        db.session.query(Flow).filter_by(id=flow_id).update({"updated_at": datetime.now(timezone.utc)})        
         if (get_diagram == None):
             return JSONResponse(status_code=404, content="please publish first")
         return get_diagram.diagram
