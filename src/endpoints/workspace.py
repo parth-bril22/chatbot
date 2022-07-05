@@ -99,7 +99,7 @@ async def move_flow(flow_id:int, workspace_id : int,token = Depends(auth_handler
             return JSONResponse(status_code=404,content={"errorMessage":"Flow not found"})
 
         if ((db.session.query(Flow).filter_by(id=flow_id).first()).workspace_id == workspace_id):
-            return JSONResponse(status_code=404,content={"errorMessage":"Flow is already in workspace"})
+            return JSONResponse(status_code=208,content={"errorMessage":"Flow is already in workspace"})
 
         db_workspace_name = db.session.query(Workspace.name).filter_by(id=workspace_id).first()
         db.session.query(Flow).filter_by(id=flow_id).update({"workspace_id":workspace_id,"workspace_name": db_workspace_name.name})
