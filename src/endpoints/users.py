@@ -31,34 +31,38 @@ def validate_user(user:ModelUser):
     """
     
     if(bool(db.session.query(ModelUser).filter_by(email = user.email).first())):
-        return JSONResponse(status_code=404, content = {"message" : 'Mail already exists'})
+        return JSONResponse(status_code=404, content = {"errorMessage" : 'Mail already exists'})
 
     elif not (re.fullmatch( r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', user.email)):
-        return JSONResponse(status_code=404, content = {"message" : 'Enter valid email'})
+        return JSONResponse(status_code=404, content = {"errorMessage" : 'Enter valid email'})
 
     elif (len(user.password) < 7):
-        return JSONResponse(status_code=404, content = {"message" : 'Password must be greater than 6 characters'})
+        return JSONResponse(status_code=404, content = {"errorMessage" : 'Password must be greater than 6 characters'})
 
     elif not (re.fullmatch(r'[a-zA-Z]+$', user.first_name) and re.fullmatch(r'[A-Za-z]+$', user.last_name)):
-        return JSONResponse(status_code=404, content = {"message" : 'Enter valid name'})
+        return JSONResponse(status_code=404, content = {"errorMessage" : 'Enter valid name'})
 
     else:
         return True
 
 @router.post("/signup/" )
 async def signup(user: SchemaUser):
-    validated_user = validate_user(user)
-    if (validated_user != True): 
-        return validated_user
-    else:
-        hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
-        token = auth_handler.encode_token(user.email)
-        db_user = ModelUser(email = user.email, password = hashed_password.decode('utf-8'), first_name = user.first_name, last_name = user.last_name, created_at = datetime.now(timezone.utc),token = token)
-        db.session.add(db_user)
-        db.session.commit()
-        user_id = db.session.query(ModelUser.id).filter_by(id=db_user.id).first()
-        return JSONResponse(status_code=200, content = {'message': "Signup Successful",'token':token, "refresh_token" : auth_handler.create_refresh_token(user.email),'user_id':user_id[0]})
-
+    try:
+        validated_user = validate_user(user)
+        if (validated_user != True): 
+            return validated_user
+        else:
+            hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
+            token = auth_handler.encode_token(user.email)
+            db_user = ModelUser(email = user.email, password = hashed_password.decode('utf-8'), first_name = user.first_name, last_name = user.last_name, created_at = datetime.now(timezone.utc),token = token)
+            db.session.add(db_user)
+            db.session.commit()
+            user_id = db.session.query(ModelUser.id).filter_by(id=db_user.id).first()
+            return JSONResponse(status_code=200, content = {'message': "Signup Successful",'token':token, "refresh_token" : auth_handler.create_refresh_token(user.email),'user_id':user_id[0]})
+    except Exception as e:
+        print("Error at signup: ", e)
+        return JSONResponse(status_code=404, content={"errorMessage": "Please check inputs!"})
+        
 async def get_user_by_email(my_email: str):
     """
     Checks if the email exists in the DB. If not, returns false. If it does, returns all details of the user in User Model form from models.py.
@@ -70,14 +74,17 @@ async def get_user_by_email(my_email: str):
 
 @router.post("/login/")
 async def authenticate_user(input_user: lg):
-    user = await get_user_by_email(input_user.email)
-    if (not user) or (not bcrypt.checkpw(input_user.password.encode('utf-8'), user.password.encode('utf-8'))):
-        return JSONResponse(status_code=401, content = {"errorMessage" : 'Invalid username or password'})
-    else:   
-        token = auth_handler.encode_token(input_user.email)
-        user_id = db.session.query(ModelUser.id).filter_by(email=input_user.email).first()
-        return JSONResponse(status_code=200, content={"message" : "success", 'token':token, "refresh_token" : auth_handler.create_refresh_token(input_user.email),'user_id':user_id[0]})#valid for 1 minute and 30 seconds, change expiration time in auth.py
-
+    try:
+        user = await get_user_by_email(input_user.email)
+        if (not user) or (not bcrypt.checkpw(input_user.password.encode('utf-8'), user.password.encode('utf-8'))):
+            return JSONResponse(status_code=401, content = {"errorMessage" : 'Invalid username or password'})
+        else:   
+            token = auth_handler.encode_token(input_user.email)
+            user_id = db.session.query(ModelUser.id).filter_by(email=input_user.email).first()
+            return JSONResponse(status_code=200, content={"message" : "success", 'token':token, "refresh_token" : auth_handler.create_refresh_token(input_user.email),'user_id':user_id[0]})#valid for 1 minute and 30 seconds, change expiration time in auth.py
+    except Exception as e:
+        print("Error at login: ", e)
+        return JSONResponse(status_code=404, content={"errorMessage": "Please check inputs!"})
     """
     The auth.py file has the function auth_wrapper which validates the token by decoding it and checking the credentials.
     Using that function , the details can only be accessed if there is valid JWT token in the header
@@ -99,8 +106,8 @@ async def refresh( refresh_token : str):
                 return JSONResponse(status_code=200, content={"message" : "success", 'access_token': auth_handler.encode_token(email)})
 
     except Exception:
-        return JSONResponse(status_code=401, content = {"message" : 'Unauthorized'})
-    return JSONResponse(status_code=401, content = {"message" : 'Unauthorized'})
+        return JSONResponse(status_code=401, content = {"errorMessage" : 'Unauthorized'})
+    return JSONResponse(status_code=401, content = {"errorMessage" : 'Unauthorized'})
 
 
 def send_mail(my_uuid:str):
