@@ -1,5 +1,5 @@
 from fastapi import APIRouter,Depends, encoders
-from datetime import datetime,timezone
+from datetime import datetime
 from fastapi_sqlalchemy import db
 
 from ..schemas.workspaceSchema import WorkSpaceSchema
@@ -28,10 +28,10 @@ async def check_user_token(workspace_id:int,token=Depends(auth_handler.auth_wrap
        if workspace_id in workspace_ids:
            return JSONResponse(status_code=200,content={"message":"workspace is exists"})
        else:
-           return JSONResponse(status_code=404,content={"message":"workspace not exists for this user"})
+           return JSONResponse(status_code=404,content={"errorMessage":"workspace not exists for this user"})
     except Exception as e:
         print(e,"at:",datetime.now())
-        return JSONResponse(status_code=400,content={"message":"please check input"})
+        return JSONResponse(status_code=400,content={"errorMessage":"please check input"})
 
 @router.post('/create_workspace')
 async def create_workspace(space : WorkSpaceSchema,token = Depends(auth_handler.auth_wrapper)):
@@ -47,7 +47,7 @@ async def create_workspace(space : WorkSpaceSchema,token = Depends(auth_handler.
         return JSONResponse(status_code = 200, content = {"message": "success"})
     except Exception as e:
         print(e, "Error: at create_flow. Time:", datetime.now())
-        return JSONResponse(status_code=400, content={"message":"please check the input"})
+        return JSONResponse(status_code=400, content={"errorMessage":"please check the input"})
 
 @router.get('/get_workspace')
 async def create_workspace(user_id : int,token = Depends(auth_handler.auth_wrapper)):
@@ -64,7 +64,7 @@ async def create_workspace(user_id : int,token = Depends(auth_handler.auth_wrapp
         return {"workspace":workspace_list}
     except Exception as e:
         print(e, "Error: at create_flow. Time:", datetime.now())
-        return JSONResponse(status_code=400, content={"message":"please check the input"})
+        return JSONResponse(status_code=400, content={"errorMessage":"please check the input"})
 
 @router.get('/get_workspace_flow_list')
 async def create_workspace(user_id:int,workspace_id : int,token = Depends(auth_handler.auth_wrapper)):
@@ -77,7 +77,7 @@ async def create_workspace(user_id:int,workspace_id : int,token = Depends(auth_h
             return user_check 
 
         if (db.session.query(Workspace).filter_by(id=workspace_id).first()) == None:
-            return JSONResponse(status_code=404,content={"message":"workspace not found"})
+            return JSONResponse(status_code=404,content={"errorMessage":"workspace not found"})
 
         flows = db.session.query(Flow).filter_by(user_id = user_id).filter_by(workspace_id = workspace_id).all()
         flow_list = []
@@ -86,7 +86,7 @@ async def create_workspace(user_id:int,workspace_id : int,token = Depends(auth_h
         return JSONResponse(status_code=200, content={"flows" : flow_list})
     except Exception as e:
         print(e, "at:", datetime.now())
-        return JSONResponse(status_code=400, content={"message":"please check the input"})
+        return JSONResponse(status_code=400, content={"errorMessage":"please check the input"})
 
 
 @router.post('/move_flow')
@@ -96,10 +96,10 @@ async def move_flow(flow_id:int, workspace_id : int,token = Depends(auth_handler
     """
     try:
         if (db.session.query(Flow).filter_by(id=flow_id).first()) == None:
-            return JSONResponse(status_code=404,content={"message":"Flow not found"})
+            return JSONResponse(status_code=404,content={"errorMessage":"Flow not found"})
 
         if ((db.session.query(Flow).filter_by(id=flow_id).first()).workspace_id == workspace_id):
-            return JSONResponse(status_code=404,content={"message":"Flow is already in workspace"})
+            return JSONResponse(status_code=404,content={"errorMessage":"Flow is already in workspace"})
 
         db_workspace_name = db.session.query(Workspace.name).filter_by(id=workspace_id).first()
         db.session.query(Flow).filter_by(id=flow_id).update({"workspace_id":workspace_id,"workspace_name": db_workspace_name.name})
@@ -108,7 +108,7 @@ async def move_flow(flow_id:int, workspace_id : int,token = Depends(auth_handler
         return JSONResponse(status_code = 200, content = {"message": "success"})
     except Exception as e:
         print(e, "Error: at create_flow. Time:", datetime.now())
-        return JSONResponse(status_code=400, content={"message":"please check the input"})
+        return JSONResponse(status_code=400, content={"errorMessage":"please check the input"})
 
 
 
@@ -119,7 +119,7 @@ async def remove_workspace(user_id:int, workspace_id : int,token = Depends(auth_
     """
     try:
         if (db.session.query(Workspace).filter_by(id=workspace_id).first()) == None:
-            return JSONResponse(status_code=404,content={"message":"workspace not found"})
+            return JSONResponse(status_code=404,content={"errorMessage":"workspace not found"})
         db.session.query(Workspace).filter_by(user_id=user_id).filter_by(id = workspace_id).update({"deleted":True}) 
         db.session.commit()
 
@@ -133,7 +133,7 @@ async def remove_workspace(user_id:int, workspace_id : int,token = Depends(auth_
         return JSONResponse(status_code = 200, content = {"message": "success"})
     except Exception as e:
         print(e, "Error: at create_flow. Time:", datetime.now())
-        return JSONResponse(status_code=400, content={"message":"please check the input"})
+        return JSONResponse(status_code=400, content={"errorMessage":"please check the input"})
 
 
 @router.patch('/remove_from_workspace')
@@ -151,7 +151,7 @@ async def remove_workspace(user_id:int, flow_id : int,token = Depends(auth_handl
         return JSONResponse(status_code = 200, content = {"message": "success"})
     except Exception as e:
         print(e, "Error: at create_flow. Time:", datetime.now())
-        return JSONResponse(status_code=400, content={"message":"please check the input"})
+        return JSONResponse(status_code=400, content={"errorMessage":"please check the input"})
 
 @router.patch('/rename_workspace')
 async def rename_workspace(user_id : int, workspace_id:int, new_name:str,token = Depends(auth_handler.auth_wrapper)):
@@ -161,7 +161,7 @@ async def rename_workspace(user_id : int, workspace_id:int, new_name:str,token =
     try:
         db_workspace = db.session.query(Workspace).filter_by(id = workspace_id)
         if(db_workspace.first() == None):
-            return JSONResponse(status_code=404, content={"message":"no flows with this name"})
+            return JSONResponse(status_code=404, content={"errorMessage":"no flows with this name"})
         else:
             db_workspace.update({'name' : new_name})
             get_flow_ids = db.session.query(Flow.id).filter_by(workspace_id=workspace_id).all()
@@ -172,4 +172,4 @@ async def rename_workspace(user_id : int, workspace_id:int, new_name:str,token =
             return JSONResponse(status_code=200, content={"message": "success"})
     except Exception as e:
         print(e, "at:", datetime.now())
-        return JSONResponse(status_code=400, content={"message":"please check the input"})
+        return JSONResponse(status_code=400, content={"errorMessage":"please check the input"})
