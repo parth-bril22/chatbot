@@ -48,7 +48,7 @@ async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrappe
         flow_id = db.session.query(Flow.id).filter_by(id = new_flow.id).first()
         node_data = []
         node_data.append({"text": "Welcome","button":"Start"})
-        default_node = Node(name = "Welcome", type = "special", data = node_data, position = {"x": "180","y": "260"},flow_id=flow_id[0])
+        default_node = Node(name = "Welcome", type = "special", data = node_data, position = {"x": 180,"y": 260},flow_id=flow_id[0])
         db.session.add(default_node)
         db.session.commit()
         default_subnode = SubNode(id = str(default_node.id) + "_" + str(1) + "b", node_id = default_node.id, flow_id = default_node.flow_id, data = node_data[0], type = default_node.type)
@@ -405,6 +405,21 @@ async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)
         db_name =  db.session.query(Flow).filter_by(id=flow_id).first()
         token = db.session.query(Flow.publish_token).first()[0]
         return JSONResponse(status_code=200,content={"name":db_name.name,"publish_token":token})
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=400,content={"errorMessage":"something is wrong"})
+
+@router.post("/get_embed_code")
+async def get_embed_code(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
+    """
+    Get the embed code to integrate bot into webpage
+    """
+    try:
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
+
+        return JSONResponse(status_code=200,content={"message":"success"})
     except Exception as e:
         print(e)
         return JSONResponse(status_code=400,content={"errorMessage":"something is wrong"})
