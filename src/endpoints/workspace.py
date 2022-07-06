@@ -39,6 +39,12 @@ async def create_workspace(space : WorkSpaceSchema,token = Depends(auth_handler.
     Create a workspace as per requirements
     """
     try:
+        # check the workspace has same name or not 
+        workspace_names =[i[0] for i in db.session.query(Workspace.name).filter_by(user_id=space.user_id).all()]
+
+        if space.name in workspace_names:
+            return JSONResponse(status_code=404, content={"errorMessage":"Name is already exists"})
+
         new_workspace = Workspace(name = space.name, user_id = space.user_id, deleted = False)
         db.session.add(new_workspace)
         db.session.commit()

@@ -8,7 +8,6 @@ from typing import List,Dict
 from ..schemas.flowSchema import FlowSchema
 from ..models.flow import Flow
 from ..models.node import Node,SubNode,CustomFields,Connections
-from ..models.users import User
 from ..endpoints.node import check_user_token
 
 from ..dependencies.auth import AuthHandler
@@ -410,7 +409,7 @@ async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)
         return JSONResponse(status_code=400,content={"errorMessage":"something is wrong"})
 
 @router.post("/get_embed_code")
-async def get_embed_code(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def get_embed_code(flow_id:int,config_url:str,token = Depends(auth_handler.auth_wrapper)):
     """
     Get the embed code to integrate bot into webpage
     """
@@ -418,8 +417,17 @@ async def get_embed_code(flow_id:int,token = Depends(auth_handler.auth_wrapper))
         valid_user = await check_user_token(flow_id,token)
         if (valid_user.status_code != 200):
             return valid_user
-
-        return JSONResponse(status_code=200,content={"message":"success"})
+        
+        return """
+    <html>
+        <head>
+            <title>Some HTML in here</title>
+        </head>
+        <body>
+            <h1>Look ma! HTML!</h1>
+        </body>
+    </html>
+    """
     except Exception as e:
         print(e)
         return JSONResponse(status_code=400,content={"errorMessage":"something is wrong"})
