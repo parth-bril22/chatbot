@@ -165,6 +165,11 @@ async def rename_workspace(user_id : int, workspace_id:int, new_name:str,token =
     Rename selected workspace
     """
     try:
+        workspace_names =[i[0] for i in db.session.query(Workspace.name).filter_by(user_id=user_id).all()]
+
+        if new_name in workspace_names:
+            return JSONResponse(status_code=404, content={"errorMessage":"Name is already exists"})
+
         db_workspace = db.session.query(Workspace).filter_by(id = workspace_id)
         if(db_workspace.first() == None):
             return JSONResponse(status_code=404, content={"errorMessage":"no flows with this name"})
