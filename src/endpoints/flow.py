@@ -116,7 +116,7 @@ async def rename_flow(user_id : int, flow_id:int, new_name:str,token = Depends(a
         if(flows.first() == None):
             return JSONResponse(status_code=404, content={"errorMessage":"no flows with this name"})
         else:
-            flows.update({'name' : new_name,"updated_at": datetime.now(timezone.utc)})
+            flows.update({'name' : new_name,"updated_at": datetime.today().isoformat()})
             db.session.commit()
             db.session.close()
             return JSONResponse(status_code=200, content={"message": "success"})
@@ -171,7 +171,7 @@ async def duplicate_flow(user_id:int, flow_id:int,token = Depends(auth_handler.a
         if (flow_data == None):
             return JSONResponse(status_code=404, content={"errorMessage":"please check the id"})   
         my_uuid = uuid.uuid4()
-        new_flow = Flow(name = "duplicate of " + flow_data.name, user_id = flow_data.user_id, created_at = datetime.now(timezone.utc), updated_at = datetime.now(timezone.utc), diagram = flow_data.diagram, publish_token=my_uuid,status = "active", isEnable = True, chats = 0, finished = 0)
+        new_flow = Flow(name = "duplicate of " + flow_data.name, user_id = flow_data.user_id, created_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(), diagram = flow_data.diagram, publish_token=my_uuid,status = "active", isEnable = True, chats = 0, finished = 0)
         db.session.add(new_flow)
         db.session.commit()
         db.session.close()
@@ -240,7 +240,7 @@ async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
     """
     try:
         get_diagram = db.session.query(Flow).filter_by(id=flow_id).first()
-        db.session.query(Flow).filter_by(id=flow_id).update({"updated_at": datetime.now(timezone.utc)})        
+        db.session.query(Flow).filter_by(id=flow_id).update({"updated_at": datetime.today().isoformat()})        
         if (get_diagram == None):
             return JSONResponse(status_code=404, content={"errorMessage":"please publish first"})
         return get_diagram.diagram
@@ -282,7 +282,7 @@ async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_
         if (diagram ==None):
             return JSONResponse(status_code=404, content={"errorMessage": "diagram field is empty!!"})
 
-        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.now(timezone.utc), 'diagram' : diagram,'publish_token': my_uuid})
+        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.today().isoformat(), 'diagram' : diagram,'publish_token': my_uuid})
         db.session.commit()
         db.session.close()
 
@@ -384,7 +384,7 @@ async def restore_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
         if (valid_user.status_code != 200):
             return valid_user
         db.session.query(Flow).filter_by(id=flow_id).update(
-            {"status": "active", "isEnable": True, "updated_at": datetime.now(timezone.utc)})
+            {"status": "active", "isEnable": True, "updated_at": datetime.today().isoformat()})
         db.session.commit()
         db.session.close()
         return JSONResponse(status_code=200, content={"message": "success"})

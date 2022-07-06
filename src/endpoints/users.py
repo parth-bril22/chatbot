@@ -54,7 +54,7 @@ async def signup(user: SchemaUser):
         else:
             hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
             token = auth_handler.encode_token(user.email)
-            db_user = ModelUser(email = user.email, password = hashed_password.decode('utf-8'), first_name = user.first_name, last_name = user.last_name, created_at = datetime.now(timezone.utc),token = token)
+            db_user = ModelUser(email = user.email, password = hashed_password.decode('utf-8'), first_name = user.first_name, last_name = user.last_name, created_at = datetime.today().isoformat(),token = token)
             db.session.add(db_user)
             db.session.commit()
             user_id = db.session.query(ModelUser.id).filter_by(id=db_user.id).first()
@@ -142,7 +142,7 @@ async def req_change_password(email_id : str):
     my_id = user.id
     my_uuid = uuid4()
 
-    db_user = Password_tokens(id = my_id, uuid = str(my_uuid), time = datetime.now(timezone.utc), used = False)
+    db_user = Password_tokens(id = my_id, uuid = str(my_uuid), time = datetime.today().isoformat(), used = False)
     db.session.merge(db_user)
     db.session.commit()
     return send_mail(my_uuid)    
@@ -178,7 +178,7 @@ async def reset_password_link(my_uuid:str,ps:PasswordResetSchema):
     if(uuid_details.used == True):
         return JSONResponse(status_code=401,content = {"message" : 'Link already used once'})
 
-    mins_passed = ((datetime.now(timezone.utc) - uuid_details.time).seconds)/60
+    mins_passed = ((datetime.today().isoformat() - uuid_details.time).seconds)/60
     if(mins_passed > 10):
         return JSONResponse(status_code=401, content = {"message" : 'More than 10 minutes have passed'})
     else:

@@ -129,7 +129,7 @@ async def create_node(node:NodeSchema):
                 new_sub_node = SubNode(id=str(new_node.id) + "_" + str(count) + "b", node_id=new_node.id,flow_id=node.flow_id, data=item, type=node.type)
                 db.session.add(new_sub_node)
                 count += 1
-        db.session.query(Flow).filter_by(id=node.flow_id).update({"updated_at": datetime.now(timezone.utc)})
+        db.session.query(Flow).filter_by(id=node.flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()
         db.session.close()
 
@@ -170,7 +170,7 @@ async def delete_node(node_id : str, flow_id:int,token = Depends(auth_handler.au
             return JSONResponse(status_code=404, content={"message":"Node not found"})
         node_in_db.delete()
         db.session.query(Connections).filter((Connections.source_node_id == node_id) | (Connections.target_node_id == node_id)).delete()
-        db.session.query(Flow).filter_by(id=flow_id).update({"updated_at": datetime.now(timezone.utc)})
+        db.session.query(Flow).filter_by(id=flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()
         db.session.close()
 
@@ -197,7 +197,7 @@ async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handle
             return node_check
     
         db.session.query(Node).filter(Node.id == node_id).filter_by(flow_id=my_node.flow_id).update({'data' : node_data, 'type' : my_node.type, 'position':my_node.position})
-        db.session.query(Flow).filter_by(id=my_node.flow_id).update({"updated_at": datetime.now(timezone.utc)})
+        db.session.query(Flow).filter_by(id=my_node.flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()
         db.session.close()
 
@@ -244,7 +244,7 @@ async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapp
         current_node.data = list(current_node.data)
         current_node.data.append(relevant_items)
         db.session.merge(current_node)
-        db.session.query(Flow).filter_by(id=sub.flow_id).update({"updated_at": datetime.now(timezone.utc)})
+        db.session.query(Flow).filter_by(id=sub.flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()
         db.session.close()
 
@@ -279,7 +279,7 @@ async def update_sub_node(my_sub_node:SubNodeSchema,sub_node_id:str = Body(...),
         for sub_node in sub_nodes:
             node_data.append(sub_node.data)  
         db.session.query(Node).filter_by(flow_id=my_sub_node.flow_id).filter_by(id = my_sub_node.node_id).update({'data' : existing_data})
-        db.session.query(Flow).filter_by(id=my_sub_node.flow_id).update({"updated_at": datetime.now(timezone.utc)})
+        db.session.query(Flow).filter_by(id=my_sub_node.flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()  
         db.session.close()
 
@@ -301,7 +301,7 @@ async def delete_sub_node(sub_node_id : str,flow_id:int,token = Depends(auth_han
 
         node_in_db.delete()
         db.session.query(Connections).filter(Connections.sub_node_id == sub_node_id).delete()
-        db.session.query(Flow).filter_by(id=flow_id).update({"updated_at": datetime.now(timezone.utc)})
+        db.session.query(Flow).filter_by(id=flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()
         db.session.close()
 
@@ -337,7 +337,7 @@ async def create_connection(connection : ConnectionSchema):
         else:
             new_connection = Connections(sub_node_id = connection.sub_node_id, source_node_id = connection.source_node_id, target_node_id = connection.target_node_id, name = connection_name,flow_id= connection.flow_id)
             db.session.add(new_connection)
-        db.session.query(Flow).filter_by(id=connection.flow_id).update({"updated_at": datetime.now(timezone.utc)})
+        db.session.query(Flow).filter_by(id=connection.flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()
 
         return JSONResponse(status_code = 200, content = {"message": "success"})
@@ -374,7 +374,7 @@ async def delete_connection(connection_id: int,flow_id:int,token = Depends(auth_
             return JSONResponse(status_code=404, content={"errorMessage": "Connection not found"})
       
         connection_in_db.delete()
-        db.session.query(Flow).filter_by(id=flow_id).update({"updated_at": datetime.now(timezone.utc)})
+        db.session.query(Flow).filter_by(id=flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()
         db.session.close()
 
