@@ -31,7 +31,7 @@ def validate_user(user:ModelUser):
     """
     
     if(bool(db.session.query(ModelUser).filter_by(email = user.email).first())):
-        return JSONResponse(status_code=404, content = {"errorMessage" : 'Mail already exists'})
+        return JSONResponse(status_code=404, content = {"errorMessage" : 'Email already exists'})
 
     elif not (re.fullmatch( r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', user.email)):
         return JSONResponse(status_code=404, content = {"errorMessage" : 'Enter valid email'})
