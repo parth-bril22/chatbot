@@ -1,4 +1,3 @@
-from imp import reload
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
@@ -18,6 +17,7 @@ app.add_middleware(
 )
 
 app.include_router(api_router)
+templates = Jinja2Templates(directory="demo")
 
 if __name__ == '__main__':
     uvicorn.run("main:app", host='127.0.0.1', port=8000, log_level="info", reload=True)

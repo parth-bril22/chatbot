@@ -1,4 +1,6 @@
-#!/home/brilworks-23/Downloads/chatbot_apis/venv/bin/python
+#!/bin/sh
+'''exec' "/home/brilworks-23/Downloads/Chatbot Project/chatbot_apis/venv/bin/python" "$0" "$@"
+' '''
 # -*- coding: utf-8 -*-
 import re
 import sys

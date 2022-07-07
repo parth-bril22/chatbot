@@ -29,7 +29,7 @@ end
 # unset irrelevant variables
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV "/home/brilworks-23/Downloads/chatbot_apis/venv"
+set -gx VIRTUAL_ENV "/home/brilworks-23/Downloads/Chatbot Project/chatbot_apis/venv"
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/bin" $PATH

@@ -1,11 +1,13 @@
 import uuid
-from fastapi import APIRouter, Depends , encoders
+from fastapi import APIRouter, Depends , encoders,Request
 from fastapi.responses import JSONResponse, Response
+from fastapi.templating import Jinja2Templates
 from fastapi_sqlalchemy import db
 from datetime import timezone, datetime
 from typing import List,Dict
 
-from ..schemas.flowSchema import FlowSchema
+
+from ..schemas.flowSchema import FlowSchema,EmbedSchema
 from ..models.flow import Flow
 from ..models.node import Node,SubNode,CustomFields,Connections
 from ..endpoints.node import check_user_token
@@ -18,7 +20,7 @@ router = APIRouter(
     tags=["Flow"],
     responses={404: {"description": "Not found"}},
 )
-
+templates = Jinja2Templates(directory="/home/brilworks-23/Downloads/Chatbot Project/chatbot_apis/src/endpoints/templates")
 async def check_user_id(user_id:str):
     """
     Check User using Id to give  permission
@@ -416,26 +418,25 @@ async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)
         print(e)
         return JSONResponse(status_code=400,content={"errorMessage":"something is wrong"})
 
-@router.post("/get_embed_code")
-async def get_embed_code(flow_id:int,config_url:str,token = Depends(auth_handler.auth_wrapper)):
+@router.get("/get_embed_code")
+async def get_embed_code(request: Request,schema:EmbedSchema,token = Depends(auth_handler.auth_wrapper)):
     """
-    Get the embed code to integrate bot into webpage
+    Get the embed Script to integrate bot into webpage
     """
     try:
-        valid_user = await check_user_token(flow_id,token)
+        valid_user = await check_user_token(schema.flow_id,token)
         if (valid_user.status_code != 200):
             return valid_user
-        
-        return """
-    <html>
-        <head>
-            <title>Some HTML in here</title>
-        </head>
-        <body>
-            <h1>Look ma! HTML!</h1>
-        </body>
-    </html>
-    """
+        if schema.type == 'livechat': 
+            return templates.TemplateResponse("livechat.html", {"request": request, "config_url":schema.config_url})
+        elif schema.type == 'fullpage': 
+            return templates.TemplateResponse("fullpage.html", {"request": request, "config_url":schema.config_url})
+        elif schema.type == 'embed': 
+            return templates.TemplateResponse("embed.html", {"request": request, "config_url":schema.config_url})
+        elif schema.type == 'popup': 
+            return templates.TemplateResponse("popup.html", {"request": request, "config_url":schema.config_url})
+        else: 
+            return JSONResponse(status_code=404,content={"errorMessage":"Select correct Type"})
     except Exception as e:
         print(e)
-        return JSONResponse(status_code=400,content={"errorMessage":"something is wrong"})
+        return JSONResponse(status_code=400,content={"errorMessage":"Can't access embed code"})

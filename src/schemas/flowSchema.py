@@ -12,3 +12,13 @@ class FlowSchema(BaseModel):
     class Config:
         orm_mode = True
         underscore_attrs_are_private = True
+
+class EmbedSchema(BaseModel):
+    _id: int
+    flow_id:int
+    config_url:str
+    type:str
+
+    class Config:
+        orm_mode= True
+        underscore_attrs_are_private = True
