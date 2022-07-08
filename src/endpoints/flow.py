@@ -277,7 +277,7 @@ async def tokenize_preview(my_token:str,token = Depends(auth_handler.auth_wrappe
 @router.post('/publish')
 async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_wrapper)):
     """
-    Save latest diagram(nodes,connections,sub_nodes) with token in database
+    Save latest diagram(nodes,connections,sub_nodes) with token in database and allow to publish 
     """
     try:
         valid_user = await check_user_token(flow_id,token)
@@ -286,19 +286,26 @@ async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_
         save_draft_status = await save_draft(flow_id)
         if (save_draft_status.status_code != 200):
             return save_draft_status
-
-        my_uuid = uuid.uuid4()
+        
+        db_token =  db.session.query(Flow.publish_token).filter_by(id = flow_id).first()[0]
+        
+        print(db_token)
+        if db_token != None:
+            publish_token = db_token
+        else:
+            publish_token = uuid.uuid4()
+            
         if (diagram ==None):
             return JSONResponse(status_code=404, content={"errorMessage": "diagram field is empty!!"})
 
-        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.today().isoformat(), 'diagram' : diagram,'publish_token': my_uuid})
+        db.session.query(Flow).filter_by(id = flow_id).update({'updated_at' : datetime.today().isoformat(), 'diagram' : diagram,'publish_token': publish_token})
         db.session.commit()
         db.session.close()
 
         if (token == None):
             return JSONResponse(status_code=404, content={"errorMessage": "Cannot publish. Check flow_id entered"})
 
-        return {"message": "success", "token": my_uuid}
+        return {"message": "success", "token": publish_token}
     except Exception as e:
         print("Error in publish: ", e)
         return JSONResponse(status_code=400, content={"errorMessage": "Cannot publish"})
