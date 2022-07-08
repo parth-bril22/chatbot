@@ -18,3 +18,12 @@ class Flow(Base):
     status = Column(String)
     workspace_id = Column(Integer)
     workspace_name = Column(String)
+
+class Chat(Base):
+    __tablename__ = 'chat'
+    visitor_id = Column(Integer, primary_key = True)
+    flow_id = Column(Integer)
+    visited_at = Column(DateTime)
+    updated_at = Column(DateTime)
+    chat = Column(JSON)
+    

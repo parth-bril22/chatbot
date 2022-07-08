@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from datetime import datetime
-
+from typing import Dict
 
 class FlowSchema(BaseModel):
     _id: int
@@ -13,3 +13,13 @@ class FlowSchema(BaseModel):
         orm_mode = True
         underscore_attrs_are_private = True
 
+class ChatSchema(BaseModel):
+    _visitor_id: int
+    _visited_at: datetime
+    _updated_at: datetime
+    chat : Dict
+    flow_id : int
+
+    class Config:
+        orm_mode = True
+        underscore_attrs_are_private = True

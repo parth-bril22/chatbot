@@ -6,8 +6,8 @@ from datetime import datetime
 from typing import List,Dict
 
 
-from ..schemas.flowSchema import FlowSchema
-from ..models.flow import Flow
+from ..schemas.flowSchema import FlowSchema,ChatSchema
+from ..models.flow import Flow,Chat
 from ..models.node import Node,SubNode,CustomFields,Connections
 from ..endpoints.node import check_user_token
 
@@ -421,6 +421,27 @@ async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)
     except Exception as e:
         print(e)
         return JSONResponse(status_code=400,content={"errorMessage":"something is wrong"})
+
+
+@router.post("/save_chat_history")
+async def save_chat_history(chats:ChatSchema, token = Depends(auth_handler.auth_wrapper)):
+    """
+    Save the chat history of every user
+    """
+    try:
+        valid_user = await check_user_token(chats.flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
+        
+        new_chat = Chat(flow_id = chats.flow_id, visited_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),chat = chats.chat)
+        db.session.add(new_chat)
+        db.session.commit()
+        db.session.close()
+
+        return JSONResponse(status_code=200,content={"message":"Success"})
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=400,content={"errorMessage":"Can't access embed code"})
 
 @router.get("/get_embed_code")
 async def get_embed_code(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
