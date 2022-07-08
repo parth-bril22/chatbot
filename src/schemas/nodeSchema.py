@@ -1,5 +1,4 @@
-# build a schema using pydantic
-from typing import Dict, Optional ,List
+from typing import Dict, Optional
 from pydantic import BaseModel
 
 

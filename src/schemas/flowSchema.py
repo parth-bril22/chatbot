@@ -1,4 +1,3 @@
-# build a schema using pydantic
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -13,3 +12,4 @@ class FlowSchema(BaseModel):
     class Config:
         orm_mode = True
         underscore_attrs_are_private = True
+

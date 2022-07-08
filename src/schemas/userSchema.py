@@ -1,4 +1,3 @@
-# build a schema using pydantic
 from pydantic import BaseModel
 
 class User(BaseModel):
@@ -37,4 +36,3 @@ class EmailSchema(BaseModel):
 
     class Config:
         orm_mode = True
-

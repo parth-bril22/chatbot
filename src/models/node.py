@@ -1,5 +1,4 @@
-
-from sqlalchemy import Column, ForeignKey, Integer, String, DateTime
+from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSON
@@ -57,7 +56,6 @@ class CustomFieldTypes(Base):
     type = Column(String, primary_key =True)
     datatype = Column(String)
     custom_field_type_conn = relationship("CustomFields", back_populates = "custom_field_conn")
-
 
 class Diagram(Base):
     __tablename__ = 'diagram'

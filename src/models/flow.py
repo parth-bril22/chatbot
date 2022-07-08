@@ -1,5 +1,4 @@
-
-from sqlalchemy import JSON, Column, DateTime, Integer, String ,ARRAY , Boolean
+from sqlalchemy import JSON, Column, DateTime, Integer, String, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 Base  = declarative_base()

@@ -14,7 +14,6 @@ class User(Base):
     token = Column(String)
     pwd_token = relationship("Password_tokens", back_populates = "user", uselist = False, cascade = "all, delete", passive_deletes = True)
 
-
 class Password_tokens(Base):
     __tablename__ = 'password_tokens'
     id = Column(Integer, ForeignKey("user_info.id", ondelete = "CASCADE"), primary_key = True)
