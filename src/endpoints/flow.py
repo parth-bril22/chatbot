@@ -288,13 +288,11 @@ async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_
             return save_draft_status
         
         db_token =  db.session.query(Flow.publish_token).filter_by(id = flow_id).first()[0]
-        
-        print(db_token)
         if db_token != None:
             publish_token = db_token
         else:
             publish_token = uuid.uuid4()
-            
+
         if (diagram ==None):
             return JSONResponse(status_code=404, content={"errorMessage": "diagram field is empty!!"})
 
