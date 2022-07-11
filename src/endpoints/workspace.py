@@ -66,8 +66,9 @@ async def create_workspace(user_id : int,token = Depends(auth_handler.auth_wrapp
         for workspace in all_workspaces:
             get_workspace = {"id":workspace.id,"name":workspace.name}
             workspace_list.append(get_workspace)
+        sorted_worksapce = sorted(all_workspaces, key=lambda all_workspaces: all_workspaces['id'])
 
-        return {"workspace":workspace_list}
+        return {"workspace":sorted_worksapce}
     except Exception as e:
         print(e, "Error: at create_flow. Time:", datetime.now())
         return JSONResponse(status_code=400, content={"errorMessage":"please check the input"})
@@ -89,7 +90,8 @@ async def create_workspace(user_id:int,workspace_id : int,token = Depends(auth_h
         flow_list = []
         for fl in flows:
             flow_list.append({"flow_id":fl.id, "name":fl.name, "updated_at":encoders.jsonable_encoder(fl.updated_at),"created_at":encoders.jsonable_encoder(fl.created_at), "chats":fl.chats,"finished":fl.finished, "publish_token":fl.publish_token,"workspace_id":fl.workspace_id,"workspace_name":fl.workspace_name})
-        return JSONResponse(status_code=200, content={"flows" : flow_list})
+        sorted_list = sorted(flow_list, key=lambda flow_list: flow_list['flow_id'])
+        return JSONResponse(status_code=200, content={"flows" : sorted_list})
     except Exception as e:
         print(e, "at:", datetime.now())
         return JSONResponse(status_code=400, content={"errorMessage":"please check the input"})
