@@ -14,6 +14,7 @@ class NodeSchema(BaseModel):
         orm_mode = True
         underscore_attrs_are_private = True
 
+
 class DelNodeSchema(BaseModel):
     id : int
     class Config:
