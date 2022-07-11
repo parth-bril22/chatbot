@@ -259,7 +259,7 @@ async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
         return JSONResponse(status_code=404, content={"errorMessage": "Send Chat data Not Found"})
 
 @router.post('/{my_token}/preview')
-async def tokenize_preview(my_token:str,token = Depends(auth_handler.auth_wrapper)):
+async def tokenize_preview(my_token:str):
     """
     Retun the diagram for the preview using valid token(user conversion)
     """
@@ -429,7 +429,9 @@ async def save_chat_history(chats:ChatSchema):
     """
     Save the chat history of every user
     """
-    try:       
+    try:
+        flow_ids =[i[0] for i in db.session.query(Flow.id).filter_by(status = 'active').all()]
+
         new_chat = Chat(flow_id = chats.flow_id, visited_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),chat = chats.chat)
         db.session.add(new_chat)
         db.session.commit()
