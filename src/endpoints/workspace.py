@@ -66,7 +66,7 @@ async def create_workspace(user_id : int,token = Depends(auth_handler.auth_wrapp
         for workspace in all_workspaces:
             get_workspace = {"id":workspace.id,"name":workspace.name}
             workspace_list.append(get_workspace)
-        sorted_worksapce = sorted(all_workspaces, key=lambda all_workspaces: all_workspaces['id'])
+        sorted_worksapce = sorted(workspace_list, key=lambda workspace_list: workspace_list['id'])
 
         return {"workspace":sorted_worksapce}
     except Exception as e:
