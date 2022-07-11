@@ -39,7 +39,7 @@ async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrappe
     Create a flow as per user requirements 
     """
     try:
-        flow_names =[i[0] for i in db.session.query(Flow.name).filter_by(user_id=flow.user_id).all()]
+        flow_names =[i[0] for i in db.session.query(Flow.name).filter_by(user_id=flow.user_id).filter_by(status = 'active').all()]
 
         if flow.name in flow_names:
             return JSONResponse(status_code=404, content={"errorMessage":"Name is already exists"})
@@ -110,7 +110,7 @@ async def rename_flow(user_id : int, flow_id:int, new_name:str,token = Depends(a
     Rename flow
     """
     try:
-        flow_names =[i[0] for i in db.session.query(Flow.name).filter_by(user_id=user_id).all()]
+        flow_names =[i[0] for i in db.session.query(Flow.name).filter_by(user_id=user_id).filter_by(status = 'active').all()]
 
         if new_name in flow_names:
             return JSONResponse(status_code=404, content={"errorMessage":"Name is already exists"})
