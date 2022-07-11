@@ -66,7 +66,7 @@ async def create_workspace(user_id : int,token = Depends(auth_handler.auth_wrapp
         for workspace in all_workspaces:
             get_workspace = {"id":workspace.id,"name":workspace.name}
             workspace_list.append(get_workspace)
-        sorted_worksapce = sorted(workspace_list, key=lambda workspace_list: workspace_list['id'])
+        sorted_worksapce = sorted(workspace_list, key=lambda workspace_list: workspace_list['id'],reverse = True)
 
         return {"workspace":sorted_worksapce}
     except Exception as e:
@@ -90,7 +90,7 @@ async def create_workspace(user_id:int,workspace_id : int,token = Depends(auth_h
         flow_list = []
         for fl in flows:
             flow_list.append({"flow_id":fl.id, "name":fl.name, "updated_at":encoders.jsonable_encoder(fl.updated_at),"created_at":encoders.jsonable_encoder(fl.created_at), "chats":fl.chats,"finished":fl.finished, "publish_token":fl.publish_token,"workspace_id":fl.workspace_id,"workspace_name":fl.workspace_name})
-        sorted_list = sorted(flow_list, key=lambda flow_list: flow_list['flow_id'])
+        sorted_list = sorted(flow_list, key=lambda flow_list: flow_list['flow_id'],reverse = True)
         return JSONResponse(status_code=200, content={"flows" : sorted_list})
     except Exception as e:
         print(e, "at:", datetime.now())
