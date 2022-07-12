@@ -1,10 +1,10 @@
 import bcrypt
 import re
-from fastapi import APIRouter,Request
+from fastapi import APIRouter
 from uuid import uuid4
 from fastapi import Depends, HTTPException
 from fastapi_sqlalchemy import db
-from datetime import datetime, timezone
+from datetime import datetime
 from fastapi.responses import JSONResponse
 
 from sendgrid import SendGridAPIClient
@@ -219,9 +219,3 @@ async def delete_user(my_email = Depends(auth_handler.auth_wrapper)):
      db.session.commit()
      db.session.close()
      return JSONResponse(status_code = 200, content = {'message': 'deleted'})
-
-
-@router.get("/items/{item_id}")
-def read_root(item_id: str, request: Request):
-    client_host = request.client.host
-    return {"client_host": client_host, "item_id": item_id}
