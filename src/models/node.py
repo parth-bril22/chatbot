@@ -61,4 +61,3 @@ class Diagram(Base):
     __tablename__ = 'diagram'
     id = Column(String, primary_key = True)
     name = Column(String)
-

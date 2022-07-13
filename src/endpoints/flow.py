@@ -430,8 +430,6 @@ async def save_chat_history(chats:ChatSchema):
     Save the chat history of every user
     """
     try:
-        flow_ids =[i[0] for i in db.session.query(Flow.id).filter_by(status = 'active').all()]
-
         new_chat = Chat(flow_id = chats.flow_id, visited_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),chat = chats.chat)
         db.session.add(new_chat)
         db.session.commit()
@@ -442,17 +440,4 @@ async def save_chat_history(chats:ChatSchema):
         print(e)
         return JSONResponse(status_code=400,content={"errorMessage":"Can't access embed code"})
 
-# @router.get("/get_embed_code")
-# async def get_embed_code(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
-#     """
-#     Get the embed Script to integrate bot into webpage
-#     """
-#     try:
-#         valid_user = await check_user_token(flow_id,token)
-#         if (valid_user.status_code != 200):
-#             return valid_user
-        
-#         return JSONResponse(status_code=200,content={"message":"Success"})
-#     except Exception as e:
-#         print(e)
-#         return JSONResponse(status_code=400,content={"errorMessage":"Can't access embed code"})
+
