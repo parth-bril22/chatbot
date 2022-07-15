@@ -1,7 +1,7 @@
 import uuid
 import boto3
 import shutil
-from decouple import config
+# from decouple import config
 from fastapi import APIRouter, Depends , encoders, UploadFile, File
 from fastapi.responses import JSONResponse, Response
 from fastapi_sqlalchemy import db
@@ -9,8 +9,8 @@ from datetime import datetime
 from typing import List,Dict
 
 
-AWS_ACCESS_KEY = config('AWS_ACCESS_KEY')
-AWS_ACCESS_SECRET_KEY = config('AWS_ACCESS_SECRET_KEY')
+# AWS_ACCESS_KEY = config('AWS_ACCESS_KEY')
+# AWS_ACCESS_SECRET_KEY = config('AWS_ACCESS_SECRET_KEY')
 
 from ..schemas.flowSchema import FlowSchema,ChatSchema
 from ..models.flow import Flow,Chat
