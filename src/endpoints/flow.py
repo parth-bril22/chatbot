@@ -444,7 +444,7 @@ async def save_chat_history(chats:ChatSchema):
 
 async def upload_file_to_s3(file_name, bucket,object_name):
     try:
-        s3_client = boto3.client('s3',aws_access_key_id ="AKIAZDZPEA74OEXEVDOB",aws_secret_access_key="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")
+        s3_client = boto3.client('s3',aws_access_key_id ="",aws_secret_access_key="")
         s3_client.upload_file(file_name, bucket, object_name)
         return JSONResponse(status_code=200,content={"message":"Success"})
     except:
