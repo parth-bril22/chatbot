@@ -1,12 +1,16 @@
 import uuid
 import boto3
 import shutil
+from decouple import config
 from fastapi import APIRouter, Depends , encoders, UploadFile, File
 from fastapi.responses import JSONResponse, Response
 from fastapi_sqlalchemy import db
 from datetime import datetime
 from typing import List,Dict
 
+
+AWS_ACCESS_KEY = config('AWS_ACCESS_KEY')
+AWS_ACCESS_SECRET_KEY = config('AWS_ACCESS_SECRET_KEY')
 
 from ..schemas.flowSchema import FlowSchema,ChatSchema
 from ..models.flow import Flow,Chat
@@ -444,7 +448,7 @@ async def save_chat_history(chats:ChatSchema):
 
 async def upload_file_to_s3(file_name, bucket,object_name):
     try:
-        s3_client = boto3.client('s3',aws_access_key_id ="",aws_secret_access_key="")
+        s3_client = boto3.client('s3',aws_access_key_id =AWS_ACCESS_KEY,aws_secret_access_key=AWS_ACCESS_SECRET_KEY)
         s3_client.upload_file(file_name, bucket, object_name)
         return JSONResponse(status_code=200,content={"message":"Success"})
     except:
