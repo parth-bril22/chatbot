@@ -1,5 +1,7 @@
 import uuid
-from fastapi import APIRouter, Depends , encoders
+import boto3
+import shutil
+from fastapi import APIRouter, Depends , encoders, UploadFile, File
 from fastapi.responses import JSONResponse, Response
 from fastapi_sqlalchemy import db
 from datetime import datetime
@@ -440,4 +442,28 @@ async def save_chat_history(chats:ChatSchema):
         print(e)
         return JSONResponse(status_code=400,content={"errorMessage":"Can't access embed code"})
 
+async def upload_file_to_s3(file_name, bucket,object_name):
+    try:
+        s3_client = boto3.client('s3',aws_access_key_id ="AKIAZDZPEA74OEXEVDOB",aws_secret_access_key="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")
+        s3_client.upload_file(file_name, bucket, object_name)
+        return JSONResponse(status_code=200,content={"message":"Success"})
+    except:
+        return JSONResponse(status_code=400,content={"errorMessage":"Can't uploaded"}) 
 
+@router.post("/save-html-file")
+async def save_uploaded_file(flow_id:int,uploaded_file: UploadFile):    
+    """
+    Save the html script into s3 bucket
+    """
+    try:
+        BUCKET_NAME = "bril-chatbot-files"
+        file_location = f"/home/brilworks-23/Downloads/Chatbot Project/chatbot/uploads/{uploaded_file.filename}"
+        with open(file_location, "wb+") as file_object:
+            shutil.copyfileobj(uploaded_file.file, file_object)  
+            upload_file  = await upload_file_to_s3(file_location,BUCKET_NAME,'embedfile/'+str(flow_id)+'/index.html')
+        if (upload_file.status_code != 200):
+            return JSONResponse(status_code=400,content={"errorMessage":"something wrong"})
+        return JSONResponse(status_code=200,content={"message":"Success"})
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=400,content={"errorMessage":"Can't access embed code"})
