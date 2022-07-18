@@ -8,8 +8,11 @@ from fastapi_sqlalchemy import db
 from datetime import datetime
 from typing import List,Dict
 
+from requests import session
+
 
 # AWS_ACCESS_KEY = config('AWS_ACCESS_KEY')
+
 # AWS_ACCESS_SECRET_KEY = config('AWS_ACCESS_SECRET_KEY')
 
 from ..schemas.flowSchema import FlowSchema,ChatSchema
@@ -436,19 +439,42 @@ async def save_chat_history(chats:ChatSchema):
     Save the chat history of every user
     """
     try:
-        new_chat = Chat(flow_id = chats.flow_id, visited_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),chat = chats.chat)
-        db.session.add(new_chat)
+        get_visitor = db.session.query(Chat).filter_by(visitor_ip=chats.visitor_ip).first()
+
+        if (get_visitor != None):
+            db.session.query(Chat).filter_by(visitor_ip=chats.visitor_ip).update({"chat":chats.chat})
+        else:
+            new_chat = Chat(flow_id = chats.flow_id, visited_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),chat = chats.chat,visitor_ip=chats.visitor_ip)
+            db.session.add(new_chat)
         db.session.commit()
         db.session.close()
 
         return JSONResponse(status_code=200,content={"message":"Success"})
     except Exception as e:
         print(e)
-        return JSONResponse(status_code=400,content={"errorMessage":"Can't access embed code"})
+        return JSONResponse(status_code=400,content={"errorMessage":"Error in save chathistory"})
 
+@router.get("/get_chat_history")
+async def get_chat_history(ip:str):
+    """
+    Get the chat history of every user
+    """
+    try:
+        chat_history = db.session.query(Chat).filter_by(visitor_ip=ip).all()
+        data=[]
+        for item in chat_history:
+            chat_data = {"chat":item.chat,"flow_id":item.flow_id}
+            data.append(chat_data)
+        db.session.commit()
+        db.session.close()
+
+        return {"data":data}
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=400,content={"errorMessage":"Can't find chat history"})
 async def upload_file_to_s3(file_name, bucket,object_name):
     try:
-        s3_client = boto3.client('s3',aws_access_key_id =AWS_ACCESS_KEY,aws_secret_access_key=AWS_ACCESS_SECRET_KEY)
+        s3_client = boto3.client('s3',aws_access_key_id ="AWS_ACCESS_KEY",aws_secret_access_key="AWS_ACCESS_SECRET_KEY")
         s3_client.upload_file(file_name, bucket, object_name)
         return JSONResponse(status_code=200,content={"message":"Success"})
     except:

@@ -18,6 +18,7 @@ class ChatSchema(BaseModel):
     _updated_at: datetime
     chat : list = []
     flow_id : int
+    visitor_ip:str
 
     class Config:
         orm_mode = True

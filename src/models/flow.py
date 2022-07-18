@@ -26,4 +26,5 @@ class Chat(Base):
     visited_at = Column(DateTime)
     updated_at = Column(DateTime)
     chat = Column(JSON)
+    visitor_ip = Column(String)
     
