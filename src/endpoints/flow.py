@@ -461,17 +461,20 @@ async def get_chat_history(ip:str):
     """
     try:
         chat_history = db.session.query(Chat).filter_by(visitor_ip=ip).all()
-        data=[]
-        for item in chat_history:
-            chat_data = {"chat":item.chat,"flow_id":item.flow_id}
-            data.append(chat_data)
-        db.session.commit()
-        db.session.close()
-
-        return {"data":data}
+        if (chat_history != None):
+            data=[]
+            for item in chat_history:
+                chat_data = {"chat":item.chat,"flow_id":item.flow_id}
+                data.append(chat_data)
+            db.session.commit()
+            db.session.close()
+            return {"data":data}
+        else:
+            return JSONResponse(status_code=400,content={"errorMessage":"Can't find Ip address"})
     except Exception as e:
         print(e)
         return JSONResponse(status_code=400,content={"errorMessage":"Can't find chat history"})
+
 async def upload_file_to_s3(file_name, bucket,object_name):
     try:
         s3_client = boto3.client('s3',aws_access_key_id ="AWS_ACCESS_KEY",aws_secret_access_key="AWS_ACCESS_SECRET_KEY")
