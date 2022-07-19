@@ -464,10 +464,10 @@ async def get_chat_history(ip:str):
         chat_history = db.session.query(Chat).filter_by(visitor_ip=ip).first()
         if (chat_history == None):
             return JSONResponse(status_code=400,content={"errorMessage":"Can't find Ip address"})
-        data = json.dumps({"chat":chat_history.chat,"flow_id":chat_history.flow_id})
+        chat_data = {"chat":chat_history.chat,"flow_id":chat_history.flow_id}
         db.session.commit()
         db.session.close()
-        return data
+        return JSONResponse(status_code=200,content=chat_data)
     except Exception as e:
         print(e)
         return JSONResponse(status_code=400,content={"errorMessage":"Can't find chat history"})
