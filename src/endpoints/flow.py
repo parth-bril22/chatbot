@@ -1,3 +1,4 @@
+import json
 import uuid
 import boto3
 import shutil
@@ -460,17 +461,13 @@ async def get_chat_history(ip:str):
     Get the chat history of every user
     """
     try:
-        chat_history = db.session.query(Chat).filter_by(visitor_ip=ip).all()
-        if (chat_history != None):
-            data=[]
-            for item in chat_history:
-                chat_data = {"chat":item.chat,"flow_id":item.flow_id}
-                data.append(chat_data)
-            db.session.commit()
-            db.session.close()
-            return {"data":data}
-        else:
+        chat_history = db.session.query(Chat).filter_by(visitor_ip=ip).first()
+        if (chat_history == None):
             return JSONResponse(status_code=400,content={"errorMessage":"Can't find Ip address"})
+        data = json.dumps({"chat":chat_history.chat,"flow_id":chat_history.flow_id})
+        db.session.commit()
+        db.session.close()
+        return data
     except Exception as e:
         print(e)
         return JSONResponse(status_code=400,content={"errorMessage":"Can't find chat history"})
