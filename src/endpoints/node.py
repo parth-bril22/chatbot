@@ -6,7 +6,7 @@ from typing import List,Dict
 from datetime import datetime
 from fastapi_sqlalchemy import db
 
-from ..schemas.nodeSchema import NodeSchema,ConnectionSchema,SubNodeSchema,UpdateSubNodeSchema
+from ..schemas.nodeSchema import NodeSchema,ConnectionSchema,SubNodeSchema,UpdateSubNodeSchema,NewSubNodeSchema
 from ..models.node import Node, NodeType , Connections,CustomFieldTypes, CustomFields, SubNode
 from ..models.flow import Flow
 from ..models.users import User
@@ -259,35 +259,63 @@ async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapp
         print("Error: at add_sub_node.",e)
         return JSONResponse(status_code=404, content={"errorMessage":"Node not present in db"})
 
-
-@router.put('/update_subnode')
-async def update_sub_node(my_sub_node:SubNodeSchema,sub_node_id:str = Body(...),token = Depends(auth_handler.auth_wrapper)):
-    """
-    Update subnode as per requirements 
-    """
-    try:
-        validate_user = await check_user_token(my_sub_node.flow_id,token)
-        if (validate_user.status_code != 200):
-            return validate_user
-        node_in_db = db.session.query(SubNode).filter_by(flow_id=my_sub_node.flow_id).filter_by(id=sub_node_id)
+async def update_subnode(sub_node:NewSubNodeSchema):
+    try :
+        node_in_db = db.session.query(SubNode).filter_by(flow_id=sub_node.flow_id).filter_by(id=sub_node.id)
 
         if(node_in_db.first() == None):
             return JSONResponse(status_code=404, content={"errorMessage":"Node not found"})
 
         existing_data = node_in_db.first().data
-        for key,value in my_sub_node.data.items():
+        for key,value in sub_node.data.items():
             existing_data[key] = value
-        db.session.query(SubNode).filter_by(flow_id=my_sub_node.flow_id).filter_by(id = sub_node_id).update({'data' : existing_data})
+        db.session.query(SubNode).filter_by(flow_id=sub_node.flow_id).filter_by(id = sub_node.id).update({'data' : existing_data})
         db.session.commit()
 
-        sub_nodes = db.session.query(SubNode).filter_by(flow_id=my_sub_node.flow_id).filter_by(node_id = my_sub_node.node_id).all()
+        sub_nodes = db.session.query(SubNode).filter_by(flow_id=sub_node.flow_id).filter_by(node_id = sub_node.node_id).all()
         node_data = []
         for sub_node in sub_nodes:
             node_data.append(sub_node.data)  
-        db.session.query(Node).filter_by(flow_id=my_sub_node.flow_id).filter_by(id = my_sub_node.node_id).update({'data' : existing_data})
-        db.session.query(Flow).filter_by(id=my_sub_node.flow_id).update({"updated_at": datetime.today().isoformat()})
+        db.session.query(Node).filter_by(flow_id=sub_node.flow_id).filter_by(id = sub_node.node_id).update({'data' : existing_data})
+        db.session.query(Flow).filter_by(id=sub_node.flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()  
         db.session.close()
+    except Exception as e:
+        print("Error in updating node: ", e)
+        return JSONResponse(status_code=404, content={"errorMessage":"Please enter node_id correctly"})
+
+@router.put('/update_subnode')
+async def update_sub_node(sub_nodes:List[NewSubNodeSchema],token = Depends(auth_handler.auth_wrapper)):
+    """
+    Update subnode as per requirements 
+    """
+    try:
+        # validate_user = await check_user_token(sub_node.flow_id,token)
+        # if (validate_user.status_code != 200):
+        #     return validate_user
+        for subnode in sub_nodes:
+            update_sub = await update_subnode(subnode)
+
+
+        # node_in_db = db.session.query(SubNode).filter_by(flow_id=sub_node.flow_id).filter_by(id=sub_node.id)
+
+        # if(node_in_db.first() == None):
+        #     return JSONResponse(status_code=404, content={"errorMessage":"Node not found"})
+
+        # existing_data = node_in_db.first().data
+        # for key,value in sub_node.data.items():
+        #     existing_data[key] = value
+        # db.session.query(SubNode).filter_by(flow_id=sub_node.flow_id).filter_by(id = sub_node.id).update({'data' : existing_data})
+        # db.session.commit()
+
+        # sub_nodes = db.session.query(SubNode).filter_by(flow_id=sub_node.flow_id).filter_by(node_id = sub_node.node_id).all()
+        # node_data = []
+        # for sub_node in sub_nodes:
+        #     node_data.append(sub_node.data)  
+        # db.session.query(Node).filter_by(flow_id=sub_node.flow_id).filter_by(id = sub_node.node_id).update({'data' : existing_data})
+        # db.session.query(Flow).filter_by(id=sub_node.flow_id).update({"updated_at": datetime.today().isoformat()})
+        # db.session.commit()  
+        # db.session.close()
 
         return JSONResponse(status_code = 200, content = {"message":"success"})
     except Exception as e:

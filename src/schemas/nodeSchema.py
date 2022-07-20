@@ -31,6 +31,16 @@ class SubNodeSchema(BaseModel):
         orm_mode = True
         underscore_attrs_are_private = True
 
+class NewSubNodeSchema(BaseModel):
+    id :str
+    node_id : int
+    flow_id: int
+    type: str
+    data : Dict = {"text":""}
+    class Config:
+        orm_mode = True
+        underscore_attrs_are_private = True
+
 class UpdateSubNodeSchema(BaseModel):
     sub_node_id : str
     type: str
