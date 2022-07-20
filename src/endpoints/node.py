@@ -281,7 +281,7 @@ async def update_subnode(sub_node:UpdateSubNodeSchema,token):
             node_data.append(sub_node.data)  
         # sorted_data = sorted(node_data, key=lambda node_data: node_data['id'],reverse = True)
 
-        db.session.query(Node).filter_by(flow_id=sub_node.flow_id).filter_by(id = sub_node.node_id).update({'data' : node_data})
+        db.session.query(Node).filter_by(flow_id=sub_node.flow_id).filter_by(id = sub_node.node_id).update({'data' : existing_data})
         db.session.query(Flow).filter_by(id=sub_node.flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()  
         db.session.close()
