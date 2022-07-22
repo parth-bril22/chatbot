@@ -26,7 +26,7 @@ async def upload_to_s3(file,node_id,flow_id):
     try:
         s3 = boto3.resource("s3",aws_access_key_id =AWS_ACCESS_KEY,aws_secret_access_key=AWS_ACCESS_SECRET_KEY)
         bucket = s3.Bucket(BUCKET_NAME)
-        bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename))  
+        bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/png'})  
 
         s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/mediafile/{flow_id}/{node_id}/{file.filename}"
         db_subnode_data = db.session.query(SubNode).filter_by(flow_id=flow_id).filter_by(node_id=node_id).first()
