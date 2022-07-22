@@ -476,7 +476,7 @@ async def upload_file_to_s3(flow_id:int,file: UploadFile):
         
         s3 = boto3.resource("s3",aws_access_key_id =AWS_ACCESS_KEY,aws_secret_access_key=AWS_ACCESS_SECRET_KEY)
         bucket = s3.Bucket(BUCKET_NAME)
-        bucket.upload_fileobj(file.file,'embedfile/'+str(flow_id)+'/'+(file.filename))
+        bucket.upload_fileobj(file.file,'embedfile/'+str(flow_id)+'/'+(file.filename),ExtraArgs={'ContentType':'text/html'})
 
         s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/embedfile/{flow_id}/{file.filename}"
 
