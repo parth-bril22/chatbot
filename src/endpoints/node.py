@@ -27,6 +27,7 @@ async def upload_to_s3(file,node_id,flow_id):
         s3 = boto3.resource("s3",aws_access_key_id =AWS_ACCESS_KEY,aws_secret_access_key=AWS_ACCESS_SECRET_KEY)
         bucket = s3.Bucket(BUCKET_NAME)
         
+        
         if file.content_type == 'image/png':
             bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/png'})  
         elif file.content_type in 'video/mp4':
