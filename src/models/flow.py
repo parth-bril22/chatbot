@@ -27,4 +27,11 @@ class Chat(Base):
     updated_at = Column(DateTime)
     chat = Column(JSON)
     visitor_ip = Column(String)
-    
+
+class EmbedScript(Base):
+    __tablename__ = 'embedscripts'
+    id = Column(Integer, primary_key = True)
+    file_name = Column(String)
+    created_at = Column(DateTime)
+    file_url = Column(String)
+        

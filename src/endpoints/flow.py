@@ -1,9 +1,7 @@
-import json
 import uuid
 import boto3
 import shutil
-# from decouple import config
-from fastapi import APIRouter, Depends , encoders, UploadFile, File
+from fastapi import APIRouter, Depends , encoders, UploadFile
 from fastapi.responses import JSONResponse, Response
 from fastapi_sqlalchemy import db
 from datetime import datetime
@@ -11,13 +9,10 @@ from typing import List,Dict
 
 from requests import session
 
-
-# AWS_ACCESS_KEY = config('AWS_ACCESS_KEY')
-
-# AWS_ACCESS_SECRET_KEY = config('AWS_ACCESS_SECRET_KEY')
+from ..dependencies.env import AWS_ACCESS_KEY,AWS_ACCESS_SECRET_KEY,BUCKET_NAME
 
 from ..schemas.flowSchema import FlowSchema,ChatSchema
-from ..models.flow import Flow,Chat
+from ..models.flow import Flow,Chat,EmbedScript
 from ..models.node import Node,SubNode,CustomFields,Connections
 from ..endpoints.node import check_user_token
 
@@ -463,7 +458,7 @@ async def get_chat_history(ip:str):
     try:
         chat_history = db.session.query(Chat).filter_by(visitor_ip=ip).first()
         if (chat_history == None):
-            return JSONResponse(status_code=400,content={"errorMessage":"Can't find Ip address"})
+            return JSONResponse(status_code=400,content={"errorMessage":"Can't find ip address"})
         chat_data = {"chat":chat_history.chat,"flow_id":chat_history.flow_id}
         db.session.commit()
         db.session.close()
@@ -472,28 +467,24 @@ async def get_chat_history(ip:str):
         print(e)
         return JSONResponse(status_code=400,content={"errorMessage":"Can't find chat history"})
 
-async def upload_file_to_s3(file_name, bucket,object_name):
+@router.post("/upload")
+async def upload_file_to_s3(flow_id:int,file: UploadFile):    
+    """
+    Upload the html file into s3 bucket
+    """
     try:
-        s3_client = boto3.client('s3',aws_access_key_id ="AWS_ACCESS_KEY",aws_secret_access_key="AWS_ACCESS_SECRET_KEY")
-        s3_client.upload_file(file_name, bucket, object_name)
-        return JSONResponse(status_code=200,content={"message":"Success"})
-    except:
-        return JSONResponse(status_code=400,content={"errorMessage":"Can't uploaded"}) 
+        
+        s3 = boto3.resource("s3",aws_access_key_id =AWS_ACCESS_KEY,aws_secret_access_key=AWS_ACCESS_SECRET_KEY)
+        bucket = s3.Bucket(BUCKET_NAME)
+        bucket.upload_fileobj(file.file,'embedfile/'+str(flow_id)+'/'+(file.filename))
 
-@router.post("/save-html-file")
-async def save_uploaded_file(flow_id:int,uploaded_file: UploadFile):    
-    """
-    Save the html script into s3 bucket
-    """
-    try:
-        BUCKET_NAME = "bril-chatbot-files"
-        file_location = f"/home/brilworks-23/Downloads/Chatbot Project/chatbot/uploads/{uploaded_file.filename}"
-        with open(file_location, "wb+") as file_object:
-            shutil.copyfileobj(uploaded_file.file, file_object)  
-            upload_file  = await upload_file_to_s3(file_location,BUCKET_NAME,'embedfile/'+str(flow_id)+'/index.html')
-        if (upload_file.status_code != 200):
-            return JSONResponse(status_code=400,content={"errorMessage":"something wrong"})
+        s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/embedfile/{flow_id}/{file.filename}"
+
+        db_file=EmbedScript(file_name = file.filename, created_at = datetime.today().isoformat(),file_url = s3_file_url)
+        db.session.add(db_file)
+        db.session.commit()
+        db.session.close()
         return JSONResponse(status_code=200,content={"message":"Success"})
     except Exception as e:
         print(e)
-        return JSONResponse(status_code=400,content={"errorMessage":"Can't access embed code"})
+        return JSONResponse(status_code=400,content={"errorMessage":"Error at uploading file"})

@@ -1,16 +1,18 @@
+import boto3
 import secrets
 import json
 from fastapi.responses import JSONResponse
-from fastapi import APIRouter, status, HTTPException ,encoders , Response, Body,Depends
+from fastapi import APIRouter, status, HTTPException ,encoders , Response,Depends,UploadFile
 from typing import List,Dict
 from datetime import datetime
 from fastapi_sqlalchemy import db
 
 from ..schemas.nodeSchema import NodeSchema,ConnectionSchema,SubNodeSchema,UpdateSubNodeSchema
-from ..models.node import Node, NodeType , Connections,CustomFieldTypes, CustomFields, SubNode
+from ..models.node import Node, NodeType,Connections,SubNode
 from ..models.flow import Flow
 from ..models.users import User
 
+from ..dependencies.env import AWS_ACCESS_KEY,AWS_ACCESS_SECRET_KEY,BUCKET_NAME
 from ..dependencies.auth import AuthHandler
 auth_handler = AuthHandler()
 
@@ -19,6 +21,32 @@ router = APIRouter(
     tags=["Node"],
     responses={404: {"description": "Not found"}},
 )
+
+async def upload_to_s3(file,node_id,flow_id):
+    try:
+        s3 = boto3.resource("s3",aws_access_key_id =AWS_ACCESS_KEY,aws_secret_access_key=AWS_ACCESS_SECRET_KEY)
+        bucket = s3.Bucket(BUCKET_NAME)
+        bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename))  
+
+        s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/mediafile/{flow_id}/{node_id}/{file.filename}"
+        db_subnode_data = db.session.query(SubNode).filter_by(flow_id=flow_id).filter_by(node_id=node_id).first()
+        for key,value in db_subnode_data.data.items():
+            node_data.data['source'] = s3_file_url
+        db.session.query(SubNode).filter_by(flow_id=db_subnode_data.flow_id).filter_by(id = db_subnode_data.id).update({'data' : node_data.data})
+        db.session.commit()
+        sub_nodes = db.session.query(SubNode).filter_by(flow_id=db_subnode_data.flow_id).filter_by(node_id = db_subnode_data.node_id).all()
+        node_data = []
+        for sub_node in sub_nodes:
+            node_data.append(sub_node.data)  
+
+        db.session.query(Node).filter_by(flow_id=sub_node.flow_id).filter_by(id = sub_node.node_id).update({'data' : node_data})
+        db.session.query(Flow).filter_by(id=sub_node.flow_id).update({"updated_at": datetime.today().isoformat()})
+        db.session.commit()  
+        db.session.close()
+        return JSONResponse(status_code=200,content={"message":"Successfully Uploaded"})
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=404, content={"errorMessage":"Error at uploading"})
 
 async def check_user_token(flow_id:int,token=Depends(auth_handler.auth_wrapper)):
     """
@@ -73,7 +101,6 @@ async def check_conditional_logic(prop_value_json : json):
                     else:
                         Response(status_code = 204)
     return True
-
 
 async def check_property_dict(prop : Dict, keys : List):
     """
@@ -156,6 +183,22 @@ async def create_nodes(node : NodeSchema,token = Depends(auth_handler.auth_wrapp
             return create_node_response
 
         return JSONResponse(status_code=200, content={"message": "success", "ids": node_id})
+    except Exception as e:
+        print(e,'at create_node')
+        return JSONResponse(status_code=404, content={"errorMessage":"Error in creating node"})
+
+@router.post('/upload_media')
+async def upload_media_files(file:UploadFile,node_id:int,flow_id:int):
+    """
+    Upload media file for media,file nodes
+    """
+    try:
+        upload_file = await upload_to_s3(file,node_id,flow_id)
+
+        if (upload_file.status_code != 200):
+            return JSONResponse(status_code=400,content={"message":"File not uploaded"})
+
+        return JSONResponse(status_code=200, content={"message": "success"})
     except Exception as e:
         print(e,'at create_node')
         return JSONResponse(status_code=404, content={"errorMessage":"Error in creating node"})
@@ -279,7 +322,6 @@ async def update_subnode(sub_node:UpdateSubNodeSchema,token):
         node_data = []
         for sub_node in sub_nodes:
             node_data.append(sub_node.data)  
-        # sorted_data = sorted(node_data, key=lambda node_data: node_data['id'],reverse = True)
 
         db.session.query(Node).filter_by(flow_id=sub_node.flow_id).filter_by(id = sub_node.node_id).update({'data' : node_data})
         db.session.query(Flow).filter_by(id=sub_node.flow_id).update({"updated_at": datetime.today().isoformat()})
