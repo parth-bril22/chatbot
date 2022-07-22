@@ -31,7 +31,7 @@ async def upload_to_s3(file,node_id,flow_id):
         s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/mediafile/{flow_id}/{node_id}/{file.filename}"
         db_subnode_data = db.session.query(SubNode).filter_by(flow_id=flow_id).filter_by(node_id=node_id).first()
         for key,value in db_subnode_data.data.items():
-            node_data.data['source'] = s3_file_url
+            db_subnode_data.data['source'] = s3_file_url
         db.session.query(SubNode).filter_by(flow_id=db_subnode_data.flow_id).filter_by(id = db_subnode_data.id).update({'data' : node_data.data})
         db.session.commit()
         sub_nodes = db.session.query(SubNode).filter_by(flow_id=db_subnode_data.flow_id).filter_by(node_id = db_subnode_data.node_id).all()
