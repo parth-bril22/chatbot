@@ -29,7 +29,9 @@ async def upload_to_s3(file,node_id,flow_id):
         
         
         if file.content_type == 'image/png':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/png'})  
+            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/png'})
+        elif file.content_type == 'image/gif':
+            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/gif'})  
         elif file.content_type in 'video/mp4':
             bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'video/mp4'})  
         elif file.content_type == 'text/html':
@@ -196,10 +198,10 @@ async def create_nodes(node : NodeSchema,token = Depends(auth_handler.auth_wrapp
         print(e,'at create_node')
         return JSONResponse(status_code=404, content={"errorMessage":"Error in creating node"})
 
-@router.post('/upload_media')
-async def upload_media_files(file:UploadFile,node_id:int,flow_id:int):
+@router.post('/upload_file')
+async def upload_files_to_s3(file:UploadFile,node_id:int,flow_id:int):
     """
-    Upload media file for media,file nodes
+    Upload file for media & ohter file for file and media node
     """
     try:
         upload_file = await upload_to_s3(file,node_id,flow_id)
@@ -210,7 +212,7 @@ async def upload_media_files(file:UploadFile,node_id:int,flow_id:int):
         return JSONResponse(status_code=200, content={"message": "success"})
     except Exception as e:
         print(e,'at create_node')
-        return JSONResponse(status_code=404, content={"errorMessage":"Error in creating node"})
+        return JSONResponse(status_code=404, content={"errorMessage":"Error in uploading file"})
 
 @router.delete('/delete_node')
 async def delete_node(node_id : str, flow_id:int,token = Depends(auth_handler.auth_wrapper)):
