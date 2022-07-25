@@ -488,3 +488,5 @@ async def upload_file_to_s3(flow_id:int,file: UploadFile):
     except Exception as e:
         print(e)
         return JSONResponse(status_code=400,content={"errorMessage":"Error at uploading file"})
+
+@router.get(/)
