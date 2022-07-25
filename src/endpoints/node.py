@@ -36,6 +36,8 @@ async def upload_to_s3(file,node_id,flow_id):
             bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'video/mp4'})  
         elif file.content_type == 'text/html':
             bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'text/html'})
+        elif file.content_type == 'application/pdf':
+            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'application/pdf'})
 
 
         s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/mediafile/{flow_id}/{node_id}/{file.filename}"
