@@ -38,6 +38,8 @@ async def upload_to_s3(file,node_id,flow_id):
             bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'text/html'})
         elif file.content_type == 'text/plain':
             bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'text/plain'})
+        elif file.content_type == 'application/msword':
+            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'application/msword'})
         elif file.content_type == 'application/pdf':
             bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'application/pdf'})
 
