@@ -435,7 +435,7 @@ async def save_chat_history(chats:ChatSchema):
     Save the chat history of every user
     """
     try:
-        get_visitor = db.session.query(Chat).filter_by(visitor_ip=chats.visitor_ip).first()
+        get_visitor = db.session.query(Chat).filter_by(visitor_ip=chats.visitor_ip).filter_by(flow_id=chats.flow_id).first()
 
         if (get_visitor != None):
             db.session.query(Chat).filter_by(visitor_ip=chats.visitor_ip).update({"chat":chats.chat})
