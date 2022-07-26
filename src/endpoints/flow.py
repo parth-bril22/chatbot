@@ -523,7 +523,7 @@ async def get_flow_analysis_data(flow_id:int):
                 n+=1
             conn['data'] = {'n':n,'percentage':str(round(n/total_visits*100))+'%'}
 
-        return {"nodes": diagram['node_list'],"connections": connections,"sub_nodes:":diagram['sub_nodes']}
+        return {"nodes": diagram['nodes'],"connections": connections,"sub_nodes:":diagram['sub_nodes']}
     except Exception as e:
         print(e)
         return JSONResponse(status_code=400,content={"errorMessage":"Error at get that data"})
