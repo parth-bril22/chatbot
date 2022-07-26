@@ -489,4 +489,41 @@ async def upload_file_to_s3(flow_id:int,file: UploadFile):
         print(e)
         return JSONResponse(status_code=400,content={"errorMessage":"Error at uploading file"})
 
-# @router.get(/)
+@router.post("/upload_user")
+async def upload_file_from_user(flow_id:int,file: UploadFile):    
+    """
+    Upload the html file into s3 bucket
+    """
+    try:
+        
+        s3 = boto3.resource("s3",aws_access_key_id =AWS_ACCESS_KEY,aws_secret_access_key=AWS_ACCESS_SECRET_KEY)
+        bucket = s3.Bucket(BUCKET_NAME)
+        bucket.upload_fileobj(file.file,'visitorfiles/'+str(flow_id)+'/'+(file.filename),ExtraArgs={'ContentType':'text/html'})
+
+        s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/visitorfiles/{flow_id}/{file.filename}"
+        return JSONResponse(status_code=200,content={"mget_diaessage":"Success"})
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=400,content={"errorMessage":"Error at uploading file"})
+
+@router.get("/flow_analysis")
+async def get_flow_analysis_data(flow_id:int):
+    try:
+        diagram = await get_diagram(flow_id)
+
+        # get the data and calculate 
+        connections = diagram['connections']
+        # print(connections[0]['sourceHandle'])
+        total_visits = len(db.session.query(Chat.flow_id).filter_by(flow_id=flow_id).all())
+        chat_data = db.session.query(Chat.chat).filter_by(flow_id=flow_id).all()
+        subnode_list = [i['id'] for i in chat_data[0][0]]
+        for conn in connections:
+            n=0
+            if conn['sourceHandle'] in subnode_list:
+                n+=1
+            conn['data'] = {'n':n,'percentage':str(round(n/total_visits*100))+'%'}
+
+        return {"nodes": diagram['node_list'],"connections": connections,"sub_nodes:":diagram['sub_nodes']}
+    except Exception as e:
+        print(e)
+        return JSONResponse(status_code=400,content={"errorMessage":"Error at get that data"})
