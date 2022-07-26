@@ -451,7 +451,7 @@ async def save_chat_history(chats:ChatSchema):
         return JSONResponse(status_code=400,content={"errorMessage":"Error in save chathistory"})
 
 @router.get("/get_chat_history")
-async def get_chat_history(ip:str,flow_id):
+async def get_chat_history(ip:str,flow_id:int):
     """
     Get the chat history of every user
     """
