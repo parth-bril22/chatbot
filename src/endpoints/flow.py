@@ -513,15 +513,19 @@ async def get_flow_analysis_data(flow_id:int):
 
         connections = diagram['connections']
         total_visits = len(db.session.query(Chat.flow_id).filter_by(flow_id=flow_id).all())
+        # print(total_visits.visitor_ip)
+
         chat_data = db.session.query(Chat.chat).filter_by(flow_id=flow_id).all()
         
         if total_visits == 0:
             return JSONResponse(status_code=404,content={"errorMessage":"There is no visitors!"})
         subnode_list = [i['id'] for i in chat_data[0][0]]
         for conn in connections:
-            n=0
+            n=total_visits-1
             if conn['sourceHandle'] in subnode_list:
                 n+=1
+                conn['data'] = {'n':n,'percentage':str(round(n/total_visits*100))+'%'}
+            else:
                 conn['data'] = {'n':n,'percentage':str(round(n/total_visits*100))+'%'}
 
         return {"nodes": diagram['nodes'],"connections": connections}
