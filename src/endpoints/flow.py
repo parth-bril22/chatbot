@@ -522,7 +522,7 @@ async def get_flow_analysis_data(flow_id:int):
             n=0
             if conn['sourceHandle'] in subnode_list:
                 n+=1
-            conn['data'] = {'n':n,'percentage':str(round(n/total_visits*100))+'%'}
+                conn['data'] = {'n':n,'percentage':str(round(n/total_visits*100))+'%'}
 
         return {"nodes": diagram['nodes'],"connections": connections}
     except Exception as e:
