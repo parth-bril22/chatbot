@@ -529,7 +529,7 @@ async def get_flow_analysis_data(flow_id:int):
                 n=dictionary[conn['sourceHandle']]
                 conn['data'] = {'n':n,'percentage':str(round(n/total_visits*100))+'%'}
             else:
-                conn['sourceHandle'] = {'n':0,'percentage':'0'+'%'}
+                conn['data'] = {'n':0,'percentage':'0'+'%'}
 
         # for conn in connections:
         #     n=total_visits-1
