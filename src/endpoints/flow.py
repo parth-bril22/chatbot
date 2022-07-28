@@ -517,14 +517,18 @@ async def get_flow_analysis_data(flow_id:int):
             return JSONResponse(status_code=404,content={"errorMessage":"There is no visitors!"})
         subnode_list=[]
         input_types = ['url','file',"text",'number','phone','email','date']
+        pop_list = []
         for i in range(len(chat_data)):
+            if chat_data[i][0][-1]['type'] in input_types:
+                pop_list.append(chat_data[i][0][-1]['id'])
+            print(pop_list)
             id_list =[]
             for i in chat_data[i][0]:
                 if i['type'] == 'button':
                     id_list.append(i['id'])
-                elif 'from' in i:
+                elif 'from' in i:   
                     pass
-                elif i[-1]['type'] in input_types:
+                elif i['id'] in pop_list:
                     pass
                 else:
                     id_list.append(i['id'])
