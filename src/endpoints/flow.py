@@ -505,7 +505,7 @@ async def upload_file_from_user(flow_id:int,file: UploadFile):
     except Exception as e:
         print(e)
         return JSONResponse(status_code=400,content={"errorMessage":"Error at uploading file"})
-
+import collections
 @router.get("/flow_analysis")
 async def get_flow_analysis_data(flow_id:int):
     try:
@@ -513,20 +513,32 @@ async def get_flow_analysis_data(flow_id:int):
 
         connections = diagram['connections']
         total_visits = len(db.session.query(Chat.flow_id).filter_by(flow_id=flow_id).all())
-        # print(total_visits.visitor_ip)
-
         chat_data = db.session.query(Chat.chat).filter_by(flow_id=flow_id).all()
-        
         if total_visits == 0:
             return JSONResponse(status_code=404,content={"errorMessage":"There is no visitors!"})
-        subnode_list = [i['id'] for i in chat_data[0][0]]
+        subnode_list=[]
+        for i in range(len(chat_data)):
+            subnode_list.extend(list(set([i['id'] for i in chat_data[i][0]])))
+        print(subnode_list)
+        subnode_set = list(set(subnode_list))
+        frequency = collections.Counter(subnode_list)
+        dictionary = dict(frequency)
+
         for conn in connections:
-            n=total_visits-1
-            if conn['sourceHandle'] in subnode_list:
-                n+=1
+            if conn['sourceHandle'] in subnode_set:
+                n=dictionary[conn['sourceHandle']]
                 conn['data'] = {'n':n,'percentage':str(round(n/total_visits*100))+'%'}
             else:
-                conn['data'] = {'n':n,'percentage':str(round(n/total_visits*100))+'%'}
+                conn['sourceHandle'] = {'n':0,'percentage':'0'+'%'}
+
+        # for conn in connections:
+        #     n=total_visits-1
+        #     if conn['sourceHandle'] in subnode_list:
+        #         n+=1
+        #         conn['data'] = {'n':n,'percentage':str(round(n/total_visits*100))+'%'}
+        #     else:
+        #         n=1
+        #         conn['data'] = {'n':n,'percentage':str(round(n/total_visits*100))+'%'}
 
         return {"nodes": diagram['nodes'],"connections": connections}
     except Exception as e:
