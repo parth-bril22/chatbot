@@ -500,7 +500,7 @@ async def upload_file_from_user(flow_id:int,file: UploadFile):
         bucket.upload_fileobj(file.file,'visitorfiles/'+str(flow_id)+'/'+(file.filename),ExtraArgs={'ContentType':'text/html'})
 
         s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/visitorfiles/{flow_id}/{file.filename}"
-        return JSONResponse(status_code=200,content={"mget_diaessage":"Success"})
+        return JSONResponse(status_code=200,content={"message":"Success"})
     except Exception as e:
         print(e)
         return JSONResponse(status_code=400,content={"errorMessage":"Error at uploading file"})
@@ -550,32 +550,31 @@ async def get_flow_analysis_data(flow_id:int):
         print(e)
         return JSONResponse(status_code=400,content={"errorMessage":"Error at get that data"})
 
-@router.get("/upload_from_user")
-async def upload_to_s3_from_user(file,node_id,flow_id):
+@router.post("/upload_from_user")
+async def upload_to_s3_from_user(file:UploadFile,node_id:int,flow_id:int):
     try:
         s3 = boto3.resource("s3",aws_access_key_id =AWS_ACCESS_KEY,aws_secret_access_key=AWS_ACCESS_SECRET_KEY)
         bucket = s3.Bucket(BUCKET_NAME)
         
-        
         if file.content_type == 'image/png':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/png'})
+            bucket.upload_fileobj(file.file,'userfiles/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/png'})
         elif file.content_type == 'image/gif':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/gif'})  
+            bucket.upload_fileobj(file.file,'userfiles/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/gif'})  
         elif file.content_type in 'video/mp4':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'video/mp4'})  
+            bucket.upload_fileobj(file.file,'userfiles/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'video/mp4'})  
         elif file.content_type == 'text/html':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'text/html'})
+            bucket.upload_fileobj(file.file,'userfiles/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'text/html'})
         elif file.content_type == 'text/plain':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'text/plain'})
+            bucket.upload_fileobj(file.file,'userfiles/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'text/plain'})
         elif file.content_type == 'application/msword':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'application/msword'})
+            bucket.upload_fileobj(file.file,'userfiles/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'application/msword'})
         elif file.content_type == 'application/pdf':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'application/pdf'})
+            bucket.upload_fileobj(file.file,'userfiles/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'application/pdf'})
         elif file.content_type == 'audio/mpeg':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'audio/mpeg'})
+            bucket.upload_fileobj(file.file,'userfiles/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'audio/mpeg'})
 
 
-        s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/mediafile/{flow_id}/{node_id}/{file.filename}"
+        s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/userfiles/{flow_id}/{node_id}/{file.filename}"
         return JSONResponse(status_code=200,content={"message":"Successfully Uploaded","url":s3_file_url})
     except Exception as e:
         print(e)
