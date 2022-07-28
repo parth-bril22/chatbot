@@ -508,6 +508,7 @@ async def upload_file_from_user(flow_id:int,file: UploadFile):
 @router.get("/flow_analysis")
 async def get_flow_analysis_data(flow_id:int):
     try:
+
         diagram = await get_diagram(flow_id)
         connections = diagram['connections']
         total_visits = len(db.session.query(Chat.flow_id).filter_by(flow_id=flow_id).all())
@@ -515,13 +516,16 @@ async def get_flow_analysis_data(flow_id:int):
         if total_visits == 0:
             return JSONResponse(status_code=404,content={"errorMessage":"There is no visitors!"})
         subnode_list=[]
+        input_types = ['url','file',"text",'number','phone','email','date']
         for i in range(len(chat_data)):
             id_list =[]
             for i in chat_data[i][0]:
                 if i['type'] == 'button':
                     id_list.append(i['id'])
                 elif 'from' in i:
-                    print('from user')
+                    pass
+                elif i[-1]['type'] in input_types:
+                    pass
                 else:
                     id_list.append(i['id'])
             subnode_list.extend(list(set(id_list)))
@@ -540,3 +544,5 @@ async def get_flow_analysis_data(flow_id:int):
     except Exception as e:
         print(e)
         return JSONResponse(status_code=400,content={"errorMessage":"Error at get that data"})
+
+
