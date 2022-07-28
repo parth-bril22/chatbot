@@ -556,6 +556,9 @@ async def upload_to_s3_from_user(file:UploadFile,node_id:int,flow_id:int):
         s3 = boto3.resource("s3",aws_access_key_id =AWS_ACCESS_KEY,aws_secret_access_key=AWS_ACCESS_SECRET_KEY)
         bucket = s3.Bucket(BUCKET_NAME)
         
+        if(db.session.query(Node).filter_by(id = node_id).filter_by(flow_id=flow_id).first() == None):
+            return JSONResponse(status_code=404, content={"errorMessage":"Node not found"})
+    
         if file.content_type == 'image/png':
             bucket.upload_fileobj(file.file,'userfiles/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/png'})
         elif file.content_type == 'image/gif':
