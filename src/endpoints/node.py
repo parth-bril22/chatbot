@@ -32,6 +32,8 @@ async def upload_to_s3(file,node_id,flow_id):
             bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/png'})
         elif file.content_type == 'image/jpeg':
             bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/jpeg'})
+        elif file.content_type == 'image/jpg':
+            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/jpg'})
         elif file.content_type == 'image/gif':
             bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/gif'})  
         elif file.content_type in 'video/mp4':
