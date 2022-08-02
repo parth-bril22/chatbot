@@ -417,9 +417,9 @@ async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)
     Get flow details name and publish_token
     """
     try:
-        valid_user = await check_user_token(flow_id,token)
-        if (valid_user.status_code != 200):
-            return valid_user
+        # valid_user = await check_user_token(flow_id,token)
+        # if (valid_user.status_code != 200):
+        #     return valid_user
         db_name =  db.session.query(Flow).filter_by(id=flow_id).first()
         token = db.session.query(Flow.publish_token).first()[0]
         return JSONResponse(status_code=200,content={"name":db_name.name,"publish_token":token})
