@@ -422,7 +422,7 @@ async def get_flow_detail(flow_id:int):
         # if (valid_user.status_code != 200):
         #     return valid_user
         db_name =  db.session.query(Flow).filter_by(id=flow_id).first()
-        token = db.session.query(Flow.publish_token).first()[0]
+        token = db.session.query(Flow.publish_token).filter_by(id=flow_id).first()[0]
         return JSONResponse(status_code=200,content={"name":db_name.name,"publish_token":token})
     except Exception as e:
         print(e)
