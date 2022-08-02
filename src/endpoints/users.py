@@ -219,3 +219,10 @@ async def delete_user(my_email = Depends(auth_handler.auth_wrapper)):
      db.session.commit()
      db.session.close()
      return JSONResponse(status_code = 200, content = {'message': 'deleted'})
+
+@router.post('/user_profile')
+async def user_profile(user_id : int):
+     token = db.session.query(ModelUser.token).filter_by(id=user_id).first()[0]
+     db.session.commit()
+     db.session.close()
+     return JSONResponse(status_code = 200, content = {'Token': token})
