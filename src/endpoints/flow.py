@@ -412,7 +412,8 @@ async def restore_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
 
 
 @router.get("/flow_detail")
-async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
+# async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def get_flow_detail(flow_id:int):
     """
     Get flow details name and publish_token
     """
