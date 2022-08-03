@@ -580,10 +580,12 @@ async def upload_to_s3_from_user(file:UploadFile,node_id:int,flow_id:int):
             bucket.upload_fileobj(file.file,'userfiles/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'application/pdf'})
         elif file.content_type == 'audio/mpeg':
             bucket.upload_fileobj(file.file,'userfiles/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'audio/mpeg'})
+        elif file.content_type == 'text/csv':
+            bucket.upload_fileobj(file.file,'userfiles/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'text/csv'})
 
 
         s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/userfiles/{flow_id}/{node_id}/{file.filename}"
-        return JSONResponse(status_code=200,content={"message":"Successfully Uploaded","url":s3_file_url})
+        return JSONResponse(status_code=200,content={"message":"Successfully Uploaded"})
     except Exception as e:
         print(e)
         return JSONResponse(status_code=404, content={"errorMessage":"Error at uploading"})
