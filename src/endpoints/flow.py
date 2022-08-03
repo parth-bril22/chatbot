@@ -542,9 +542,12 @@ async def get_flow_analysis_data(flow_id:int):
         for conn in connections:
             if conn['sourceHandle'] in subnode_set:
                 n=subnode_frequency[conn['sourceHandle']]
-                conn['data'] = {'n':n,'percentage':str(round(n/total_visits*100))+'%'}
+                if round(n/total_visits*100) == 100:
+                    conn['data'] = {'n':n,'percentage':+'100%','color':'#006400'}
+                else:
+                    conn['data'] = {'n':n,'percentage':str(round(n/total_visits*100))+'%','color':'#0000FF'}
             else:
-                conn['data'] = {'n':0,'percentage':'0'+'%'}
+                conn['data'] = {'n':0,'percentage':'0'+'%','color':'#ff0000'}
 
         return {"nodes": diagram['nodes'],"connections": connections}
     except Exception as e:
