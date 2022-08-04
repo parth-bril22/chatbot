@@ -50,7 +50,8 @@ async def upload_to_s3(file,node_id,flow_id):
             bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'audio/mpeg'})
         elif file.content_type == 'text/csv':
             bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'text/csv'})
-
+        elif file.content_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})
 
         s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/mediafile/{flow_id}/{node_id}/{file.filename}"
         db_subnode_data = db.session.query(SubNode).filter_by(flow_id=flow_id).filter_by(node_id=node_id).first()
