@@ -27,7 +27,7 @@ async def upload_to_s3(file,node_id,flow_id):
         s3 = boto3.resource("s3",aws_access_key_id =AWS_ACCESS_KEY,aws_secret_access_key=AWS_ACCESS_SECRET_KEY)
         bucket = s3.Bucket(BUCKET_NAME)
         
-        CONTENT_TYPES = ['image/png','image/jpeg','image/jpg','image/gif','video/mp4','text/html','text/plain','application/msword','application/pdf',
+        CONTENT_TYPES = ['image/png','image/jpeg','image/jpg','image/gif','video/mp4','text/html','image/svg+xml','text/plain','application/msword','application/pdf',
         'audio/mpeg','text/csv','application/vnd.openxmlformats-officedocument.wordprocessingml.document']
         if file.content_type in CONTENT_TYPES:
             bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':file.content_type})
