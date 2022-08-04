@@ -413,15 +413,14 @@ async def restore_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
 
 
 @router.get("/flow_detail")
-# async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
-async def get_flow_detail(flow_id:int):
+async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     """
     Get flow details name and publish_token
     """
     try:
-        # valid_user = await check_user_token(flow_id,token)
-        # if (valid_user.status_code != 200):
-        #     return valid_user
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         db_name =  db.session.query(Flow).filter_by(id=flow_id).first()
         token = db.session.query(Flow.publish_token).filter_by(id=flow_id).first()[0]
         return JSONResponse(status_code=200,content={"name":db_name.name,"publish_token":token})
@@ -431,11 +430,14 @@ async def get_flow_detail(flow_id:int):
 
 
 @router.post("/save_chat_history")
-async def save_chat_history(chats:ChatSchema):
+async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_wrapper)):
     """
     Save the chat history of every user
     """
     try:
+        valid_user = await check_user_token(chats.flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         get_visitor = db.session.query(Chat).filter_by(visitor_ip=chats.visitor_ip).filter_by(flow_id=chats.flow_id).first()
 
         if (get_visitor != None):
@@ -452,7 +454,7 @@ async def save_chat_history(chats:ChatSchema):
         return JSONResponse(status_code=400,content={"errorMessage":"Error in save chathistory"})
 
 @router.get("/get_chat_history")
-async def get_chat_history(ip:str,flow_id:int):
+async def get_chat_history(ip:str,flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     """
     Get the chat history of every user
     """
@@ -461,8 +463,6 @@ async def get_chat_history(ip:str,flow_id:int):
         if (chat_history == None):
             return JSONResponse(status_code=400,content={"errorMessage":"Can't find ip address"})
         chat_data = {"chat":chat_history.chat,"flow_id":chat_history.flow_id}
-        db.session.commit()
-        db.session.close()
         return JSONResponse(status_code=200,content=chat_data)
     except Exception as e:
         print(e)
@@ -508,9 +508,11 @@ async def upload_file_from_user(flow_id:int,file: UploadFile):
         return JSONResponse(status_code=400,content={"errorMessage":"Error at uploading file"})
 
 @router.get("/flow_analysis")
-async def get_flow_analysis_data(flow_id:int):
+async def get_flow_analysis_data(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
-
+        valid_user = await check_user_token(flow_id,token)
+        if (valid_user.status_code != 200):
+            return valid_user
         diagram = await get_diagram(flow_id)
         connections = diagram['connections']
         total_visits = len(db.session.query(Chat.flow_id).filter_by(flow_id=flow_id).all())
