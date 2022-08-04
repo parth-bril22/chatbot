@@ -544,7 +544,7 @@ async def get_flow_analysis_data(flow_id:int):
             if conn['sourceHandle'] in subnode_set:
                 n=subnode_frequency[conn['sourceHandle']]
                 if round(n/total_visits*100) == 100:
-                    conn['data'] = {'n':n,'percentage':+'100%','color':'#006400'}
+                    conn['data'] = {'n':n,'percentage':'100%','color':'#006400'}
                 else:
                     conn['data'] = {'n':n,'percentage':str(round(n/total_visits*100))+'%','color':'#0000FF'}
             else:
