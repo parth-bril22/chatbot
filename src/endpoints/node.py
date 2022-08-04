@@ -27,31 +27,10 @@ async def upload_to_s3(file,node_id,flow_id):
         s3 = boto3.resource("s3",aws_access_key_id =AWS_ACCESS_KEY,aws_secret_access_key=AWS_ACCESS_SECRET_KEY)
         bucket = s3.Bucket(BUCKET_NAME)
         
-        
-        if file.content_type == 'image/png':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/png'})
-        elif file.content_type == 'image/jpeg':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/jpeg'})
-        elif file.content_type == 'image/jpg':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/jpg'})
-        elif file.content_type == 'image/gif':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'image/gif'})  
-        elif file.content_type in 'video/mp4':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'video/mp4'})  
-        elif file.content_type == 'text/html':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'text/html'})
-        elif file.content_type == 'text/plain':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'text/plain'})
-        elif file.content_type == 'application/msword':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'application/msword'})
-        elif file.content_type == 'application/pdf':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'application/pdf'})
-        elif file.content_type == 'audio/mpeg':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'audio/mpeg'})
-        elif file.content_type == 'text/csv':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'text/csv'})
-        elif file.content_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})
+        CONTENT_TYPES = ['image/png','image/jpeg','image/jpg','image/gif','video/mp4','text/html','text/plain','application/msword','application/pdf',
+        'audio/mpeg','text/csv','application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+        if file.content_type in CONTENT_TYPES:
+            bucket.upload_fileobj(file.file,'mediafile/'+str(flow_id)+'/'+str(node_id)+'/'+(file.filename),ExtraArgs={'ContentType':file.content_type})
 
         s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/mediafile/{flow_id}/{node_id}/{file.filename}"
         db_subnode_data = db.session.query(SubNode).filter_by(flow_id=flow_id).filter_by(node_id=node_id).first()

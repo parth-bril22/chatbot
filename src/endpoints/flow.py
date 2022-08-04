@@ -441,7 +441,7 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
         get_visitor = db.session.query(Chat).filter_by(visitor_ip=chats.visitor_ip).filter_by(flow_id=chats.flow_id).first()
 
         if (get_visitor != None):
-            db.session.query(Chat).filter_by(visitor_ip=chats.visitor_ip).update({"chat":chats.chat})
+            db.session.query(Chat).filter_by(visitor_ip=chats.visitor_ip).filter_by(flow_id=chats.flow_id).update({"chat":chats.chat})
         else:
             new_chat = Chat(flow_id = chats.flow_id, visited_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),chat = chats.chat,visitor_ip=chats.visitor_ip)
             db.session.add(new_chat)
@@ -451,7 +451,7 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
         return JSONResponse(status_code=200,content={"message":"Success"})
     except Exception as e:
         print(e)
-        return JSONResponse(status_code=400,content={"errorMessage":"Error in save chathistory"})
+        return JSONResponse(status_code=400,content={"errorMessage":"Error in save chat history"})
 
 @router.get("/get_chat_history")
 async def get_chat_history(ip:str,flow_id:int,token = Depends(auth_handler.auth_wrapper)):
