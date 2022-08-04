@@ -222,8 +222,9 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
                 # for key,value in fields.items():
                 #     my_dict[key] = value
                 sub_node_list.append(my_dict)
+            sorted_sub_node_list = sorted(sub_node_list, key=lambda sub_node_list: sub_node_list['id'])
             get_data = {"flow_id" : flow_id,"id": str(node.id), "type": node.type, "position": node.position,
-             "data": { "id": node.id,"label": "NEW NODE", "nodeData": sub_node_list}}
+             "data": { "id": node.id,"label": "NEW NODE", "nodeData": sorted_sub_node_list}}
             node_list.append(get_data)
 
         return {"nodes": node_list,"connections": connections_list, "custom_fields": encoders.jsonable_encoder(all_custom_fileds),"sub_nodes:": encoders.jsonable_encoder(sub_nodes)}
