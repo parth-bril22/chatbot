@@ -206,7 +206,7 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
         all_connections = db.session.query(Connections).filter_by(flow_id=flow_id).all()
         connections_list =[]
         for conn in all_connections:
-            get_conn = {"id": str(conn.id), "markerEnd": {type: "MarkerType.ArrowClosed",},"type": 'buttonedge', "source": str(conn.source_node_id), "sourceHandle": conn.sub_node_id,"target": str(conn.target_node_id), "animated": True, "label": 'edge label', "flow_id":flow_id}
+            get_conn = {"id": str(conn.id), "markerEnd": {"type": "MarkerType.ArrowClosed",},"type": 'buttonedge', "source": str(conn.source_node_id), "sourceHandle": conn.sub_node_id,"target": str(conn.target_node_id), "animated": True, "label": 'edge label', "flow_id":flow_id}
             connections_list.append(get_conn)
         all_custom_fileds = db.session.query(CustomFields).filter_by(flow_id=flow_id).all()
         all_nodes = db.session.query(Node).filter_by(flow_id=flow_id).all()
