@@ -285,9 +285,9 @@ async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_
     Save latest diagram(nodes,connections,sub_nodes) with token in database and allow to publish 
     """
     try:
-        valid_user = await check_user_token(flow_id,token)
-        if (valid_user.status_code != 200):
-            return valid_user
+        # valid_user = await check_user_token(flow_id,token)
+        # if (valid_user.status_code != 200):
+        #     return valid_user
         save_draft_status = await save_draft(flow_id)
         if (save_draft_status.status_code != 200):
             return save_draft_status
