@@ -555,7 +555,7 @@ async def get_flow_analysis_data(flow_id:int,token = Depends(auth_handler.auth_w
         return {"nodes": diagram['nodes'],"connections": connections}
     except Exception as e:
         print(e)
-        return JSONResponse(status_code=400,content={"errorMessage":"Error at get that data"})
+        return JSONResponse(status_code=400,content={"errorMessage":"There is no visitors!"})
 
 @router.post("/upload_from_user")
 async def upload_to_s3_from_user(file:UploadFile,node_id:int,flow_id:int):
