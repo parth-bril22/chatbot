@@ -8,4 +8,3 @@ class Workspace(Base):
     id = Column(Integer, primary_key = True)
     user_id = Column(Integer)
     name = Column(String)
-    deleted = Column(Boolean)

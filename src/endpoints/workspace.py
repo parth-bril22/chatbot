@@ -45,7 +45,7 @@ async def create_workspace(space : WorkSpaceSchema,token = Depends(auth_handler.
         if space.name in workspace_names:
             return JSONResponse(status_code=404, content={"errorMessage":"Name is already exists"})
 
-        new_workspace = Workspace(name = space.name, user_id = space.user_id, deleted = False)
+        new_workspace = Workspace(name = space.name, user_id = space.user_id)
         db.session.add(new_workspace)
         db.session.commit()
         db.session.close()
@@ -61,7 +61,7 @@ async def create_workspace(user_id : int,token = Depends(auth_handler.auth_wrapp
     Get all workspaces list per user
     """
     try:
-        all_workspaces = db.session.query(Workspace).filter_by(user_id=user_id).filter_by(deleted=False).all()
+        all_workspaces = db.session.query(Workspace).filter_by(user_id=user_id).all()
         workspace_list =[]
         for workspace in all_workspaces:
             get_workspace = {"id":workspace.id,"name":workspace.name}
@@ -128,7 +128,7 @@ async def remove_workspace(user_id:int, workspace_id : int,token = Depends(auth_
     try:
         if (db.session.query(Workspace).filter_by(id=workspace_id).first()) == None:
             return JSONResponse(status_code=404,content={"errorMessage":"workspace not found"})
-        db.session.query(Workspace).filter_by(user_id=user_id).filter_by(id = workspace_id).update({"deleted":True}) 
+        db.session.query(Workspace).filter_by(user_id=user_id).filter_by(id = workspace_id).delete() 
         db.session.commit()
 
         # get the all flows from the table 
