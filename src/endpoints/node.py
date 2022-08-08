@@ -203,7 +203,7 @@ async def upload_files_to_s3(file:UploadFile,node_id:int,flow_id:int):
         if (upload_file.status_code != 200):
             return JSONResponse(status_code=400,content={"message":"File not uploaded"})
 
-        return JSONResponse(status_code=200, content={"message": "success"})
+        return JSONResponse(status_code=200, content={"message": "success","filename":file.filename})
     except Exception as e:
         print(e,'at create_node')
         return JSONResponse(status_code=404, content={"errorMessage":"Error in uploading file"})
