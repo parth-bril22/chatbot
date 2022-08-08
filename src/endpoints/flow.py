@@ -205,7 +205,7 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
         all_connections = db.session.query(Connections).filter_by(flow_id=flow_id).all()
         connections_list =[]
         for conn in all_connections:
-            get_conn = {"id": str(conn.id), "markerEnd": {"type": "arrowclosed",},"type": 'buttonedge', "source": str(conn.source_node_id), "sourceHandle": conn.sub_node_id,"target": str(conn.target_node_id), "animated": True, "label": 'edge label', "flow_id":flow_id}
+            get_conn = {"id": str(conn.id), "markerEnd": {"type": "arrowclosed","color":"#79E794","orient":"auto"},"type": 'buttonedge', "source": str(conn.source_node_id), "sourceHandle": conn.sub_node_id,"target": str(conn.target_node_id), "animated": True, "label": 'edge label', "flow_id":flow_id}
             connections_list.append(get_conn)
         all_custom_fileds = db.session.query(CustomFields).filter_by(flow_id=flow_id).all()
         all_nodes = db.session.query(Node).filter_by(flow_id=flow_id).all()
@@ -514,10 +514,10 @@ async def get_flow_analysis_data(flow_id:int,token = Depends(auth_handler.auth_w
             return valid_user
         diagram = await get_diagram(flow_id)
         connections = diagram['connections']
-        total_visits = len(db.session.query(Chat.flow_id).filter_by(flow_id=flow_id).all())
-        chat_data = db.session.query(Chat.chat).filter_by(flow_id=flow_id).all()
+        total_visits = len(db.session.query(Chat).filter_by(flow_id=flow_id).all())
         if total_visits == 0:
             return JSONResponse(status_code=404,content={"errorMessage":"There is no visitors!"})
+        chat_data = db.session.query(Chat.chat).filter_by(flow_id=flow_id).all()
         subnode_list=[]
         input_types = ['url','file',"text",'number','phone','email','date']
         pop_list = []
