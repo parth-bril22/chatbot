@@ -245,7 +245,7 @@ async def save_draft(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
         return JSONResponse(status_code=200, content={"message":"success"})
     except Exception as e:
         print(e, "at:", datetime.now())
-        return JSONResponse(status_code=400, content={"errorMessage":"please check the input"})
+        return JSONResponse(status_code=400, content={"errorMessage":"Can't save draft"})
 
 async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
     """
@@ -255,25 +255,12 @@ async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
         get_diagram = db.session.query(Flow).filter_by(id=flow_id).first()
         db.session.query(Flow).filter_by(id=flow_id).update({"updated_at": datetime.today().isoformat()})        
         if (get_diagram == None):
-            return JSONResponse(status_code=404, content={"errorMessage":"please publish first"})
-        chat_count = db.session.query(Flow.chats).filter_by(id = flow_id).first()#can keep this same
-
-        if(chat_count[0] == None):
-            local_count = 0
-        else:
-            local_count = chat_count[0]
-     
-        #increase count of chats initialized
-        local_count = local_count + 1
-        db.session.query(Flow).filter_by(id = flow_id).update({"chats":local_count})
-
-        db.session.commit()
-        db.session.close()
+            return JSONResponse(status_code=404, content={"errorMessage":"Please publish first"})
         return get_diagram.diagram
 
     except Exception as e:
-        print("Error at send: ", e)
-        return JSONResponse(status_code=404, content={"errorMessage": "Send Chat data Not Found"})
+        print(e)
+        return JSONResponse(status_code=404, content={"errorMessage": "Error at Preview"})
 
 @router.post('/{my_token}/preview')
 async def tokenize_preview(my_token:str):
@@ -457,6 +444,17 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
         else:
             new_chat = Chat(flow_id = chats.flow_id, visited_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),chat = chats.chat,visitor_ip=chats.visitor_ip)
             db.session.add(new_chat)
+        chat_count = db.session.query(Flow.chats).filter_by(id = chats.flow_id).first()#can keep this same
+
+        if(chat_count[0] == None):
+            local_count = 0
+        else:
+            local_count = chat_count[0]
+     
+        #increase count of chats initialized
+        local_count = local_count + 1
+        db.session.query(Flow).filter_by(id = chats.flow_id).update({"chats":local_count})
+
         db.session.commit()
         db.session.close()
 
