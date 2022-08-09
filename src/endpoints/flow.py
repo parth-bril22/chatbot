@@ -45,7 +45,7 @@ async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrappe
     try:
         flow_names =[i[0] for i in db.session.query(Flow.name).filter_by(user_id=flow.user_id).filter_by(status = 'active').all()]
 
-        if flow.name in flow_names:
+        if flow.name.rstrip()in flow_names:
             return JSONResponse(status_code=404, content={"errorMessage":"Name is already exists"})
         if(flow.name == None or len(flow.name.strip()) == 0):
             return Response(status_code=204)
