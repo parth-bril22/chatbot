@@ -256,6 +256,19 @@ async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
         db.session.query(Flow).filter_by(id=flow_id).update({"updated_at": datetime.today().isoformat()})        
         if (get_diagram == None):
             return JSONResponse(status_code=404, content={"errorMessage":"please publish first"})
+        chat_count = db.session.query(Flow.chats).filter_by(id = flow_id).first()#can keep this same
+
+        if(chat_count[0] == None):
+            local_count = 0
+        else:
+            local_count = chat_count[0]
+     
+        #increase count of chats initialized
+        local_count = local_count + 1
+        db.session.query(Flow).filter_by(id = flow_id).update({"chats":local_count})
+
+        db.session.commit()
+        db.session.close()
         return get_diagram.diagram
 
     except Exception as e:
