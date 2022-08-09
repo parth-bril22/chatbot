@@ -444,16 +444,30 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
         else:
             new_chat = Chat(flow_id = chats.flow_id, visited_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),chat = chats.chat,visitor_ip=chats.visitor_ip)
             db.session.add(new_chat)
-        chat_count = db.session.query(Flow.chats).filter_by(id = chats.flow_id).first()#can keep this same
+        # subnode_list = []
+        # chat_data = chats.chat
 
-        if(chat_count[0] == None):
-            local_count = 0
-        else:
-            local_count = chat_count[0]
+        # for i in chat_data:
+        #     subnode_list.append(i['id'])
+        # print(subnode_list)
+        # chat_count = db.session.query(Flow.chats).filter_by(id = chats.flow_id).first()#can keep this same
+        # finished_count = db.session.query(Flow.finished).filter_by(id = chats.flow_id).first()
+
+        # if(chat_count[0] == None):
+        #     chat = 0
+        # else:
+        #     chat = chat_count[0]
      
-        #increase count of chats initialized
-        local_count = local_count + 1
-        db.session.query(Flow).filter_by(id = chats.flow_id).update({"chats":local_count})
+        # #increase count of chats initialized
+        # chat = chat + 1
+
+        # if(finished_count[0] == None):
+        #     finish = 0
+        # else:
+        #     finish = chat_count[0]
+
+        # finish = finish + 1
+        # db.session.query(Flow).filter_by(id = chats.flow_id).update({"chats":chat,"finished":finish})
 
         db.session.commit()
         db.session.close()
@@ -530,7 +544,7 @@ async def get_flow_analysis_data(flow_id:int,token = Depends(auth_handler.auth_w
             return JSONResponse(status_code=404,content={"errorMessage":"There is no visitors!"})
         chat_data = db.session.query(Chat.chat).filter_by(flow_id=flow_id).all()
         subnode_list=[]
-        input_types = ['url','file',"text",'number','phone','email','date']
+        input_types = ['url','file','text','number','phone','email','date']
         pop_list = []
 
         for i in range(len(chat_data)):
