@@ -45,7 +45,7 @@ async def create_workspace(space : WorkSpaceSchema,token = Depends(auth_handler.
         if space.name in workspace_names:
             return JSONResponse(status_code=404, content={"errorMessage":"Name is already exists"})
 
-        new_workspace = Workspace(name = space.name, user_id = space.user_id)
+        new_workspace = Workspace(name = space.name.rstrip(), user_id = space.user_id)
         db.session.add(new_workspace)
         db.session.commit()
         db.session.close()

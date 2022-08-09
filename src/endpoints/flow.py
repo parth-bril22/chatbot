@@ -49,7 +49,7 @@ async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrappe
             return JSONResponse(status_code=404, content={"errorMessage":"Name is already exists"})
         if(flow.name == None or len(flow.name.strip()) == 0):
             return Response(status_code=204)
-        new_flow = Flow(name = flow.name, user_id = flow.user_id, created_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),publish_token=None,status = "active", isEnable = True,chats =0, finished=0, workspace_id=0,workspace_name=None)
+        new_flow = Flow(name = flow.name.rstrip(), user_id = flow.user_id, created_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),publish_token=None,status = "active", isEnable = True,chats =0, finished=0, workspace_id=0,workspace_name=None)
         db.session.add(new_flow)
         db.session.commit()
 
