@@ -521,22 +521,27 @@ async def get_flow_analysis_data(flow_id:int,token = Depends(auth_handler.auth_w
         subnode_list=[]
         input_types = ['url','file',"text",'number','phone','email','date']
         pop_list = []
+
         for i in range(len(chat_data)):
-            if chat_data[i][0][-1]['type'] in input_types:
-                pop_list.append(chat_data[i][0][-1]['id'])
+            if len(chat_data[i][0])== 0:
+                print(chat_data[i])
             else:
-                pop_list
-            id_list =[]
-            for i in chat_data[i][0]:
-                if i['type'] == 'button':
-                    id_list.append(i['id'])
-                elif 'from' in i:   
-                    pass
-                elif i['id'] in pop_list:
-                    pass
+                if chat_data[i][0][-1]['type'] in input_types:
+                    pop_list.append(chat_data[i][0][-1]['id'])
                 else:
-                    id_list.append(i['id'])
-            subnode_list.extend(list(set(id_list)))
+                    pop_list
+                id_list =[]
+                for i in chat_data[i][0]:
+                    if i['type'] == 'button':
+                        id_list.append(i['id'])
+                    elif 'from' in i:   
+                        pass
+                    elif i['id'] in pop_list:
+                        pass
+                    else:
+                        id_list.append(i['id'])
+                subnode_list.extend(list(set(id_list)))
+            
 
         subnode_set = list(set(subnode_list))
         subnode_frequency = dict(collections.Counter(subnode_list))
