@@ -5,7 +5,7 @@ class FlowSchema(BaseModel):
     _id: int
     _created_at: datetime
     _updated_at: datetime
-    name : str.rstrip()
+    name : str
     user_id : int
 
     class Config:
