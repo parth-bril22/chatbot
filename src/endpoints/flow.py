@@ -515,6 +515,7 @@ async def get_flow_analysis_data(flow_id:int,token = Depends(auth_handler.auth_w
         diagram = await get_diagram(flow_id)
         connections = diagram['connections']
         total_visits = len(db.session.query(Chat).filter_by(flow_id=flow_id).all())
+        print(total_visits)
         if total_visits == 0:
             return JSONResponse(status_code=404,content={"errorMessage":"There is no visitors!"})
         chat_data = db.session.query(Chat.chat).filter_by(flow_id=flow_id).all()
@@ -524,7 +525,7 @@ async def get_flow_analysis_data(flow_id:int,token = Depends(auth_handler.auth_w
 
         for i in range(len(chat_data)):
             if len(chat_data[i][0])== 0:
-                print(chat_data[i])
+                total_visits-=1
             else:
                 if chat_data[i][0][-1]['type'] in input_types:
                     pop_list.append(chat_data[i][0][-1]['id'])
@@ -542,7 +543,7 @@ async def get_flow_analysis_data(flow_id:int,token = Depends(auth_handler.auth_w
                         id_list.append(i['id'])
                 subnode_list.extend(list(set(id_list)))
             
-
+        print(total_visits)
         subnode_set = list(set(subnode_list))
         subnode_frequency = dict(collections.Counter(subnode_list))
 
