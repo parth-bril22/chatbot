@@ -441,7 +441,7 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
 
         if (get_visitor != None):
             finish_count = db.session.query(Flow.finished).filter_by(id = chats.flow_id).first() #can keep this same
-            flow_info = db.session.query(Flow.diagram).filter_by(id=flow_id).first()
+            flow_info = db.session.query(Flow.diagram).filter_by(id=chats.flow_id).first()
 
             published_nodes = []
             for i in flow_info['diagram']['nodes']:
