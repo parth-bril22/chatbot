@@ -440,35 +440,43 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
         get_visitor = db.session.query(Chat).filter_by(visitor_ip=chats.visitor_ip).filter_by(flow_id=chats.flow_id).first()
 
         if (get_visitor != None):
+            finish_count = db.session.query(Flow.finished).filter_by(id = chats.flow_id).first() #can keep this same
+            flow_info = db.session.query(Flow.diagram).filter_by(id=flow_id).first()
+
+            published_nodes = []
+            for i in flow_info['diagram']['nodes']:
+                published_nodes.append(i['id'])
+            
+            saved_nodes=[]
+
+            for i in chats.chat:
+                saved_nodes.append(i['node_id'])
+            if(finish_count[0] == None):
+                finish = 0
+            else:
+                finish = finish_count[0]
+            #increase count of finished initialized
+            if len(set(published_nodes)) == len(set(saved_nodes)):
+                finish = finish + 1
+            else:
+                finish = finish
+            db.session.query(Flow).filter_by(id = chats.flow_id).update({"finished":finish})
             db.session.query(Chat).filter_by(visitor_ip=chats.visitor_ip).filter_by(flow_id=chats.flow_id).update({"chat":chats.chat})
         else:
+            chat_count = db.session.query(Flow.chats).filter_by(id = chats.flow_id).first() #can keep this same
+
+            if(chat_count[0] == None):
+                chat = 0
+            else:
+                chat = chat_count[0]
+        
+            #increase count of chats initialized
+            chat = chat + 1
+            db.session.query(Flow).filter_by(id = chats.flow_id).update({"chats":chat})
+
             new_chat = Chat(flow_id = chats.flow_id, visited_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),chat = chats.chat,visitor_ip=chats.visitor_ip)
             db.session.add(new_chat)
-        # subnode_list = []
-        # chat_data = chats.chat
-
-        # for i in chat_data:
-        #     subnode_list.append(i['id'])
-        # print(subnode_list)
-        # chat_count = db.session.query(Flow.chats).filter_by(id = chats.flow_id).first()#can keep this same
-        # finished_count = db.session.query(Flow.finished).filter_by(id = chats.flow_id).first()
-
-        # if(chat_count[0] == None):
-        #     chat = 0
-        # else:
-        #     chat = chat_count[0]
-     
-        # #increase count of chats initialized
-        # chat = chat + 1
-
-        # if(finished_count[0] == None):
-        #     finish = 0
-        # else:
-        #     finish = chat_count[0]
-
-        # finish = finish + 1
-        # db.session.query(Flow).filter_by(id = chats.flow_id).update({"chats":chat,"finished":finish})
-
+        
         db.session.commit()
         db.session.close()
 
