@@ -234,7 +234,7 @@ async def save_draft(flow_id:int):
         print(e, "at save draft. Time:", datetime.now())
         return JSONResponse(status_code=400, content={"errorMessage":"Can't save draft"})
 
-async def preview(flow_id : int):
+async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
     """
     Retun the diagram for the preview (user conversion)
     """
