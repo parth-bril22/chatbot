@@ -1,13 +1,11 @@
 import boto3
 import secrets
 import json
-import time
 from fastapi.responses import JSONResponse
 from fastapi import APIRouter, status, HTTPException ,encoders , Response,Depends,UploadFile
 from typing import List,Dict
 from datetime import datetime
 from fastapi_sqlalchemy import db
-from functools import lru_cache
 
 from ..schemas.nodeSchema import NodeSchema,ConnectionSchema,SubNodeSchema,UpdateSubNodeSchema
 from ..models.node import Node, NodeType,Connections,SubNode
@@ -385,7 +383,6 @@ async def create_connection(connection : ConnectionSchema):
     Create a connection(edge) between nodes
     """
     try:
-        st = time.time()
         if connection.sub_node_id == "" : connection.sub_node_id = "b"
         try:
             source_node_exists = db.session.query(Node).filter((Node.id == connection.source_node_id)).first()
@@ -411,8 +408,6 @@ async def create_connection(connection : ConnectionSchema):
             db.session.add(new_connection)
         db.session.query(Flow).filter_by(id=connection.flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()
-        et = time.time()
-        print(et-st)
         return JSONResponse(status_code = 200, content = {"message": "Connection created succssfully!"})
     except Exception as e:
         print(e,"at creating connection. Time:", datetime.now())
