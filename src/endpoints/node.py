@@ -379,6 +379,7 @@ async def delete_sub_node(sub_node_id : str,flow_id:int,token = Depends(auth_han
         print(e,"at delete subnode. Time:", datetime.now())
         return JSONResponse(status_code=404, content={"errorMessage":"Can't delete subnode"})  
 
+@lru_cache
 async def create_connection(connection : ConnectionSchema):
     """
     Create a connection(edge) between nodes
