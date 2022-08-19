@@ -38,4 +38,4 @@ async def get_connected_channels():
         return JSONResponse(status_code = 200, content = {"channels": all_channels})
     except Exception as e:
         print(e, "at creating workspace. Time:", datetime.now())
-        return JSONResponse(status_code=400, content={"errorMessage":"Can't create a workspace"})
+        return JSONResponse(status_code=400, content={"errorMessage":"There is no channels available!"})
