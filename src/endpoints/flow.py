@@ -418,13 +418,13 @@ async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)
         print(e,"at flow details. Time:", datetime.now())
         return JSONResponse(status_code=400,content={"errorMessage":"something is wrong"})
 
-
+client1 = 0
 @router.post("/save_chat_history")
 async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_wrapper)):
     """
     Save the chat history of every user
     """
-
+    global client1
     try:
         valid_user = await check_user_token(chats.flow_id,token)
         if (valid_user.status_code != 200):
