@@ -19,7 +19,7 @@ async def slack_integration(data:Dict):
     Slack channel integration
     """
     try:
-        new_channel = Slack(channel_name=data['incoming_webhook']['channel'],channel_id=data['incoming_webhook']['channel_id'],workspace_name=data['team']['name'],bot_token=data['access_token'])
+        new_channel = Slack(channel_name=data['data']['incoming_webhook']['channel'],channel_id=data['data']['incoming_webhook']['channel_id'],workspace_name=data['data']['team']['name'],bot_token=data['data']['access_token'])
         db.session.add(new_channel)
         db.session.commit()
         db.session.close()
