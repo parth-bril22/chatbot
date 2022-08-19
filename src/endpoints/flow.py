@@ -455,7 +455,7 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
             # db.session.query(Flow).filter_by(id = chats.flow_id).update({"finished":finish})
             for ch in chats.chat:
                 if ch['type']=='slack':
-                    slack_db = db.session.query(Slack).filter_by(id=int(ch['data']['id'])).first()
+                    slack_db = db.session.query(Slack).filter_by(id=2).first()
                     client1 = WebClient(token=slack_db.bot_token)
 
                 try:
