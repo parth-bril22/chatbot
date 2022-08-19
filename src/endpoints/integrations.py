@@ -28,7 +28,7 @@ async def slack_integration(data:Dict):
         print(e,"at slack connection. Time:", datetime.now())
         return JSONResponse(status_code=404, content={"errorMessage":"Can't connect with Slack"})
 
-@router.post('/get_slack')
+@router.get('/get_slack')
 async def get_connected_channels():
     """
     Get all connected channels 
