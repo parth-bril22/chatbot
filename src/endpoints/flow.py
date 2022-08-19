@@ -424,7 +424,7 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
     """
     Save the chat history of every user
     """
-    global client
+
     try:
         valid_user = await check_user_token(chats.flow_id,token)
         if (valid_user.status_code != 200):
@@ -456,10 +456,10 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
             for ch in chats.chat:
                 if ch['type']=='slack':
                     slack_db = db.session.query(Slack).filter_by(id=int(ch['data']['id'])).first()
-                    client = WebClient(token=slack_db.bot_token)
+                    client1 = WebClient(token=slack_db.bot_token)
 
                 try:
-                    response = client.chat_postMessage(channel=slack_db.channel_name, text=ch['data']['text'])
+                    response = client1.chat_postMessage(channel=slack_db.channel_name, text=ch['data']['text'])
                     assert response["message"]["text"] == ch['data']['text']
                 except SlackApiError as e:
                     # You will get a SlackApiError if "ok" is False
