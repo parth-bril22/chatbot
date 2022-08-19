@@ -7,11 +7,15 @@ from fastapi_sqlalchemy import db
 from datetime import datetime
 from typing import List,Dict
 
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
+
 
 from ..dependencies.env import AWS_ACCESS_KEY,AWS_ACCESS_SECRET_KEY,BUCKET_NAME
 
 from ..schemas.flowSchema import FlowSchema,ChatSchema
-from ..models.flow import Flow,Chat,EmbedScript
+from ..models.flow import Flow,Chat,EmbedScript,
+from ..models.integrations import Slack
 from ..models.node import Node,SubNode,CustomFields,Connections
 from ..endpoints.node import check_user_token
 
@@ -427,7 +431,7 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
         get_visitor = db.session.query(Chat).filter_by(visitor_ip=chats.visitor_ip).filter_by(flow_id=chats.flow_id).first()
 
         if (get_visitor != None):
-            finish_count = db.session.query(Flow.finished).filter_by(id = chats.flow_id).first() #can keep this same
+            # finish_count = db.session.query(Flow.finished).filter_by(id = chats.flow_id).first() #can keep this same
             # flow_info = db.session.query(Flow.diagram).filter_by(id=chats.flow_id).first()
 
             # published_nodes = []
@@ -438,16 +442,31 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
 
             for i in chats.chat:
                 saved_nodes.append(i['node_id'])
-            if(finish_count[0] == None):
-                finish = 0
-            else:
-                finish = len(set(saved_nodes))
+            # if(finish_count[0] == None):
+            #     finish = 0
+            # else:
+            #     finish = len(set(saved_nodes))
             #increase count of finished initialized
             # if len(set(published_nodes)) == len(set(saved_nodes)):
             #     finish = finish + 1
             # else:
             #     finish = finish
-            db.session.query(Flow).filter_by(id = chats.flow_id).update({"finished":finish})
+            # db.session.query(Flow).filter_by(id = chats.flow_id).update({"finished":finish})
+            for ch in chats.chat:
+                if ch['type']=='slack':
+                    slack_db = db.session.query(Slack).filter_by(id=int(ch['data']['id'])).first()
+                    client = WebClient(token=slack_db.bot_token)
+
+                try:
+                    response = client.chat_postMessage(channel=slack_db.channel_name, text=ch['data']['text'])
+                    assert response["message"]["text"] == ch['data']['text']
+                except SlackApiError as e:
+                    # You will get a SlackApiError if "ok" is False
+                    assert e.response["ok"] is False
+                    assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
+                    print(f"Got an error: {e.response['error']}")
+                else:
+                    pass
             db.session.query(Chat).filter_by(visitor_ip=chats.visitor_ip).filter_by(flow_id=chats.flow_id).update({"chat":chats.chat})
         else:
             chat_count = db.session.query(Flow.chats).filter_by(id = chats.flow_id).first() #can keep this same
@@ -459,28 +478,42 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
         
             #increase count of chats initialized
             chat = chat + 1
-            flow_info = db.session.query(Flow.diagram).filter_by(id=chats.flow_id).first()
+            # flow_info = db.session.query(Flow.diagram).filter_by(id=chats.flow_id).first()
 
-            published_nodes = []
-            for i in flow_info['diagram']['nodes']:
-                published_nodes.append(i['id'])
+            # published_nodes = []
+            # for i in flow_info['diagram']['nodes']:
+            #     published_nodes.append(i['id'])
             
             saved_nodes=[]
 
             for i in chats.chat:
                 saved_nodes.append(i['node_id'])
-            if(finish_count[0] == None):
-                finish = 0
-            else:
-                finish = finish_count[0]
+            # if(finish_count[0] == None):
+            #     finish = 0
+            # else:
+            #     finish = finish_count[0]
             #increase count of finished initialized
-            if len(set(published_nodes)) == len(set(saved_nodes)):
-                finish = finish + 1
-            else:
-                finish = finish
-            db.session.query(Flow).filter_by(id = chats.flow_id).update({"finished":finish})
+            # if len(set(published_nodes)) == len(set(saved_nodes)):
+            #     finish = finish + 1
+            # else:
+            #     finish = finish
+            # db.session.query(Flow).filter_by(id = chats.flow_id).update({"finished":finish})
             db.session.query(Flow).filter_by(id = chats.flow_id).update({"chats":chat})
+            for ch in chats.chat:
+                if ch['type']=='slack':
+                    slack_db = db.session.query(Slack).filter_by(id=int(ch['data']['id'])).first()
+                    client = WebClient(token=slack_db.bot_token)
 
+                try:
+                    response = client.chat_postMessage(channel=slack_db.channel_name, text=ch['data']['text'])
+                    assert response["message"]["text"] == ch['data']['text']
+                except SlackApiError as e:
+                    # You will get a SlackApiError if "ok" is False
+                    assert e.response["ok"] is False
+                    assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
+                    print(f"Got an error: {e.response['error']}")
+                else:
+                    pass
             new_chat = Chat(flow_id = chats.flow_id, visited_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),chat = chats.chat,visitor_ip=chats.visitor_ip)
             db.session.add(new_chat)
         
