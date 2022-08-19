@@ -35,7 +35,11 @@ async def get_connected_channels():
     """
     try:
         all_channels = db.session.query(Slack).all()
-        return JSONResponse(status_code = 200, content = {"channels": all_channels})
+        channels = []
+        for ch in all_channels:
+            get_channel = {"id":ch.id,"channel":(ch.workspace_name+' - '+ch.channel_name)}
+            channels.append(get_channel)
+        return JSONResponse(status_code = 200, content = {"channels":channels})
     except Exception as e:
-        print(e, "at creating workspace. Time:", datetime.now())
+        print(e, "at get slack channels. Time:", datetime.now())
         return JSONResponse(status_code=400, content={"errorMessage":"There is no channels available!"})
