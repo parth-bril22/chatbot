@@ -418,6 +418,19 @@ async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)
         print(e,"at flow details. Time:", datetime.now())
         return JSONResponse(status_code=400,content={"errorMessage":"something is wrong"})
 
+async def post_message(slack_id,message):
+    slack_db = db.session.query(Slack).filter_by(id=slack_id).first()
+    client = WebClient(token=slack_db.bot_token)
+
+    try:
+        response = client.chat_postMessage(channel=slack_db.channel_name, text=message)
+        assert response["message"]["text"] == message
+    except SlackApiError as e:
+        # You will get a SlackApiError if "ok" is False
+        assert e.response["ok"] is False
+        assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
+        print(f"Got an error: {e.response['error']}")
+
 client1 = WebClient(token="") 
 @router.post("/save_chat_history")
 async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_wrapper)):
@@ -455,17 +468,7 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
             # db.session.query(Flow).filter_by(id = chats.flow_id).update({"finished":finish})
             for ch in chats.chat:
                 if ch['type']=='slack':
-                    slack_db = db.session.query(Slack).filter_by(id=2).first()
-                    client1 = WebClient(token=slack_db.bot_token)
-
-                try:
-                    response = client1.chat_postMessage(channel=slack_db.channel_name, text=ch['data']['text'])
-                    assert response["message"]["text"] == ch['data']['text']
-                except SlackApiError as e:
-                    # You will get a SlackApiError if "ok" is False
-                    assert e.response["ok"] is False
-                    assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
-                    print(f"Got an error: {e.response['error']}")
+                    await post_message(int(ch['data']['slack_id']),ch['data']['text'])
                 else:
                     pass
             db.session.query(Chat).filter_by(visitor_ip=chats.visitor_ip).filter_by(flow_id=chats.flow_id).update({"chat":chats.chat})
@@ -502,17 +505,7 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
             db.session.query(Flow).filter_by(id = chats.flow_id).update({"chats":chat})
             for ch in chats.chat:
                 if ch['type']=='slack':
-                    slack_db = db.session.query(Slack).filter_by(id=int(ch['data']['id'])).first()
-                    client = WebClient(token=slack_db.bot_token)
-
-                try:
-                    response = client.chat_postMessage(channel=slack_db.channel_name, text=ch['data']['text'])
-                    assert response["message"]["text"] == ch['data']['text']
-                except SlackApiError as e:
-                    # You will get a SlackApiError if "ok" is False
-                    assert e.response["ok"] is False
-                    assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
-                    print(f"Got an error: {e.response['error']}")
+                    await post_message(int(ch['data']['slack_id']),ch['data']['text'])
                 else:
                     pass
             new_chat = Chat(flow_id = chats.flow_id, visited_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),chat = chats.chat,visitor_ip=chats.visitor_ip)
