@@ -14,7 +14,7 @@ from slack_sdk.errors import SlackApiError
 from ..dependencies.env import AWS_ACCESS_KEY,AWS_ACCESS_SECRET_KEY,BUCKET_NAME
 
 from ..schemas.flowSchema import FlowSchema,ChatSchema
-from ..models.flow import Flow,Chat,EmbedScript,
+from ..models.flow import Flow,Chat,EmbedScript
 from ..models.integrations import Slack
 from ..models.node import Node,SubNode,CustomFields,Connections
 from ..endpoints.node import check_user_token
