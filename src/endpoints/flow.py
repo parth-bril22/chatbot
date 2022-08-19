@@ -425,6 +425,7 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
     Save the chat history of every user
     """
     try:
+        global client
         valid_user = await check_user_token(chats.flow_id,token)
         if (valid_user.status_code != 200):
             return valid_user
