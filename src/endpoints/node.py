@@ -196,6 +196,25 @@ async def create_nodes(node : NodeSchema,token = Depends(auth_handler.auth_wrapp
         print(e,"at creating node. Time:", datetime.now())
         return JSONResponse(status_code=404, content={"errorMessage":"Can't create a node"})
 
+@router.post("/slack")
+# async def slack_integration(channel:str, message:str,access_token:str):
+async def slack_integration(data:Dict):
+    """
+    Slack connection  as a node
+    """
+    try:
+        # if (channel == None) or (message == None) or (access_token == None):
+        #     return JSONResponse(status_code=400,content={"message":"Channel or message is missing"})
+
+        data = data
+        print(data)
+
+        return JSONResponse(status_code=200, content={"message": "Slack connection eshtablished!"})
+    except Exception as e:
+        print(e,"at slack connection. Time:", datetime.now())
+        return JSONResponse(status_code=404, content={"errorMessage":"Can't connect with Slack"})
+
+
 @router.post('/upload_file')
 async def upload_files_to_s3(file:UploadFile,node_id:int,flow_id:int):
     """
