@@ -4,6 +4,7 @@ from typing import List,Dict
 from datetime import datetime
 from fastapi_sqlalchemy import db
 
+from ..schemas.integrationSchema import SlackSchema
 from ..models.integrations import Slack
 from fastapi.responses import JSONResponse
 
@@ -15,12 +16,12 @@ router = APIRouter(
 
 @router.post("/slack")
 # async def slack_integration(channel:str, message:str,access_token:str):
-async def slack_integration(data:Dict,userId:int):
+async def slack_integration(data:SlackSchema):
     """
     Slack channel integration
     """
     try:
-        new_channel = Slack(channel_name=data['data']['incoming_webhook']['channel'],channel_id=data['data']['incoming_webhook']['channel_id'],workspace_name=data['data']['team']['name'],bot_token=data['data']['access_token'],user_id=userId)
+        new_channel = Slack(channel_name=data['data']['incoming_webhook']['channel'],channel_id=data['data']['incoming_webhook']['channel_id'],workspace_name=data['data']['team']['name'],bot_token=data['data']['access_token'],user_id=data['userID'])
         db.session.add(new_channel)
         db.session.commit()
         db.session.close()
