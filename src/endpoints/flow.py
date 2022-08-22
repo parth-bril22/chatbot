@@ -451,7 +451,7 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
             #     published_nodes.append(i['id'])
             
             saved_nodes=[]
-
+            print('hello')
             for i in chats.chat:
                 saved_nodes.append(i['node_id'])
             # if(finish_count[0] == None):
