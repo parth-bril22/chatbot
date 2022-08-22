@@ -420,7 +420,6 @@ async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)
 
 async def post_message(slack_id,message):
     slack_db = db.session.query(Slack).filter_by(id=slack_id).first()
-    print(slack_db.bot_token)
     client = WebClient(token=slack_db.bot_token)
 
     try:
@@ -467,7 +466,6 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
             # db.session.query(Flow).filter_by(id = chats.flow_id).update({"finished":finish})
             for ch in chats.chat:
                 if ch['type']=='slack':
-                    print(ch['data']['text'])
                     await post_message(int(ch['data']['slack_id']),ch['data']['text'])
                 else:
                     pass
