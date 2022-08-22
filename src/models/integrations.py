@@ -11,3 +11,4 @@ class Slack(Base):
     channel_id = Column(String)
     workspace_name = Column(String)
     bot_token = Column(String)
+    user_id = Column(Integer)
