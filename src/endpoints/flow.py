@@ -424,6 +424,7 @@ async def post_message(slack_id=None,message='Thank you'):
     client = WebClient(token=slack_db.bot_token)
 
     try:
+        print(message)
         response = client.chat_postMessage(channel=slack_db.channel_name, text=message)
         assert response["message"]["text"] == message
     except SlackApiError as e:
