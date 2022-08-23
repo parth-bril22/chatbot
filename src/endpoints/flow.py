@@ -504,7 +504,10 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
             db.session.query(Flow).filter_by(id = chats.flow_id).update({"chats":chat})
             for ch in chats.chat:
                 if ch['type']=='slack':
-                    await post_message(int(ch['data']['slack_id']),ch['data']['text'])
+                    if ch['data']['text'] == '':
+                        await post_message(int(ch['data']['slack_id']))
+                    else:
+                        await post_message(int(ch['data']['slack_id']),ch['data']['text'])
                 else:
                     pass
             new_chat = Chat(flow_id = chats.flow_id, visited_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),chat = chats.chat,visitor_ip=chats.visitor_ip)
