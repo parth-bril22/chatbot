@@ -223,7 +223,7 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
     except Exception as e:
         print(e, "at getting diagram. Time:", datetime.now())
         return JSONResponse(status_code=400, content={"errorMessage": "Cannot get diagram"})
-@router.post('/save_draft')
+
 async def save_draft(flow_id:int):
     """
     Save the diagram in db
