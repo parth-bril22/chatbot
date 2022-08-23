@@ -419,8 +419,8 @@ async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)
         return JSONResponse(status_code=400,content={"errorMessage":"something is wrong"})
 
 async def post_message(slack_id=None,message='Thank you'):
-    print(slack_id)
-    slack_db = db.session.query(Slack).filter_by(id=slack_id).first()
+    if slack_id != None:
+        slack_db = db.session.query(Slack).filter_by(id=int(slack_id)).first()
     client = WebClient(token=slack_db.bot_token)
 
     try:
