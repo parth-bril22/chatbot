@@ -418,7 +418,7 @@ async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)
         print(e,"at flow details. Time:", datetime.now())
         return JSONResponse(status_code=400,content={"errorMessage":"something is wrong"})
 
-async def post_message(slack_id=None,message='Thank You!'):
+async def post_message(slack_id,message):
     slack_db = db.session.query(Slack).filter_by(id=slack_id).first()
     client = WebClient(token=slack_db.bot_token)
     try:
@@ -501,10 +501,7 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
             db.session.query(Flow).filter_by(id = chats.flow_id).update({"chats":chat})
             for ch in chats.chat:
                 if ch['type']=='slack':
-                    if ch['data']['text'] == "":
-                        await post_message(int(ch['data']['slack_id']))
-                    else:
-                        await post_message(int(ch['data']['slack_id']),ch['data']['text'])
+                    await post_message(int(ch['data']['slack_id']),ch['data']['text'])
                 else:
                     pass
             new_chat = Chat(flow_id = chats.flow_id, visited_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),chat = chats.chat,visitor_ip=chats.visitor_ip)
