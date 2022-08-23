@@ -231,8 +231,8 @@ async def save_draft(flow_id:int):
     try:
         diagram = await get_diagram(flow_id)
         for node in get_diagram['nodes']:
-            if node.type=='slack':
-                if node.data['slack_id'] == None:
+            if node['type']=='slack':
+                if node['data']['slack_id'] == None:
                     return JSONResponse(status_code=400, content={"errorMessage": "No slack channel selected"})
         db.session.query(Flow).filter_by(id = flow_id).update({'diagram' : diagram})
         db.session.commit()
