@@ -223,14 +223,14 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
     except Exception as e:
         print(e, "at getting diagram. Time:", datetime.now())
         return JSONResponse(status_code=400, content={"errorMessage": "Cannot get diagram"})
-
+@router.post('/save_draft')
 async def save_draft(flow_id:int):
     """
     Save the diagram in db
     """
     try:
         diagram = await get_diagram(flow_id)
-        for node in get_diagram.nodes:
+        for node in get_diagram['nodes']:
             if node.type=='slack':
                 if node.data['slack_id'] == None:
                     return JSONResponse(status_code=400, content={"errorMessage": "No slack channel selected"})
