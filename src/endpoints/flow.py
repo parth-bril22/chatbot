@@ -206,11 +206,12 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
 
         node_list = []
         for node in all_nodes:
-            if node.type=='slack':
-                print('hello')
             sub_nodes = db.session.query(SubNode).filter_by(node_id = node.id).all()
             sub_node_list = []
             for sub_node in sub_nodes:
+                if sub_node.type=='slack':
+                    if not sub_node.data['slack_id']:
+                        return JSONResponse(status_code=400, content={"errorMessage": "No slack channel selected"})
                 fields = dict(sub_node.data.items()) #get fields of data(text,btn,...)
                 my_dict = {"flow_id":sub_node.flow_id, "node_id":sub_node.node_id,"type":sub_node.type,"id":sub_node.id, "data":fields}
                 # for key,value in fields.items():
