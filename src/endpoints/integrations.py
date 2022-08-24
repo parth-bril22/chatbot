@@ -15,10 +15,9 @@ router = APIRouter(
 )
 
 @router.post("/slack")
-# async def slack_integration(channel:str, message:str,access_token:str):
 async def slack_integration(data:SlackSchema):
     """
-    Slack channel integration
+    Slack channel integration by user
     """
     try:
         new_channel = Slack(channel_name=data.data['incoming_webhook']['channel'],channel_id=data.data['incoming_webhook']['channel_id'],workspace_name=data.data['team']['name'],bot_token=data.data['access_token'],user_id=data.userId)
@@ -33,7 +32,7 @@ async def slack_integration(data:SlackSchema):
 @router.get('/get_slack')
 async def get_connected_channels(userId:int):
     """
-    Get all connected channels 
+    Get all connected channels by user
     """
     try:
         all_channels = db.session.query(Slack).filter_by(user_id = userId).all()

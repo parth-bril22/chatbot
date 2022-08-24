@@ -6,7 +6,7 @@ name: fastapi-github-actions-test
 on: 
   #Trigger the workflow on a push event to the master branch only
   push: 
-    branches: [master]
+    branches: [dev]
 
 #A workflow job running sequentially
 jobs:
