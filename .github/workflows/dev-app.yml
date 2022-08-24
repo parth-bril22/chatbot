@@ -39,4 +39,4 @@ jobs:
       if: github.ref == 'refs/heads/master' && job.status == 'success'
       run: |
         git remote add heroku https://heroku:$HEROKU_AUTH_TOKEN@git.heroku.com/chatbot-apis-dev.git
-        git push heroku HEAD:master -f
+        git push heroku HEAD:dev -f
