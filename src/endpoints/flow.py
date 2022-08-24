@@ -423,13 +423,15 @@ async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)
         return JSONResponse(status_code=400,content={"errorMessage":"something is wrong"})
 
 async def post_message(slack_id,message):
+    """
+    Send the message to the slack channel
+    """
     slack_db = db.session.query(Slack).filter_by(id=slack_id).first()
     client = WebClient(token=slack_db.bot_token)
     try:
         response = client.chat_postMessage(channel=slack_db.channel_name, text=message)
         assert response["message"]["text"] == message
     except SlackApiError as e:
-        # You will get a SlackApiError if "ok" is False
         assert e.response["ok"] is False
         assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
         print(f"Got an error: {e.response['error']}")
