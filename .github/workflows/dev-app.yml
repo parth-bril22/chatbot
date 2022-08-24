@@ -36,7 +36,7 @@ jobs:
       env:
         HEROKU_AUTH_TOKEN: ${{ secrets.HEROKU_AUTH_TOKEN }}
         HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
-      if: github.ref == 'refs/heads/master' && job.status == 'success'
+      if: github.ref == 'refs/heads/dev' && job.status == 'success'
       run: |
         git remote add heroku https://heroku:$HEROKU_AUTH_TOKEN@git.heroku.com/chatbot-apis-dev.git
         git push heroku HEAD:dev -f
