@@ -37,6 +37,3 @@ jobs:
         HEROKU_AUTH_TOKEN: ${{ secrets.HEROKU_AUTH_TOKEN }}
         HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
       if: github.ref == 'refs/heads/master' && job.status == 'success'
-      run: |
-        heroku git:remote -a chatbot-apis-production 
-        git push heroku HEAD:master -f
