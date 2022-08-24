@@ -23,7 +23,7 @@ from ..dependencies.auth import AuthHandler
 auth_handler = AuthHandler()
 
 router = APIRouter(
-    prefix="/flow/v1",
+    prefix="/api/flow/v1",
     tags=["Flow"],
     responses={404: {"description": "Not found"}},
 )

@@ -20,7 +20,7 @@ from ..dependencies.auth import AuthHandler
 auth_handler = AuthHandler()
 
 router = APIRouter(
-    prefix="/users/v1",
+    prefix="/api/users/v1",
     tags=["User"],
     responses={404: {"description": "Not found"}},
 )
