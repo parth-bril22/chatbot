@@ -13,7 +13,7 @@ from ..dependencies.auth import AuthHandler
 auth_handler = AuthHandler()
 
 router = APIRouter(
-    prefix="/workspaces/v1",
+    prefix="/api/workspaces/v1",
     tags=["Workspaces"],
     responses={404: {"description": "Not found"}},
 )
