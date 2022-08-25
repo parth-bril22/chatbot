@@ -513,6 +513,7 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
                     pass
             for ch in chats.chat:
                 if ch['type']=='send_email':
+                    print("he")
                     await send_email(ch['data'])
                 else:
                     pass
