@@ -1,11 +1,11 @@
 from fastapi import APIRouter
-from typing import List,Dict
+import os
 from datetime import datetime
 from fastapi_sqlalchemy import db
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
-from ..dependencies.env import SENDGRID_EMAIL
+from ..dependencies.env import SENDGRID_API_KEY,SENDGRID_EMAIL
 from ..schemas.integrationSchema import SlackSchema,EmailSchema,SendgridMailSchema
 from ..models.integrations import Slack,SendEmail
 from fastapi.responses import JSONResponse
@@ -91,7 +91,7 @@ async def slack_integration(user:EmailSchema):
             subject=user.subject,
             html_content='<p>'+user.text+'</p>')
             try:
-                send_mail= SendGridAPIClient('SENDGRID_API_KEY')
+                send_mail= SendGridAPIClient(os.environ.get(SENDGRID_API_KEY))
                 send_mail.send(message)
             except Exception as e:
                 print(e,"at sending email. Time:", datetime.now())
@@ -103,7 +103,7 @@ async def slack_integration(user:EmailSchema):
             subject=user.subject,
             html_content='<p>'+user.text+'</p>')
             try:
-                send_mail= SendGridAPIClient('SENDGRID_API_KEY')
+                send_mail= SendGridAPIClient(os.environ.get(SENDGRID_API_KEY))
                 send_mail.send(message)
             except Exception as e:
                 print(e,"at sending email. Time:", datetime.now())
