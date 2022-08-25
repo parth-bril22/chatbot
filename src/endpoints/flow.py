@@ -446,6 +446,7 @@ async def send_email(data):
     Send Email by user to customers
     """
     try:
+        print(data['to_email'])
         if not data['customEmail']: 
             message = Mail(
             from_email=SENDGRID_EMAIL,
@@ -513,7 +514,6 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
                     pass
             for ch in chats.chat:
                 if ch['type']=='send_email':
-                    print("he")
                     await send_email(ch['data'])
                 else:
                     pass
