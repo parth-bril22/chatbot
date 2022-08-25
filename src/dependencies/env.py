@@ -11,4 +11,4 @@ AWS_ACCESS_KEY="AKIAZDZPEA74OEXEVDOB"
 AWS_ACCESS_SECRET_KEY="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"
 BUCKET_NAME = "bril-chatbot-files"
 
-SENDGRID_EMAIL='jenish.m@brilworks.com'
+SENDGRID_EMAIL='priya.b@brilworks.com'
