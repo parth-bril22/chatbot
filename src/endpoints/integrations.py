@@ -1,12 +1,8 @@
 from fastapi import APIRouter
-import os
 from datetime import datetime
 from fastapi_sqlalchemy import db
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
 
-from ..dependencies.env import SENDGRID_EMAIL
-from ..schemas.integrationSchema import SlackSchema,EmailSchema,SendgridMailSchema
+from ..schemas.integrationSchema import SlackSchema,SendgridMailSchema
 from ..models.integrations import Slack,SendEmail
 from fastapi.responses import JSONResponse
 
@@ -77,37 +73,3 @@ async def get_sendgid_email(userId:int):
     except Exception as e:
         print(e, "at geting emails. Time:", datetime.now())
         return JSONResponse(status_code=400, content={"errorMessage":"Can't get the emails!"})
-
-@router.post("/send_email")
-async def slack_integration(user:EmailSchema):
-    """
-    Send Email by user to customers
-    """
-    try:
-        if not user.customEmail:
-            message = Mail(
-            from_email=SENDGRID_EMAIL,
-            to_emails=user.to_email,
-            subject=user.subject,
-            html_content='<p>'+user.text+'</p>')
-            try:
-                send_mail= SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
-                send_mail.send(message)
-            except Exception as e:
-                print(e,"at sending email. Time:", datetime.now())
-                return JSONResponse(status_code=404, content={"errorMessage":"Can't send email"})
-        else:
-            message = Mail(
-            from_email=SENDGRID_EMAIL,
-            to_emails=user.to_email,
-            subject=user.subject,
-            html_content='<p>'+user.text+'</p>')
-            try:
-                send_mail= SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
-                send_mail.send(message)
-            except Exception as e:
-                print(e,"at sending email. Time:", datetime.now())
-                return JSONResponse(status_code=404, content={"errorMessage":"Can't send email"})
-    except Exception as e:
-        print(e,"at slack connection. Time:", datetime.now())
-        return JSONResponse(status_code=404, content={"errorMessage":"Can't connect with Slack"})
