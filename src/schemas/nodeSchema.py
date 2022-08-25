@@ -9,7 +9,7 @@ class NodeSchema(BaseModel):
     type: str = "chat"
     position: Dict = {"top":"0","left":"0"}
     # all fields from all types are present. Later in api.py, only the relevant fields will be taken into consideration
-    data: Dict = {"nodeData":[{"text":"","value":"" ,"name" :"", "type":"", "source":"", "message":"", "btn":"","value1":"","value2":"","operator":"","jumpId":"","slack_id":""}]}
+    data: Dict = {"nodeData":[{"text":"","value":"" ,"name" :"", "type":"", "source":"", "message":"", "btn":"","value1":"","value2":"","operator":"","jumpId":"","slack_id":"","from_email":"","secret":"","to_email":"","subject":"","customEmail":""}]}
     class Config:
         orm_mode = True
         underscore_attrs_are_private = True
