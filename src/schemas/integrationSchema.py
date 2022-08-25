@@ -9,16 +9,20 @@ class SlackSchema(BaseModel):
         orm_mode = True
         underscore_attrs_are_private = True
 
-
 class EmailSchema(BaseModel):
     from_email: str
-    secret:str
     to_email: str
     subject:str
-    message:str
+    text:str
     customEmail:bool
+    class Config:
+        orm_mode = True
+        underscore_attrs_are_private = True
 
-
+class SendgridMailSchema(BaseModel):
+    from_email: str
+    secret:str
+    userId: int
     class Config:
         orm_mode = True
         underscore_attrs_are_private = True

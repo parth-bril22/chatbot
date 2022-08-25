@@ -10,3 +10,6 @@ ssl_mode = "?sslmode=require"
 AWS_ACCESS_KEY="AKIAZDZPEA74OEXEVDOB"
 AWS_ACCESS_SECRET_KEY="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"
 BUCKET_NAME = "bril-chatbot-files"
+
+SENDGRID_API_KEY='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'
+SENDGRID_EMAIL='jenish.m@brilworks.com'
