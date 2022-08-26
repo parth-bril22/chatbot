@@ -46,17 +46,17 @@ async def get_connected_channels(userId:int):
 @router.post("/sendgrid_email")
 async def add_sendgrid_email(data:SendgridMailSchema):
     """
-    Set Sendgrid account by user
+    Set/Add Sendgrid account by user with API key
     """
     try:
         sg_email = SendEmail(from_email=data.from_email,secret=data.secret,user_id=data.userId)
         db.session.add(sg_email)
         db.session.commit()
         db.session.close()
-        return JSONResponse(status_code=200, content={"message": "Added Successfully!"})
+        return JSONResponse(status_code=200, content={"message": "Successfully added!"})
     except Exception as e:
         print(e,"at slack connection. Time:", datetime.now())
-        return JSONResponse(status_code=404, content={"errorMessage":""})
+        return JSONResponse(status_code=404, content={"errorMessage":"Can't add sendgrid account"})
 
 @router.get('/get_email')
 async def get_sendgid_email(userId:int):
