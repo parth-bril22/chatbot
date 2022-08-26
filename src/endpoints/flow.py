@@ -1,5 +1,6 @@
 import uuid
 import boto3
+import os
 import collections
 from fastapi import APIRouter, Depends , encoders, UploadFile
 from fastapi.responses import JSONResponse, Response
@@ -10,12 +11,16 @@ from typing import List,Dict
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
+
+from ..dependencies.env import SENDGRID_EMAIL
 
 from ..dependencies.env import AWS_ACCESS_KEY,AWS_ACCESS_SECRET_KEY,BUCKET_NAME
 
 from ..schemas.flowSchema import FlowSchema,ChatSchema
 from ..models.flow import Flow,Chat,EmbedScript
-from ..models.integrations import Slack
+from ..models.integrations import SendEmail, Slack
 from ..models.node import Node,SubNode,CustomFields,Connections
 from ..endpoints.node import check_user_token
 
@@ -436,6 +441,40 @@ async def post_message(slack_id,message):
         assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
         print(f"Got an error: {e.response['error']}")
 
+async def send_email(data):
+    """
+    Send Email by user to customers
+    """
+    try:
+        print(data['to_email'])
+        if not data['customEmail']: 
+            message = Mail(
+            from_email=SENDGRID_EMAIL,
+            to_emails=data['to_email'],
+            subject=data['subject'],
+            html_content='<p>'+data['text']+'</p>')
+            try:
+                send_mail= SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+                send_mail.send(message)
+            except Exception as e:
+                print(e,"at sending email. Time:", datetime.now())
+                return JSONResponse(status_code=404, content={"errorMessage":"API is not working"})
+        else:
+            message = Mail(
+            from_email= db.session.query(SendEmail.from_email).filter_by(id=data['frome_email']).first(),
+            to_emails=data['to_email'],
+            subject=data['subject'],
+            html_content='<p>'+data['text']+'</p>')
+            try:
+                send_mail= SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+                send_mail.send(message)
+            except Exception as e:
+                print(e,"at sending email. Time:", datetime.now())
+                return JSONResponse(status_code=404, content={"errorMessage":"API is not working"})
+    except Exception as e:
+        print(e,"at sending email. Time:", datetime.now())
+        return JSONResponse(status_code=404, content={"errorMessage":"Can't send email"})
+
 @router.post("/save_chat_history")
 async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_wrapper)):
     """
@@ -471,6 +510,11 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
             for ch in chats.chat:
                 if ch['type']=='slack':
                     await post_message(int(ch['data']['slack_id']),ch['data']['text'])
+                else:
+                    pass
+            for ch in chats.chat:
+                if ch['type']=='send_email':
+                    await send_email(ch['data'])
                 else:
                     pass
             db.session.query(Chat).filter_by(visitor_ip=chats.visitor_ip).filter_by(flow_id=chats.flow_id).update({"chat":chats.chat})
@@ -510,6 +554,11 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
                     await post_message(int(ch['data']['slack_id']),ch['data']['text'])
                 else:
                     pass
+            for ch in chats.chat:
+                if ch['type']=='send_email':
+                    await send_email(ch['data'])
+                else:
+                    pass
             new_chat = Chat(flow_id = chats.flow_id, visited_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),chat = chats.chat,visitor_ip=chats.visitor_ip)
             db.session.add(new_chat)
         
@@ -522,12 +571,14 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
         return JSONResponse(status_code=400,content={"errorMessage":"Error in save chat history"})
 
 @router.get("/get_chat_history")
-async def get_chat_history(ip:str,flow_id:int,token = Depends(auth_handler.auth_wrapper)):
+# async def get_chat_history(ip:str,flow_id:int,token = Depends(auth_handler.auth_wrapper)):
+async def get_chat_history(ip:str,token:str):
     """
     Get the chat history of every user
     """
     try:
-        chat_history = db.session.query(Chat).filter_by(visitor_ip=ip).filter_by(flow_id=flow_id).first()
+        flow_id = db.session.query(Flow.id).filter_by(publish_token=token).first()
+        chat_history = db.session.query(Chat).filter_by(visitor_ip=ip).filter_by(flow_id=flow_id[0]).first()
         if (chat_history == None):
             return JSONResponse(status_code=400,content={"errorMessage":"Can't find ip address"})
         chat_data = {"chat":chat_history.chat,"flow_id":chat_history.flow_id}
