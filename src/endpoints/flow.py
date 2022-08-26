@@ -577,7 +577,8 @@ async def get_chat_history(ip:str,token:str):
     Get the chat history of every user
     """
     try:
-        chat_history = db.session.query(Chat).filter_by(visitor_ip=ip).filter_by(publish_token=token).first()
+        flow_id = db.session.query(Flow.id).filter_by(publish_token=token).first()
+        chat_history = db.session.query(Chat).filter_by(visitor_ip=ip).filter_by(flow_id=flow_id).first()
         if (chat_history == None):
             return JSONResponse(status_code=400,content={"errorMessage":"Can't find ip address"})
         chat_data = {"chat":chat_history.chat,"flow_id":chat_history.flow_id}
