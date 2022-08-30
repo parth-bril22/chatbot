@@ -1,6 +1,6 @@
 from fastapi.responses import JSONResponse
 from datetime import datetime
-from fastapi import APIRouter, status, HTTPException ,encoders , Response,Depends
+from fastapi import APIRouter
 from fastapi_sqlalchemy import db
 
 from ..schemas.customfieldSchema import GlobalVariableSchema
@@ -15,6 +15,8 @@ router = APIRouter(
     tags=["Customfield"],
     responses={404: {"description": "Not found"}},
 )
+
+
 @router.post("/global_variable")
 async def create_global_variable(schema:GlobalVariableSchema):
     """
@@ -38,6 +40,25 @@ async def create_global_variable(schema:GlobalVariableSchema):
             return JSONResponse(status_code=200,content={"message":"Variable created successfully"})
         else:
             return JSONResponse(status_code=404,content={"errorMessage":"Type is not correct"})
+    except Exception as e:
+        print(e,"at check user. Time:", datetime.now())
+        return JSONResponse(status_code=400,content={"errorMessage":"Can't create a variable"})
+
+@router.get("/variables")
+async def get_variables(flow_id:int):
+    """
+    Get all variable by flow_id 
+    """
+    try:
+        var_list = []
+        db_variables = db.session.query(Variable).filter_by(flow_id=flow_id).all()
+        for i in db_variables:
+            var_list.append({"id": i.id,"name":i.name,"type":i.type, "flow_id":i.flow_id})
+            
+        db.session.commit()
+        db.session.close()
+        return JSONResponse(status_code=200,content={"Variables":var_list})
+        
     except Exception as e:
         print(e,"at check user. Time:", datetime.now())
         return JSONResponse(status_code=400,content={"errorMessage":"Can't create a variable"})
