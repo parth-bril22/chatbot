@@ -228,7 +228,7 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
              "data": { "id": node.id,"label": "NEW NODE", "nodeData": sorted_sub_node_list}}
             node_list.append(get_data)
 
-        return {"nodes": node_list,"connections": connections_list, "custom_fields": encoders.jsonable_encoder(all_custom_fileds),"sub_nodes:": encoders.jsonable_encoder(sub_nodes),"custom_fields":customfields}
+        return {"nodes": node_list,"connections": connections_list,"sub_nodes:": encoders.jsonable_encoder(sub_nodes),"custom_fields":customfields}
     except Exception as e:
         print(e, "at getting diagram. Time:", datetime.now())
         return JSONResponse(status_code=400, content={"errorMessage": "Cannot get diagram"})
