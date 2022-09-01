@@ -12,7 +12,7 @@ from ..models.node import Node, NodeType,Connections,SubNode
 from ..models.flow import Flow
 from ..models.users import User
 
-from ..dependencies.env import AWS_ACCESS_KEY,AWS_ACCESS_SECRET_KEY,BUCKET_NAME
+from ..dependencies.config import AWS_ACCESS_KEY,AWS_ACCESS_SECRET_KEY,BUCKET_NAME
 from ..dependencies.auth import AuthHandler
 auth_handler = AuthHandler()
 
