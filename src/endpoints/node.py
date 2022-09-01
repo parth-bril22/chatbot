@@ -285,9 +285,10 @@ async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapp
         if(sub_node_list != []):
             sort_new_list = sorted([i[0].split('_')[1] for i in sub_node_list])
             i = int(sort_new_list[-1][:2]) + 1 
+            id = str(sub.node_id) + "_" + str(i) +"b"
         else:
             i = '01'
-        id = str(sub.node_id) + "_" + i +"b"
+            id = str(sub.node_id) + "_" + i +"b"
 
         relevant_items = dict()
         current_node = db.session.query(Node).filter_by(id = sub.node_id).first()
