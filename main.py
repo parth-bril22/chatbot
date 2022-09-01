@@ -3,19 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from routes.api import router as api_router
 from fastapi_sqlalchemy import DBSessionMiddleware
-from src.dependencies.config import DATABASE_URL,API_PREFIX
+from src.dependencies.config import DATABASE_URL
 app = FastAPI()
 app.add_middleware(DBSessionMiddleware, db_url = DATABASE_URL)
 origins = ["*"]
-
-
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
-engine = create_engine(
-    DATABASE_URL
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 app.add_middleware(
     CORSMiddleware,
