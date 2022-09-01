@@ -17,9 +17,9 @@ from sendgrid.helpers.mail import Mail
 from src.endpoints import customfields
 from src.models.customfields import Variable
 
-from ..dependencies.env import SENDGRID_EMAIL
+from ..dependencies.config import SENDGRID_EMAIL
 
-from ..dependencies.env import AWS_ACCESS_KEY,AWS_ACCESS_SECRET_KEY,BUCKET_NAME
+from ..dependencies.config import AWS_ACCESS_KEY,AWS_ACCESS_SECRET_KEY,BUCKET_NAME
 
 from ..schemas.flowSchema import FlowSchema,ChatSchema
 from ..models.flow import Flow,Chat,EmbedScript
@@ -575,7 +575,6 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
         return JSONResponse(status_code=400,content={"errorMessage":"Error in save chat history"})
 
 @router.get("/get_chat_history")
-# async def get_chat_history(ip:str,flow_id:int,token = Depends(auth_handler.auth_wrapper)):
 async def get_chat_history(ip:str,token:str):
     """
     Get the chat history of every user
