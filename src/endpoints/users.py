@@ -47,6 +47,9 @@ def validate_user(user:ModelUser):
 
 @router.post("/signup/" )
 async def signup(user: SchemaUser):
+    """
+    User signup
+    """
     try:
         validated_user = validate_user(user)
         if (validated_user != True): 
@@ -65,15 +68,23 @@ async def signup(user: SchemaUser):
         
 async def get_user_by_email(my_email: str):
     """
-    Checks if the email exists in the DB. If not, returns false. If it does, returns all details of the user in User Model form from models.py.
+    Checks if the email exists or not
     """
-    user = db.session.query(ModelUser).filter_by(email=my_email).first()
-    if(user == None):
-        return False
-    return ModelUser(id = user.id, email=user.email, password=user.password, first_name=user.first_name, last_name = user.last_name, created_at=user.created_at)
+    try:
+        user = db.session.query(ModelUser).filter_by(email=my_email).first()
+        if(user == None):
+            return False
+        return ModelUser(id = user.id, email=user.email, password=user.password, first_name=user.first_name, last_name = user.last_name, created_at=user.created_at)
+    except:
+        return JSONResponse(status_code=401, content = {"message" : 'Please check email'})
+
+   
 
 @router.post("/login/")
 async def authenticate_user(input_user: lg):
+    """
+    User login/Signin
+    """
     try:
         user = await get_user_by_email(input_user.email)
         if (not user) or (not bcrypt.checkpw(input_user.password.encode('utf-8'), user.password.encode('utf-8'))):
@@ -85,15 +96,13 @@ async def authenticate_user(input_user: lg):
     except Exception as e:
         print("Error at login: ", e)
         return JSONResponse(status_code=404, content={"errorMessage": "Please check inputs!"})
-    """
-    The auth.py file has the function auth_wrapper which validates the token by decoding it and checking the credentials.
-    Using that function , the details can only be accessed if there is valid JWT token in the header
-    This function is only to demonstrate that. To run this:
-    curl --header "Authorizaion: Bearer entertokenhere" localhost:8000/protected
-    """
+
 
 @router.post('/refresh')
 async def refresh( refresh_token : str):
+    """
+    For check using refresh token after session is expired 
+    """
     try:
         payload = auth_handler.decode_refresh_token(refresh_token)
             # Check if token is not expired
@@ -112,8 +121,9 @@ async def refresh( refresh_token : str):
 
 def send_mail(my_uuid:str):
     """
-    send password reset email to user via sendgrid.
+    Send password reset email to user 
     """
+
     message = Mail(
     from_email='testforfastapi@gmail.com',
     to_emails='testforfastapi@gmail.com',
@@ -126,103 +136,144 @@ def send_mail(my_uuid:str):
         print(response.status_code)
         print(response.body)
         print(response.headers)
-        return {'message': 'Link sent, please check mail', "link" : link1}
+        return {'message': 'Link sent to on your mail,please check', "link" : link1}
     except Exception:
         return JSONResponse(status_code=404,content = {"message" : 'Sorry!We could not send the link right now'})
 
 
 @router.post('/request_change_password')
 async def req_change_password(email_id : str):
-    my_email =  email_id
-    user = db.session.query(ModelUser).filter_by(email = my_email).first()
+    """
+    Request to change the password by user
+    """
+    try:
+        my_email =  email_id
+        user = db.session.query(ModelUser).filter_by(email = my_email).first()
 
-    if(user == None):
-        return JSONResponse(status_code=404,content = {"message" : 'The user is not registered'})
+        if(user == None):
+            return JSONResponse(status_code=404,content = {"message" : 'The user is not registered'})
 
-    my_id = user.id
-    my_uuid = uuid4()
+        my_id = user.id
+        my_uuid = uuid4()
 
-    db_user = Password_tokens(id = my_id, uuid = str(my_uuid), time = datetime.today().isoformat(), used = False)
-    db.session.merge(db_user)
-    db.session.commit()
-    return send_mail(my_uuid)    
+        db_user = Password_tokens(id = my_id, uuid = str(my_uuid), time = datetime.today().isoformat(), used = False)
+        db.session.merge(db_user)
+        db.session.commit()
+        return send_mail(my_uuid)    
+    except:
+        return JSONResponse(status_code=401, content = {"message" : 'UUID entered incorrectly'})
+    
 
 def get_uuid_details(my_uuid:str):
     """
-    get id and time generated of the entered uuid
+    Get id and time generated of the entered uuid
     """
     try:
         user = db.session.query(Password_tokens).filter_by(uuid = str(my_uuid)).first()
+        if(user == None):
+            return JSONResponse(status_code=401, content = {"message" : 'UUID not found'})
+
+        return Password_tokens(id = user.id, uuid = my_uuid, time = user.time, used = user.used)
     except:
         return JSONResponse(status_code=401, content = {"message" : 'UUID entered incorrectly'})
-
-    if(user == None):
-        return JSONResponse(status_code=401, content = {"message" : 'UUID not found'})
-
-    return Password_tokens(id = user.id, uuid = my_uuid, time = user.time, used = user.used)
 
 
 async def get_user_by_id(my_id: int):
     """
-   Get the user info with id 
+   Get the user info by id 
     """
-    user = db.session.query(ModelUser).filter_by(id = my_id).first()
-    if(user == None):
-        return False
-    return ModelUser(id = my_id, email=user.email, password=user.password, first_name=user.first_name, last_name = user.last_name, created_at = user.created_at)
-
+    try:
+        user = db.session.query(ModelUser).filter_by(id = my_id).first()
+        if(user == None):
+            return False
+        return ModelUser(id = my_id, email=user.email, password=user.password, first_name=user.first_name, last_name = user.last_name, created_at = user.created_at)
+    except Exception as e:
+        print(e, "at getting user by id. Time:", datetime.now())
+        return JSONResponse(status_code=400, content={"Email is not exists"})
+        
 @router.post('/reset_password_link')
 async def reset_password_link(my_uuid:str,ps:PasswordResetSchema):
-    uuid_details = get_uuid_details((my_uuid))
+    """
+    Reset the password using link 
+    """
+    try :
+            
+        uuid_details = get_uuid_details((my_uuid))
 
-    if(uuid_details.used == True):
-        return JSONResponse(status_code=401,content = {"message" : 'Link already used once'})
+        if(uuid_details.used == True):
+            return JSONResponse(status_code=401,content = {"message" : 'Link already used once'})
 
-    mins_passed = ((datetime.today().isoformat() - uuid_details.time).seconds)/60
-    if(mins_passed > 10):
-        return JSONResponse(status_code=401, content = {"message" : 'More than 10 minutes have passed'})
-    else:
-        new_user = await get_user_by_id(uuid_details.id)
-        if(ps.password == ps.confirm_password): 
-            if(len(ps.password) < 7):
-                raise HTTPException(status_code=401, detail = 'Passwords length < 7')
+        mins_passed = ((datetime.today().isoformat() - uuid_details.time).seconds)/60
+        if(mins_passed > 10):
+            return JSONResponse(status_code=401, content = {"message" : 'More than 10 minutes have passed'})
+        else:
+            new_user = await get_user_by_id(uuid_details.id)
+            if(ps.password == ps.confirm_password): 
+                if(len(ps.password) < 7):
+                    raise HTTPException(status_code=401, detail = 'Passwords length < 7')
+                else:
+                    new_user.password =  bcrypt.hashpw(ps.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                    db.session.query(ModelUser).filter_by(id = new_user.id).update(dict(password = new_user.password))
+                    db.session.query(Password_tokens).filter_by(id = uuid_details.id).update(dict(used = True))
+                    db.session.commit()
+                    db.session.close()
+                    return JSONResponse(status_code=200, content={'message': "success"})   
             else:
-                new_user.password =  bcrypt.hashpw(ps.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-                db.session.query(ModelUser).filter_by(id = new_user.id).update(dict(password = new_user.password))
-                db.session.query(Password_tokens).filter_by(id = uuid_details.id).update(dict(used = True))
+                return JSONResponse(status_code=400, content = {"message" : 'Passwords are not same'})
+    except Exception as e:
+        print(e, "at reset password. Time:", datetime.now())
+        return JSONResponse(status_code=400, content={"errorMessage":"Sorry,Link expired"})
+ 
+@router.patch('/change_password')
+async def change_password(ps:PasswordChangeSchema, my_email = Depends(auth_handler.auth_wrapper)):
+    """
+    Change password by user  
+    """
+    try:
+
+        user = await get_user_by_email(my_email)
+        actual_password = user.password.encode('utf-8')
+
+        if(bcrypt.checkpw(ps.current_password.encode('utf-8'), actual_password)):
+            if(ps.new_password == ps.confirm_password and len(ps.new_password) > 6 and ps.new_password != ps.current_password):
+                user.password =  bcrypt.hashpw(ps.new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                db.session.merge(user)
                 db.session.commit()
                 db.session.close()
-                return JSONResponse(status_code=200, content={'message': "success"})   
+                return JSONResponse(status_code=200, content={'message':'success'})    
+            else:
+                return JSONResponse(status_code=400, content = {"message" : 'Passwords must be same and of length greater than 6 and must not be the same as old password '})
         else:
-            return JSONResponse(status_code=400, content = {"message" : 'Passwords are not same'})
-    
-@router.patch('/change_password')
-async def change_password(ps:PasswordChangeSchema, my_email = Depends(auth_handler.auth_wrapper) ):
-    user = await get_user_by_email(my_email)
-    actual_password = user.password.encode('utf-8')
+            return JSONResponse(status_code=401, content = {"message" : 'Please enter correct current password'})
+    except Exception as e:
+        print(e, "at changing password. Time:", datetime.now())
+        return JSONResponse(status_code=400, content={"errorMessage":"Can't change password"})
 
-    if(bcrypt.checkpw(ps.current_password.encode('utf-8'), actual_password)):
-        if(ps.new_password == ps.confirm_password and len(ps.new_password) > 6 and ps.new_password != ps.current_password):
-            user.password =  bcrypt.hashpw(ps.new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-            db.session.merge(user)
-            db.session.commit()
-            db.session.close()
-            return JSONResponse(status_code=200, content={'message':'success'})    
-        else:
-            return JSONResponse(status_code=400, content = {"message" : 'Passwords must be same and of length greater than 6 and must not be the same as old password '})
-    else:
-        return JSONResponse(status_code=401, content = {"message" : 'Please enter correct current password'})
 
-@router.delete('/delete_user')
+@router.delete('/delete_account')
 async def delete_user(my_email = Depends(auth_handler.auth_wrapper)):
-     db.session.query(ModelUser).filter_by(email = my_email).delete()
-     db.session.commit()
-     db.session.close()
-     return JSONResponse(status_code = 200, content = {'message': 'deleted'})
+    """
+    Delete account  
+    """
+    try:
+        db.session.query(ModelUser).filter_by(email = my_email).delete()
+        db.session.commit()
+        db.session.close()
+        return JSONResponse(status_code = 200, content = {'message': 'deleted'})
+    except Exception as e:
+        print(e, "at delete account. Time:", datetime.now())
+        return JSONResponse(status_code=400, content={"errorMessage":"Can't delete account"})
 
 @router.get('/user_profile')
 async def user_profile(user_id : int):
-     token = db.session.query(ModelUser.token).filter_by(id=user_id).first()[0]
-     db.session.commit()
-     db.session.close()
-     return JSONResponse(status_code = 200, content = {'Token': token})
+    """
+    Get the user profile 
+    """
+    try:
+        token = db.session.query(ModelUser.token).filter_by(id=user_id).first()[0]
+        db.session.commit()
+        db.session.close()
+        return JSONResponse(status_code = 200, content = {'Token': token})
+    except Exception as e:
+        print(e, "at user proflie. Time:", datetime.now())
+        return JSONResponse(status_code=400, content={"errorMessage":"Can't find user"})
