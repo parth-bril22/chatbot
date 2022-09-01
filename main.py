@@ -8,6 +8,15 @@ app = FastAPI()
 app.add_middleware(DBSessionMiddleware, db_url = DATABASE_URL)
 origins = ["*"]
 
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+engine = create_engine(
+    DATABASE_URL
+)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
