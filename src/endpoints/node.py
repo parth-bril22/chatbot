@@ -285,10 +285,7 @@ async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapp
         if(sub_node_list != []):
             # i = int(list(sub_node_list)[-1][0][-2]) + 1
             sort_new_list = sorted([i[0].split('_')[1] for i in sub_node_list])
-            if 'b' in sort_new_list[-1][:2]:
-                i = int(sort_new_list[-1][:1]) +1
-            else:
-                i = int(sort_new_list[-1][:2]) +1
+            i = int(sort_new_list[-1][:2]) + 1 
         else:
             i = 1
         id = str(sub.node_id) + "_" + str(i).zfill(2) +"b"
