@@ -2,7 +2,7 @@ import bcrypt
 import re
 from fastapi import APIRouter
 from uuid import uuid4
-from fastapi import Depends, HTTPException
+from fastapi import Depends, HTTPException,status
 from fastapi_sqlalchemy import db
 from datetime import datetime
 from fastapi.responses import JSONResponse
@@ -24,23 +24,22 @@ router = APIRouter(
     tags=["User"],
     responses={404: {"description": "Not found"}},
 )
-
 def validate_user(user:ModelUser):
     """
     Validate if email id already exists, is valid and passowrd. Takes ModelUser as input
     """
     
     if(bool(db.session.query(ModelUser).filter_by(email = user.email).first())):
-        return JSONResponse(status_code=404, content = {"errorMessage" : 'Email already exists'})
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content = {"errorMessage" : 'Email already exists'})
 
     elif not (re.fullmatch( r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', user.email)):
-        return JSONResponse(status_code=404, content = {"errorMessage" : 'Enter valid email'})
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content = {"errorMessage" : 'Enter valid email'})
 
     elif (len(user.password) < 7):
-        return JSONResponse(status_code=404, content = {"errorMessage" : 'Password must be greater than 6 characters'})
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,content = {"errorMessage" : 'Password must be greater than 6 characters'})
 
     elif not (re.fullmatch(r'[a-zA-Z]+$', user.first_name) and re.fullmatch(r'[A-Za-z]+$', user.last_name)):
-        return JSONResponse(status_code=404, content = {"errorMessage" : 'Enter valid name'})
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content = {"errorMessage" : 'Enter valid name'})
 
     else:
         return True
@@ -61,10 +60,10 @@ async def signup(user: SchemaUser):
             db.session.add(db_user)
             db.session.commit()
             user_id = db.session.query(ModelUser.id).filter_by(id=db_user.id).first()
-            return JSONResponse(status_code=200, content = {'message': "Signup Successful",'token':token, "refresh_token" : auth_handler.create_refresh_token(user.email),'user_id':user_id[0]})
+            return JSONResponse(status_code=status.HTTP_201_CREATED, content = {'message': "Signup Successful",'token':token, "refresh_token" : auth_handler.create_refresh_token(user.email),'user_id':user_id[0]})
     except Exception as e:
         print("Error at signup: ", e)
-        return JSONResponse(status_code=404, content={"errorMessage": "Please check inputs!"})
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"errorMessage": "Please check inputs!"})
         
 async def get_user_by_email(my_email: str):
     """
@@ -76,7 +75,7 @@ async def get_user_by_email(my_email: str):
             return False
         return ModelUser(id = user.id, email=user.email, password=user.password, first_name=user.first_name, last_name = user.last_name, created_at=user.created_at)
     except:
-        return JSONResponse(status_code=401, content = {"message" : 'Please check email'})
+        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content = {"message" : 'Please check email'})
 
    
 
@@ -88,14 +87,14 @@ async def authenticate_user(input_user: lg):
     try:
         user = await get_user_by_email(input_user.email)
         if (not user) or (not bcrypt.checkpw(input_user.password.encode('utf-8'), user.password.encode('utf-8'))):
-            return JSONResponse(status_code=401, content = {"errorMessage" : 'Invalid username or password'})
+            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content = {"errorMessage" : 'Invalid username or password'})
         else:   
             token = auth_handler.encode_token(input_user.email)
             user_id = db.session.query(ModelUser.id).filter_by(email=input_user.email).first()
-            return JSONResponse(status_code=200, content={"message" : "success", 'token':token, "refresh_token" : auth_handler.create_refresh_token(input_user.email),'user_id':user_id[0]})#valid for 1 minute and 30 seconds, change expiration time in auth.py
+            return JSONResponse(status_code=status.HTTP_200_OK, content={"message" : "success", 'token':token, "refresh_token" : auth_handler.create_refresh_token(input_user.email),'user_id':user_id[0]})#valid for 1 minute and 30 seconds, change expiration time in auth.py
     except Exception as e:
         print("Error at login: ", e)
-        return JSONResponse(status_code=404, content={"errorMessage": "Please check inputs!"})
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"errorMessage": "Please check inputs!"})
 
 
 @router.post('/refresh')
@@ -112,11 +111,11 @@ async def refresh( refresh_token : str):
             user = await get_user_by_email(email)
             if user:
                 # Create and return token
-                return JSONResponse(status_code=200, content={"message" : "success", 'access_token': auth_handler.encode_token(email)})
+                return JSONResponse(status_code=status.HTTP_200_OK, content={"message" : "success", 'access_token': auth_handler.encode_token(email)})
 
     except Exception:
-        return JSONResponse(status_code=401, content = {"errorMessage" : 'Unauthorized'})
-    return JSONResponse(status_code=401, content = {"errorMessage" : 'Unauthorized'})
+        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content = {"errorMessage" : 'Unauthorized'})
+    return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content = {"errorMessage" : 'Unauthorized'})
 
 
 def send_mail(my_uuid:str):
@@ -138,7 +137,7 @@ def send_mail(my_uuid:str):
         print(response.headers)
         return {'message': 'Link sent to on your mail,please check', "link" : link1}
     except Exception:
-        return JSONResponse(status_code=404,content = {"message" : 'Sorry!We could not send the link right now'})
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,content = {"message" : 'Sorry!We could not send the link right now'})
 
 
 @router.post('/request_change_password')
@@ -151,7 +150,7 @@ async def req_change_password(email_id : str):
         user = db.session.query(ModelUser).filter_by(email = my_email).first()
 
         if(user == None):
-            return JSONResponse(status_code=404,content = {"message" : 'The user is not registered'})
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,content = {"message" : 'The user is not registered'})
 
         my_id = user.id
         my_uuid = uuid4()
@@ -161,7 +160,7 @@ async def req_change_password(email_id : str):
         db.session.commit()
         return send_mail(my_uuid)    
     except:
-        return JSONResponse(status_code=401, content = {"message" : 'UUID entered incorrectly'})
+        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content = {"message" : 'UUID entered incorrectly'})
     
 
 def get_uuid_details(my_uuid:str):
@@ -171,11 +170,11 @@ def get_uuid_details(my_uuid:str):
     try:
         user = db.session.query(Password_tokens).filter_by(uuid = str(my_uuid)).first()
         if(user == None):
-            return JSONResponse(status_code=401, content = {"message" : 'UUID not found'})
+            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content = {"message" : 'UUID not found'})
 
         return Password_tokens(id = user.id, uuid = my_uuid, time = user.time, used = user.used)
     except:
-        return JSONResponse(status_code=401, content = {"message" : 'UUID entered incorrectly'})
+        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content = {"message" : 'UUID entered incorrectly'})
 
 
 async def get_user_by_id(my_id: int):
@@ -189,7 +188,7 @@ async def get_user_by_id(my_id: int):
         return ModelUser(id = my_id, email=user.email, password=user.password, first_name=user.first_name, last_name = user.last_name, created_at = user.created_at)
     except Exception as e:
         print(e, "at getting user by id. Time:", datetime.now())
-        return JSONResponse(status_code=400, content={"Email is not exists"})
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"Email is not exists"})
         
 @router.post('/reset_password_link')
 async def reset_password_link(my_uuid:str,ps:PasswordResetSchema):
@@ -201,28 +200,28 @@ async def reset_password_link(my_uuid:str,ps:PasswordResetSchema):
         uuid_details = get_uuid_details((my_uuid))
 
         if(uuid_details.used == True):
-            return JSONResponse(status_code=401,content = {"message" : 'Link already used once'})
+            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED,content = {"message" : 'Link already used once'})
 
         mins_passed = ((datetime.today().isoformat() - uuid_details.time).seconds)/60
         if(mins_passed > 10):
-            return JSONResponse(status_code=401, content = {"message" : 'More than 10 minutes have passed'})
+            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content = {"message" : 'More than 10 minutes have passed'})
         else:
             new_user = await get_user_by_id(uuid_details.id)
             if(ps.password == ps.confirm_password): 
                 if(len(ps.password) < 7):
-                    raise HTTPException(status_code=401, detail = 'Passwords length < 7')
+                    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = 'Passwords length < 7')
                 else:
                     new_user.password =  bcrypt.hashpw(ps.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
                     db.session.query(ModelUser).filter_by(id = new_user.id).update(dict(password = new_user.password))
                     db.session.query(Password_tokens).filter_by(id = uuid_details.id).update(dict(used = True))
                     db.session.commit()
                     db.session.close()
-                    return JSONResponse(status_code=200, content={'message': "success"})   
+                    return JSONResponse(status_code=status.HTTP_200_OK, content={'message': "success"})   
             else:
-                return JSONResponse(status_code=400, content = {"message" : 'Passwords are not same'})
+                return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content = {"message" : 'Passwords are not same'})
     except Exception as e:
         print(e, "at reset password. Time:", datetime.now())
-        return JSONResponse(status_code=400, content={"errorMessage":"Sorry,Link expired"})
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"errorMessage":"Sorry,Link expired"})
  
 @router.patch('/change_password')
 async def change_password(ps:PasswordChangeSchema, my_email = Depends(auth_handler.auth_wrapper)):
@@ -240,14 +239,14 @@ async def change_password(ps:PasswordChangeSchema, my_email = Depends(auth_handl
                 db.session.merge(user)
                 db.session.commit()
                 db.session.close()
-                return JSONResponse(status_code=200, content={'message':'success'})    
+                return JSONResponse(status_code=status.HTTP_200_OK, content={'message':'success'})    
             else:
-                return JSONResponse(status_code=400, content = {"message" : 'Passwords must be same and of length greater than 6 and must not be the same as old password '})
+                return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content = {"message" : 'Passwords must be same and of length greater than 6 and must not be the same as old password '})
         else:
-            return JSONResponse(status_code=401, content = {"message" : 'Please enter correct current password'})
+            return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content = {"message" : 'Please enter correct current password'})
     except Exception as e:
         print(e, "at changing password. Time:", datetime.now())
-        return JSONResponse(status_code=400, content={"errorMessage":"Can't change password"})
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"errorMessage":"Can't change password"})
 
 
 @router.delete('/delete_account')
@@ -259,10 +258,10 @@ async def delete_user(my_email = Depends(auth_handler.auth_wrapper)):
         db.session.query(ModelUser).filter_by(email = my_email).delete()
         db.session.commit()
         db.session.close()
-        return JSONResponse(status_code = 200, content = {'message': 'deleted'})
+        return JSONResponse(status_code = status.HTTP_200_OK, content = {'message': 'deleted'})
     except Exception as e:
         print(e, "at delete account. Time:", datetime.now())
-        return JSONResponse(status_code=400, content={"errorMessage":"Can't delete account"})
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"errorMessage":"Can't delete account"})
 
 @router.get('/user_profile')
 async def user_profile(user_id : int):
@@ -273,7 +272,7 @@ async def user_profile(user_id : int):
         token = db.session.query(ModelUser.token).filter_by(id=user_id).first()[0]
         db.session.commit()
         db.session.close()
-        return JSONResponse(status_code = 200, content = {'Token': token})
+        return JSONResponse(status_code = status.HTTP_200_OK, content = {'Token': token})
     except Exception as e:
         print(e, "at user proflie. Time:", datetime.now())
-        return JSONResponse(status_code=400, content={"errorMessage":"Can't find user"})
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't find user"})

@@ -140,7 +140,7 @@ async def create_node(node:NodeSchema):
     """
     try:
         node_check, node_data = await check_node_details(node)
-        if(node_check.status_code != 200):
+        if(node_check.status_code != status.HTTP_200_OK):
             return node_check
 
         prop_dict = node_data
@@ -185,10 +185,10 @@ async def create_nodes(node : NodeSchema,token = Depends(auth_handler.auth_wrapp
     """
     try:
         validate_user = await check_user_token(node.flow_id,token)
-        if (validate_user.status_code != 200):
+        if (validate_user.status_code != status.HTTP_200_OK):
             return validate_user
         create_node_response, node_id = await create_node(node)
-        if (create_node_response.status_code != 200):
+        if (create_node_response.status_code != status.HTTP_200_OK):
             return create_node_response
 
         return JSONResponse(status_code=status.HTTP_201_CREATED, content={"message": "Node created successfully!", "ids": node_id})
@@ -422,7 +422,7 @@ async def create_connections(connection : ConnectionSchema,token = Depends(auth_
         if (validate_user.status_code != status.HTTP_200_OK):
             return validate_user
         x = await create_connection(connection)
-        if(x.status_code != 200):
+        if(x.status_code != status.HTTP_200_OK):
             return x
 
         return JSONResponse(status_code = status.HTTP_200_OK, content = {"message" :"Connection created succssfully!"})
