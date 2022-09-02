@@ -49,10 +49,10 @@ async def upload_to_s3(file,node_id,flow_id):
         db.session.query(Flow).filter_by(id=sub_node.flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()  
         db.session.close()
-        return JSONResponse(status_code=200,content={"message":"Successfully Uploaded"})
+        return JSONResponse(status_code=status.HTTP_200_OK,content={"message":"Successfully Uploaded"})
     except Exception as e:
         print(e,"at upload to s3. Time:", datetime.now())
-        return JSONResponse(status_code=404, content={"errorMessage":"Can't upload"})
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"errorMessage":"Can't upload"})
 
 async def check_user_token(flow_id:int,token=Depends(auth_handler.auth_wrapper)):
     """
@@ -62,12 +62,12 @@ async def check_user_token(flow_id:int,token=Depends(auth_handler.auth_wrapper))
        get_user_id = db.session.query(User).filter_by(email=token).first()  
        flow_ids = [i[0] for i in db.session.query(Flow.id).filter_by(user_id=get_user_id.id).all()]
        if flow_id in flow_ids:
-           return JSONResponse(status_code=200,content={"message":"Flow is exists"})
+           return JSONResponse(status_code=status.HTTP_200_OK,content={"message":"Flow is exists"})
        else:
-           return JSONResponse(status_code=404,content={"errorMessage":"Can't find user"})
+           return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,content={"errorMessage":"Can't find user"})
     except Exception as e:
         print(e,"at check user. Time:", datetime.now())
-        return JSONResponse(status_code=400,content={"errorMessage":"Can't authorized"})
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,content={"errorMessage":"Can't authorized"})
 
 async def check_conditional_logic(prop_value_json : json):
     """
@@ -85,27 +85,27 @@ async def check_conditional_logic(prop_value_json : json):
     else:
         for ele in list(prop_value_json.keys()): 
                 if ele not in ["||", "&&", "!"]:
-                    Response(status_code = 204)
+                    Response(status_code = status.HTTP_204_NO_CONTENT)
                 else:
                     if "args" in prop_value_json[ele]:
                         for all_symbols in prop_value_json[ele]["args"]:
                             symbol = list(all_symbols.keys())[0]
 
                             if symbol not in ["==", "<", ">"] or len(list(all_symbols.keys())) != 1:
-                                Response(status_code = 204)
+                                Response(status_code = status.HTTP_204_NO_CONTENT)
                             else:
                                 all_args = (list((all_symbols[symbol]).keys()))
                                 for arg in all_args:
                                     if arg not in ["arg1", "arg2"]:
-                                        Response(status_code = 204)
+                                        Response(status_code = status.HTTP_204_NO_CONTENT)
                                     else:
                                         try:
                                             value = json.loads(all_symbols[symbol][arg])
                                             value + 1
                                         except:
-                                            Response(status_code = 204)
+                                            Response(status_code = status.HTTP_204_NO_CONTENT)
                     else:
-                        Response(status_code = 204)
+                        Response(status_code = status.HTTP_204_NO_CONTENT)
     return True
 
 async def check_property_dict(prop : Dict, keys : List):
@@ -123,7 +123,7 @@ async def check_node_details(node:NodeSchema):
     node_type_params = db.session.query(NodeType).filter(NodeType.type == node.type).first()
 
     if(node_type_params == None):
-        return JSONResponse(status_code = 404, content = {"errorMessage": "Can't find type"}), node.data
+        return JSONResponse(status_code = status.HTTP_404_NOT_FOUND, content = {"errorMessage": "Can't find this type"}), node.data
 
     props = []
     for property in node.data['nodeData']:
@@ -132,7 +132,7 @@ async def check_node_details(node:NodeSchema):
             return prop_dict,{}
         else:
             props.append(prop_dict)
-    return JSONResponse(status_code=200), props
+    return JSONResponse(status_code=status.HTTP_200_OK), props
 
 async def create_node(node:NodeSchema):
     """
@@ -172,10 +172,10 @@ async def create_node(node:NodeSchema):
         db.session.commit()
         db.session.close()
 
-        return JSONResponse(status_code = 200, content = {"message":"Node created successfully!"}) , node_id
+        return JSONResponse(status_code = status.HTTP_201_CREATED, content = {"message":"Node created successfully!"}) , node_id
     except Exception as e:
         print(e,"at creating node. Time:", datetime.now())
-        return JSONResponse(status_code=404, content={"errorMessage":"Can't create a node"})
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't create a node"})
 
 
 @router.post('/create_node')
@@ -191,10 +191,10 @@ async def create_nodes(node : NodeSchema,token = Depends(auth_handler.auth_wrapp
         if (create_node_response.status_code != 200):
             return create_node_response
 
-        return JSONResponse(status_code=200, content={"message": "Node created successfully!", "ids": node_id})
+        return JSONResponse(status_code=status.HTTP_201_CREATED, content={"message": "Node created successfully!", "ids": node_id})
     except Exception as e:
         print(e,"at creating node. Time:", datetime.now())
-        return JSONResponse(status_code=404, content={"errorMessage":"Can't create a node"})
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't create a node"})
 
 @router.post('/upload_file')
 async def upload_files_to_s3(file:UploadFile,node_id:int,flow_id:int):
@@ -204,13 +204,13 @@ async def upload_files_to_s3(file:UploadFile,node_id:int,flow_id:int):
     try:
         upload_file = await upload_to_s3(file,node_id,flow_id)
 
-        if (upload_file.status_code != 200):
-            return JSONResponse(status_code=400,content={"message":"File not uploaded"})
+        if (upload_file.status_code != status.HTTP_200_OK):
+            return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,content={"message":"File not uploaded"})
 
-        return JSONResponse(status_code=200, content={"message": "File Uploaded Successfully!","filename":file.filename})
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "File Uploaded Successfully!","filename":file.filename})
     except Exception as e:
         print(e,"at upload file. Time:", datetime.now())
-        return JSONResponse(status_code=404, content={"errorMessage":"Can't upload file"})
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't upload file"})
 
 @router.delete('/delete_node')
 async def delete_node(node_id : str, flow_id:int,token = Depends(auth_handler.auth_wrapper)):
@@ -220,22 +220,22 @@ async def delete_node(node_id : str, flow_id:int,token = Depends(auth_handler.au
     try:
         validate_user = await check_user_token(flow_id,token)
 
-        if (validate_user.status_code != 200):
+        if (validate_user.status_code != status.HTTP_200_OK):
             return validate_user
         node_in_db = db.session.query(Node).filter_by(flow_id = flow_id).filter_by(id = node_id)
 
         if(node_in_db.first() == None):
-            return JSONResponse(status_code=404, content={"message":"Can't find node"})
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message":"Can't find node"})
         node_in_db.delete()
         db.session.query(Connections).filter((Connections.source_node_id == node_id) | (Connections.target_node_id == node_id)).delete()
         db.session.query(Flow).filter_by(id=flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()
         db.session.close()
 
-        return JSONResponse(status_code = 200, content = {'message': 'Node deleted successfully!'})
+        return JSONResponse(status_code=status.HTTP_200_OK, content = {'message': 'Node deleted successfully!'})
     except Exception  as e:
         print(e,"at delete node. Time:", datetime.now())
-        return JSONResponse(status_code=404, content={"errorMessage":"Can't delete node"})  
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't delete node"})  
 
 @router.put('/update_node')
 async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handler.auth_wrapper)):
@@ -244,14 +244,14 @@ async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handle
     """
     try:
         validate_user = await check_user_token(my_node.flow_id,token)
-        if (validate_user.status_code != 200):
+        if (validate_user.status_code != status.HTTP_200_OK):
             return validate_user
 
         if(db.session.query(Node).filter_by(id = node_id).filter_by(flow_id=my_node.flow_id).first() == None):
-            return JSONResponse(status_code=404, content={"errorMessage":"Can't find node"})
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't find node"})
         
         node_check, node_data = await check_node_details(my_node)
-        if(node_check.status_code != 200):
+        if(node_check.status_code != status.HTTP_200_OK):
             return node_check
     
         db.session.query(Node).filter(Node.id == node_id).filter_by(flow_id=my_node.flow_id).update({'data' : node_data, 'type' : my_node.type, 'position':my_node.position})
@@ -259,10 +259,10 @@ async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handle
         db.session.commit()
         db.session.close()
 
-        return JSONResponse(status_code = 200, content = {"message":"Node successfully updated!"})
+        return JSONResponse(status_code = status.HTTP_200_OK, content = {"message":"Node successfully updated!"})
     except Exception as e:
         print(e,"at updating node. Time:", datetime.now())
-        return JSONResponse(status_code=404, content={"errorMessage":"Can't update the node"}) 
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't update the node"}) 
 
 @router.post("/add_sub_node")
 async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapper)):
@@ -271,11 +271,11 @@ async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapp
     """
     try:
         validate_user = await check_user_token(sub.flow_id,token)
-        if (validate_user.status_code != 200):
+        if (validate_user.status_code != status.HTTP_200_OK):
             return validate_user
             
         if(db.session.query(Node).filter_by(id = sub.node_id).filter_by(flow_id=sub.flow_id).first() == None):
-            return JSONResponse(status_code=404, content={"errorMessage":"Can't find node"})
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't find node"})
 
         sub_node_list = db.session.query(SubNode.id).filter_by(node_id = sub.node_id).all()
         sub_node_list = [tuple(x) for x in list(sub_node_list)]
@@ -309,20 +309,20 @@ async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapp
         db.session.commit()
         db.session.close()
 
-        return JSONResponse(status_code = 200, content = {"message" : "Sub node addedd successfully!"})
+        return JSONResponse(status_code = status.HTTP_200_OK, content = {"message" : "Sub node addedd successfully!"})
     except Exception as e:
         print(e,"at add subnode. Time:", datetime.now())
-        return JSONResponse(status_code=404, content={"errorMessage":"Can't add sub node"})
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't add sub node"})
 
 async def update_subnode(sub_node:UpdateSubNodeSchema,token):
     try :
         validate_user = await check_user_token(sub_node.flow_id,token)
-        if (validate_user.status_code != 200):
+        if (validate_user.status_code != status.HTTP_200_OK):
             return validate_user
         node_in_db = db.session.query(SubNode).filter_by(flow_id=sub_node.flow_id).filter_by(id=sub_node.id)
 
         if(node_in_db.first() == None):
-            return JSONResponse(status_code=404, content={"errorMessage":"Can't find node"})
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't find node"})
 
         existing_data = node_in_db.first().data
         for key,value in sub_node.data.items():
@@ -339,10 +339,10 @@ async def update_subnode(sub_node:UpdateSubNodeSchema,token):
         db.session.query(Flow).filter_by(id=sub_node.flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()  
         db.session.close()
-        return JSONResponse(status_code=200, content={"message":"Subnode updated"})
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message":"Subnode updated"})
     except Exception as e:
         print(e,"at update subnode. Time:", datetime.now())
-        return JSONResponse(status_code=404, content={"errorMessage":"Can't update subnode"})
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't update subnode"})
 
 @router.put('/update_subnode')
 async def update_sub_node(sub_nodes:List[UpdateSubNodeSchema],token = Depends(auth_handler.auth_wrapper)):
@@ -352,21 +352,21 @@ async def update_sub_node(sub_nodes:List[UpdateSubNodeSchema],token = Depends(au
     try:
         for subnode in sub_nodes:
             await update_subnode(subnode,token)
-        return JSONResponse(status_code = 200, content = {"message":"Subnode updated successfully!"})
+        return JSONResponse(status_code = status.HTTP_200_OK, content = {"message":"Subnode updated successfully!"})
     except Exception as e:
         print(e,"at update subnode. Time:", datetime.now())
-        return JSONResponse(status_code=404, content={"errorMessage":"Can't update subnode"})
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't update subnode"})
 
 @router.delete('/delete_sub_node')
 async def delete_sub_node(sub_node_id : str,flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
         validate_user = await check_user_token(flow_id,token)
-        if (validate_user.status_code != 200):
+        if (validate_user.status_code != status.HTTP_200_OK):
             return validate_user
 
         node_in_db = db.session.query(SubNode).filter_by(flow_id = flow_id).filter_by(id = sub_node_id)
         if(node_in_db.first() == None):
-            return JSONResponse(status_code=404, content={"errorMessage":"Can't find subnode"})
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't find subnode"})
 
         node_in_db.delete()
         db.session.query(Connections).filter(Connections.sub_node_id == sub_node_id).delete()
@@ -374,12 +374,11 @@ async def delete_sub_node(sub_node_id : str,flow_id:int,token = Depends(auth_han
         db.session.commit()
         db.session.close()
 
-        return JSONResponse(status_code = 200, content = {'message': 'Sub Node deleted'})
+        return JSONResponse(status_code = status.HTTP_200_OK, content = {'message': 'Sub Node deleted'})
     except Exception as e:
         print(e,"at delete subnode. Time:", datetime.now())
-        return JSONResponse(status_code=404, content={"errorMessage":"Can't delete subnode"})  
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't delete subnode"})  
 
-# @lru_cache
 async def create_connection(connection : ConnectionSchema):
     """
     Create a connection(edge) between nodes
@@ -391,16 +390,16 @@ async def create_connection(connection : ConnectionSchema):
             target_node_exists = db.session.query(Node).filter((Node.id == connection.target_node_id)).first()
 
             if(source_node_exists == None or target_node_exists == None):
-                return JSONResponse(status_code = 404, content = {"errorMessage" : "Can't find node"})
+                return JSONResponse(status_code = status.HTTP_404_NOT_FOUND, content = {"errorMessage" : "Can't find node"})
         except:
-            return JSONResponse(status_code=404, content={"errorMessage":"Can't create  connection"})
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't create  connection"})
 
         if "" in connection.dict().values( ): 
-            Response(status_code = 204)
+            Response(status_code = status.HTTP_204_NO_CONTENT)
 
         connection_name = "c_" + str(connection.source_node_id) + "_" + str(connection.sub_node_id) + "-" + str(connection.target_node_id)
         if(connection.source_node_id == connection.target_node_id):
-            return JSONResponse(status_code = 406, content={"errorMessage":"Source and Target node can't be the same"})
+            return JSONResponse(status_code = status.HTTP_406_NOT_ACCEPTABLE, content={"errorMessage":"Source and Target node can't be the same"})
       
         if(db.session.query(Connections).filter_by(flow_id=connection.flow_id).filter_by(source_node_id= connection.source_node_id).filter_by(sub_node_id = connection.sub_node_id).first() is not None):
             db.session.query(Connections).filter(Connections.source_node_id == connection.source_node_id).filter(Connections.sub_node_id == connection.sub_node_id).\
@@ -410,49 +409,47 @@ async def create_connection(connection : ConnectionSchema):
             db.session.add(new_connection)
         db.session.query(Flow).filter_by(id=connection.flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()
-        return JSONResponse(status_code = 200, content = {"message": "Connection created succssfully!"})
+        return JSONResponse(status_code = status.HTTP_201_CREATED, content = {"message": "Connection created succssfully!"})
     except Exception as e:
         print(e,"at creating connection. Time:", datetime.now())
-        return JSONResponse(status_code=404, content={
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={
             "errorMessage": "Can't create connection."})
          
 @router.post('/create_connection')
 async def create_connections(connection : ConnectionSchema,token = Depends(auth_handler.auth_wrapper)):
     try:
         validate_user = await check_user_token(connection.flow_id,token)
-        if (validate_user.status_code != 200):
+        if (validate_user.status_code != status.HTTP_200_OK):
             return validate_user
         x = await create_connection(connection)
         if(x.status_code != 200):
             return x
 
-        return JSONResponse(status_code = 200, content = {"message" :"Connection created succssfully!"})
+        return JSONResponse(status_code = status.HTTP_200_OK, content = {"message" :"Connection created succssfully!"})
     except Exception as e:
         print(e,"at creating connection. Time:", datetime.now())
-        return JSONResponse(status_code=404, content={
-            "errorMessage": "Can't create connection."})
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"errorMessage": "Can't create connection."})
     
 @router.delete('/delete_connection')
 async def delete_connection(connection_id: int,flow_id:int,token = Depends(auth_handler.auth_wrapper)):
     try:
         validate_user = await check_user_token(flow_id,token)
-        if (validate_user.status_code != 200):
+        if (validate_user.status_code != status.HTTP_200_OK):
             return validate_user
  
         connection_in_db = db.session.query(Connections).filter_by(id=connection_id)
         if (connection_in_db.first() == None):
-            return JSONResponse(status_code=404, content={"errorMessage": "Can't find connections"})
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage": "Can't find connections"})
       
         connection_in_db.delete()
         db.session.query(Flow).filter_by(id=flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()
         db.session.close()
 
-        return JSONResponse(status_code=200, content={'message': 'Connection deleted'})
+        return JSONResponse(status_code=status.HTTP_200_OK, content={'message': 'Connection deleted'})
     except Exception as e:
         print(e,"at deleting connection. Time:", datetime.now())
-        return JSONResponse(status_code=404, content={
-            "errorMessage": "Can't delete connection."})
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"errorMessage": "Can't delete connection."})
 
 @router.post("/create_node_with_conn")
 async def create_node_with_conn(my_node:NodeSchema,node_id:int, sub_node_id:str,token = Depends(auth_handler.auth_wrapper)):
@@ -461,23 +458,23 @@ async def create_node_with_conn(my_node:NodeSchema,node_id:int, sub_node_id:str,
     """
     try:
         validate_user = await check_user_token(my_node.flow_id,token)
-        if (validate_user.status_code != 200):
+        if (validate_user.status_code != status.HTTP_200_OK):
             return validate_user
         create_node_response, my_id = await create_node(node=my_node)
-        if (create_node_response.status_code != 200):
+        if (create_node_response.status_code != status.HTTP_200_OK):
             return create_node_response
         sub_node = db.session.query(SubNode.id).filter_by(node_id=node_id).filter_by(id=sub_node_id).first()
         if (sub_node == None):
-            return JSONResponse(status_code=404, content={"message": "Can't find subnode"})
+            return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"message": "Can't find subnode"})
         create_conn = ConnectionSchema(flow_id=my_node.flow_id, source_node_id=node_id,
                                   sub_node_id=sub_node_id,
                                   target_node_id=my_id)
         await create_connection(create_conn)
 
-        return JSONResponse(status_code=200, content={"message": "Created connection from node"})
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Created connection from node"})
     except Exception as e:
         print(e,"at creating connection. Time:", datetime.now())
-        return JSONResponse(status_code=404, content={"errorMessage": "Can't create connection"})
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"errorMessage": "Can't create connection"})
 
 @router.post('/add_connection')
 async def add_connection(my_node: NodeSchema, connection: ConnectionSchema,token = Depends(auth_handler.auth_wrapper)):
@@ -486,11 +483,11 @@ async def add_connection(my_node: NodeSchema, connection: ConnectionSchema,token
     """
     try:
         validate_user = await check_user_token(my_node.flow_id,token)
-        if (validate_user.status_code != 200):
+        if (validate_user.status_code != status.HTTP_200_OK):
             return validate_user
 
         status, new_node_id = await create_node(node=my_node)
-        if (status.status_code != 200):
+        if (status.status_code != status.HTTP_200_OK):
             return status
 
         first_connection = ConnectionSchema(flow_id=connection.flow_id, source_node_id=connection.source_node_id,
@@ -505,7 +502,7 @@ async def add_connection(my_node: NodeSchema, connection: ConnectionSchema,token
                                   target_node_id=connection.target_node_id)
         await create_connection(second_connection)
 
-        return JSONResponse(status_code=200, content={"message": "Added connection successfully!"})
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "Added connection successfully!"})
     except Exception as e:
         print(e,"at adding connection. Time:", datetime.now())
-        return JSONResponse(status_code=404, content={"errorMessage": "Can't add connection"})
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"errorMessage": "Can't add connection"})
