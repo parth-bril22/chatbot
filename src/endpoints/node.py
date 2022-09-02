@@ -150,11 +150,11 @@ async def create_node(node:NodeSchema):
         db.session.add(new_node)
         db.session.commit()
         node_id = new_node.id
-        count = 1
+        count = '01'
         if node.type == "conditional_logic":
             for item in prop_dict:
-                first_sub_node = SubNode(id=str(new_node.id) + "_" + str(count) + "b", node_id=new_node.id,flow_id=node.flow_id, data=item, type=node.type)
-                second_sub_node = SubNode(id=str(new_node.id) + "_" + str(count + 1) + "b", node_id=new_node.id,flow_id=node.flow_id, data=item, type=node.type)
+                first_sub_node = SubNode(id=str(new_node.id) + "_" + count + "b", node_id=new_node.id,flow_id=node.flow_id, data=item, type=node.type)
+                second_sub_node = SubNode(id=str(new_node.id) + "_" + str(int(count) + 1).zfill(2) + "b", node_id=new_node.id,flow_id=node.flow_id, data=item, type=node.type)
                 db.session.add(first_sub_node)
                 db.session.add(second_sub_node)
         elif node.type == "button":
@@ -283,10 +283,12 @@ async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapp
         
         #logic for the add multiple nodes
         if(sub_node_list != []):
-            i = int(list(sub_node_list)[-1][0][-2]) + 1
+            # i = int(list(sub_node_list)[-1][0][-2]) + 1
+            sort_new_list = sorted([i[0].split('_')[1] for i in sub_node_list])
+            i = int(sort_new_list[-1][:2]) + 1 
         else:
             i = 1
-        id = str(sub.node_id) + "_" + str(i) +"b"
+        id = str(sub.node_id) + "_" + str(i).zfill(2) +"b"
 
         relevant_items = dict()
         current_node = db.session.query(Node).filter_by(id = sub.node_id).first()
