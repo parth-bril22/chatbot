@@ -223,7 +223,7 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
                 #     my_dict[key] = value
                 sub_node_list.append(my_dict)
             sorted_sub_node_list = sorted(sub_node_list, key=lambda sub_node_list: sub_node_list['id'])
-            get_data = {"flow_id" : flow_id,"id": str(node.id), "type": node.type, "position": node.position,
+            get_data = {"flow_id" : flow_id,"id": str(node.id), "type": node.type, "position": node.position,"destination":node.destination,
              "data": { "id": node.id,"label": "NEW NODE", "nodeData": sorted_sub_node_list}}
             node_list.append(get_data)
 
