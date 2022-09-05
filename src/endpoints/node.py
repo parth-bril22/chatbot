@@ -314,29 +314,29 @@ async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapp
         print(e,"at add subnode. Time:", datetime.now())
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't add sub node"})
 
-async def update_subnode(sub_node:UpdateSubNodeSchema,token):
+async def update_subnode(subnodeSchema:UpdateSubNodeSchema,token):
     try :
-        validate_user = await check_user_token(sub_node.flow_id,token)
+        validate_user = await check_user_token(subnodeSchema.flow_id,token)
         if (validate_user.status_code != status.HTTP_200_OK):
             return validate_user
-        node_in_db = db.session.query(SubNode).filter_by(flow_id=sub_node.flow_id).filter_by(id=sub_node.id)
+        node_in_db = db.session.query(SubNode).filter_by(flow_id=subnodeSchema.flow_id).filter_by(id=subnodeSchema.id)
 
         if(node_in_db.first() == None):
             return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't find node"})
 
         existing_data = node_in_db.first().data
-        for key,value in sub_node.data.items():
+        for key,value in subnodeSchema.data.items():
             existing_data[key] = value
-        db.session.query(SubNode).filter_by(flow_id=sub_node.flow_id).filter_by(id = sub_node.id).update({'data' : existing_data})
+        db.session.query(SubNode).filter_by(flow_id=subnodeSchema.flow_id).filter_by(id = subnodeSchema.id).update({'data' : existing_data})
         db.session.commit()
 
-        sub_nodes = db.session.query(SubNode).filter_by(flow_id=sub_node.flow_id).filter_by(node_id = sub_node.node_id).all()
+        sub_nodes = db.session.query(SubNode).filter_by(flow_id=subnodeSchema.flow_id).filter_by(node_id = subnodeSchema.node_id).all()
         node_data = []
         for sub_node in sub_nodes:
             node_data.append(sub_node.data)  
 
-        db.session.query(Node).filter_by(flow_id=sub_node.flow_id).filter_by(id = sub_node.node_id).update({'data' : node_data,'destination':sub_node.destination})
-        db.session.query(Flow).filter_by(id=sub_node.flow_id).update({"updated_at": datetime.today().isoformat()})
+        db.session.query(Node).filter_by(flow_id=sub_node.flow_id).filter_by(id = sub_node.node_id).update({'data' : node_data ,'destination': subnodeSchema.destination})
+        db.session.query(Flow).filter_by(id=subnodeSchema.flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()  
         db.session.close()
         return JSONResponse(status_code=status.HTTP_200_OK, content={"message":"Subnode updated"})
