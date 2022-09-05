@@ -29,7 +29,7 @@ async def create_global_variable(schema:GlobalVariableSchema):
 
             # check not same name variable
             var_names = [i[0] for i in db.session.query(Variable.name).filter_by(flow_id=schema.flowId).all()]
-            if var_names in var_names:
+            if schema.name in var_names:
                 return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,content={"errorMessage":"The variable name "  +{schema.name}+ "is not allowed"})
             # create the variable
             var = Variable(name = schema.name,type = schema.type,flow_id=schema.flowId)
