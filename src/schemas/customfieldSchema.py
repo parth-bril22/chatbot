@@ -4,7 +4,8 @@ from pydantic import BaseModel
 class GlobalVariableSchema(BaseModel):
     name:str
     type:str
-    flowId: int
+    userId:int
+    nodeId:int
 
     class Config:
         orm_mode = True

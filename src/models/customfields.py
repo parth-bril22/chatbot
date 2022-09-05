@@ -8,4 +8,6 @@ class Variable(Base):
     id = Column(Integer, primary_key = True)
     name = Column(String)
     type = Column(String)
-    flow_id = Column(Integer)
+    value = Column(String)
+    node_id = Column(Integer)
+    user_id = Column(Integer)

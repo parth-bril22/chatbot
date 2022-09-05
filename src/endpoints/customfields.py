@@ -28,11 +28,11 @@ async def create_global_variable(schema:GlobalVariableSchema):
         if schema.type in types:
 
             # check not same name variable
-            var_names = [i[0] for i in db.session.query(Variable.name).filter_by(flow_id=schema.flowId).all()]
+            var_names = [i[0] for i in db.session.query(Variable.name).filter_by(user_id=schema.userId).all()]
             if schema.name in var_names:
                 return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,content={"errorMessage":"The variable name "  +{schema.name}+ "is not allowed"})
             # create the variable
-            var = Variable(name = schema.name,type = schema.type,flow_id=schema.flowId)
+            var = Variable(name = schema.name,type = schema.type,node_id=schema.nodeId,user_id=schema.userId,value=None)
             db.session.add(var)
             db.session.commit()
             db.session.close()
@@ -45,15 +45,15 @@ async def create_global_variable(schema:GlobalVariableSchema):
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,content={"errorMessage":"Can't create a variable"})
 
 @router.get("/variables")
-async def get_variables(flow_id:int):
+async def get_variables(user_id:int):
     """
     Get all variable by flow_id 
     """
     try:
         var_list = []
-        db_variables = db.session.query(Variable).filter_by(flow_id=flow_id).all()
+        db_variables = db.session.query(Variable).filter_by(user_id=user_id).all()
         for i in db_variables:
-            var_list.append({"id": i.id,"name":i.name,"type":i.type, "flow_id":i.flow_id})
+            var_list.append({"id": i.id,"name":i.name,"type":i.type, "user_id":i.user_id})
             
         db.session.commit()
         db.session.close()
