@@ -335,7 +335,7 @@ async def update_subnode(sub_node:UpdateSubNodeSchema,token):
         for sub_node in sub_nodes:
             node_data.append(sub_node.data)  
 
-        db.session.query(Node).filter_by(flow_id=sub_node.flow_id).filter_by(id = sub_node.node_id).update({'data' : node_data})
+        db.session.query(Node).filter_by(flow_id=sub_node.flow_id).filter_by(id = sub_node.node_id).update({'data' : node_data,'destination':sub_node.destination})
         db.session.query(Flow).filter_by(id=sub_node.flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()  
         db.session.close()

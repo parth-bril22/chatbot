@@ -36,6 +36,7 @@ class UpdateSubNodeSchema(BaseModel):
     id :str
     node_id : int
     flow_id: int
+    destination : str
     type: str
     data : Dict = {"text":""}
     class Config:
