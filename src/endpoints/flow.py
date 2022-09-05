@@ -210,7 +210,7 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
         # all_custom_fileds = db.session.query(CustomFields).filter_by(flow_id=flow_id).all()
         all_nodes = db.session.query(Node).filter_by(flow_id=flow_id).all()
         sub_nodes = db.session.query(SubNode).filter_by(flow_id=flow_id).all()
-        customfields = db.session.query(Variable).filter_by(flow_id=flow_id).all()
+        # customfields = db.session.query(Variable).filter_by(flow_id=flow_id).all()
 
         node_list = []
         for node in all_nodes:
@@ -227,7 +227,7 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
              "data": { "id": node.id,"label": "NEW NODE", "nodeData": sorted_sub_node_list}}
             node_list.append(get_data)
 
-        return {"nodes": node_list,"connections": connections_list,"sub_nodes:": encoders.jsonable_encoder(sub_nodes),"custom_fields":encoders.jsonable_encoder(customfields)}
+        return {"nodes": node_list,"connections": connections_list,"sub_nodes:": encoders.jsonable_encoder(sub_nodes),"custom_fields":"encoders.jsonable_encoder(customfields)"}
     except Exception as e:
         print(e, "at getting diagram. Time:", datetime.now())
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage": "Cannot get diagram"})
