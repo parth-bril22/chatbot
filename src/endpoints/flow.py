@@ -202,7 +202,7 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
         if (flow_data != None):
             return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,content={"errorMessage":"Can't find flow"})
         
-        all_connections = db.session.query(Connections).filter_by(flow_id=db.session.query(Flow.user_id).filter_by(flow_id=flow_id).first()[0]).all()
+        all_connections = db.session.query(Connections).filter_by(flow_id=flow_id).all()
         connections_list =[]
         for conn in all_connections:
             get_conn = {"id": str(conn.id), "markerEnd": {"type": "arrowclosed","color":"#79E794","orient":"auto"},"type": 'buttonedge', "source": str(conn.source_node_id), "sourceHandle": conn.sub_node_id,"target": str(conn.target_node_id), "animated": True, "label": 'edge label', "flow_id":flow_id}
@@ -210,7 +210,7 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
         # all_custom_fileds = db.session.query(CustomFields).filter_by(flow_id=flow_id).all()
         all_nodes = db.session.query(Node).filter_by(flow_id=flow_id).all()
         sub_nodes = db.session.query(SubNode).filter_by(flow_id=flow_id).all()
-        customfields = db.session.query(Variable).filter_by(user_id=flow_id).all()
+        customfields = db.session.query(Variable).filter_by(user_id=db.session.query(Flow.user_id).filter_by(id=flow_id).first()[0]).all()
 
         node_list = []
         for node in all_nodes:
