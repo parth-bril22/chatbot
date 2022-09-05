@@ -13,6 +13,7 @@ class Node(Base):
     name = Column(String)
     data = Column(JSON)#but input will be as string/dict
     position = Column(JSON)#string/dict
+    destination = Column(String) # store variable 
     type = Column(String, ForeignKey("node_type.type", ondelete = "NO ACTION"))
     node_conn = relationship("NodeType", back_populates = "node_type_conn")
     node_sub_node =  relationship("SubNode",back_populates = 'sub_node_con')

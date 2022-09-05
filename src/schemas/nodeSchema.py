@@ -7,6 +7,7 @@ class NodeSchema(BaseModel):
     flow_id: int
     _name: str = "name"
     type: str = "chat"
+    destination: str = "name"
     position: Dict = {"top":"0","left":"0"}
     # all fields from all types are present. Later in api.py, only the relevant fields will be taken into consideration
     data: Dict = {"nodeData":[{"text":"","value":"" ,"name" :"", "type":"", "source":"", "btn":"","value1":"","value2":"","operator":"","jumpId":"","slack_id":"","from_email":"","to_email":"","subject":"","customEmail":""}]}

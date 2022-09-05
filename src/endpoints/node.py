@@ -146,7 +146,7 @@ async def create_node(node:NodeSchema):
         prop_dict = node_data
         node_name = secrets.token_hex(4)
 
-        new_node = Node(name = node_name, type = node.type, data = prop_dict , position = node.position, flow_id = node.flow_id)
+        new_node = Node(name = node_name, type = node.type, data = prop_dict , position = node.position, flow_id = node.flow_id,destination=node.destination)
         db.session.add(new_node)
         db.session.commit()
         node_id = new_node.id
@@ -254,7 +254,7 @@ async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handle
         if(node_check.status_code != status.HTTP_200_OK):
             return node_check
     
-        db.session.query(Node).filter(Node.id == node_id).filter_by(flow_id=my_node.flow_id).update({'data' : node_data, 'type' : my_node.type, 'position':my_node.position})
+        db.session.query(Node).filter(Node.id == node_id).filter_by(flow_id=my_node.flow_id).update({'data' : node_data, 'type' : my_node.type, 'position':my_node.position,'destination':my_node.destination})
         db.session.query(Flow).filter_by(id=my_node.flow_id).update({"updated_at": datetime.today().isoformat()})
         db.session.commit()
         db.session.close()
