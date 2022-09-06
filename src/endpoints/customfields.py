@@ -1,3 +1,4 @@
+from typing import List
 from fastapi.responses import JSONResponse
 from datetime import datetime
 from fastapi import APIRouter,status
@@ -41,13 +42,13 @@ async def create_global_variable(schema:GlobalVariableSchema):
         else:
             return JSONResponse(status_code=status.HTTP_406_NOT_ACCEPTABLE,content={"errorMessage":"Type is not correct"})
     except Exception as e:
-        print(e,"at check user. Time:", datetime.now())
+        print(e,"at create global variables. Time:", datetime.now())
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,content={"errorMessage":"Can't create a variable"})
 
 @router.get("/variables")
 async def get_variables(user_id:int):
     """
-    Get all variable by flow_id 
+    Get all variable by user and node id
     """
     try:
         var_list = []
@@ -60,5 +61,22 @@ async def get_variables(user_id:int):
         return JSONResponse(status_code=status.HTTP_200_OK,content={"Variables":var_list})
         
     except Exception as e:
-        print(e,"at check user. Time:", datetime.now())
+        print(e,"at get variables. Time:", datetime.now())
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,content={"errorMessage":"Can't create a variable"})
+
+@router.post("/save_var")
+async def save_variables(vars:List):
+    """
+    Save values of all variable by var name  
+    """
+    try:
+        for i in vars:
+            db.session.query(Variable).filter_by(name=i['name']).update({'value':i['value']})  
+            db.session.commit()
+            db.session.close()
+        
+        return JSONResponse(status_code=status.HTTP_200_OK,content={"Variables":vars})
+        
+    except Exception as e:
+        print(e,"at save variables. Time:", datetime.now())
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,content={"errorMessage":"Can't able to save variables"})
