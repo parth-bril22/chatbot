@@ -477,16 +477,6 @@ async def send_email(data):
     except Exception as e:
         print(e,"at sending email. Time:", datetime.now())
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"errorMessage":"Can't send email"})
-# async def get_set_varibales(destination:str,node_id:int):
-#     """
-#     Variable use in conversation
-#     """
-
-#     try:
-#         db.session.query(Variable).filter_by(node_id = node_id).filter_by(user_id)
-#     except Exception as e:
-#         print(e,"at variables. Time:", datetime.now())
-#         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"errorMessage":"Can't get or set variable"})
 
 @router.post("/save_chat_history")
 async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_wrapper)):
