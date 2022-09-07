@@ -19,9 +19,8 @@ router = APIRouter(
 )
 
 async def check_user_token(workspace_id:int,token=Depends(auth_handler.auth_wrapper)):
-    """
-    Check authorization of user
-    """
+    """Check authorization of user"""
+
     try:
        get_user_id = db.session.query(User).filter_by(email=token).first()  
        workspace_ids = [i[0] for i in db.session.query(Workspace.id).filter_by(user_id=get_user_id.id).all()]
@@ -35,9 +34,8 @@ async def check_user_token(workspace_id:int,token=Depends(auth_handler.auth_wrap
 
 @router.post('/create_workspace')
 async def create_workspace(space : WorkSpaceSchema,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Create a workspace 
-    """
+    """Create a workspace"""
+
     try:
         # check the workspace has same name or not 
         workspace_names =[i[0] for i in db.session.query(Workspace.name).filter_by(user_id=space.user_id).all()]
@@ -57,9 +55,8 @@ async def create_workspace(space : WorkSpaceSchema,token = Depends(auth_handler.
 
 @router.get('/get_workspace')
 async def create_workspace(user_id : int,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Get all workspaces list per user
-    """
+    """Get all workspaces list per user"""
+
     try:
         all_workspaces = db.session.query(Workspace).filter_by(user_id=user_id).all()
         workspace_list =[]
@@ -75,9 +72,8 @@ async def create_workspace(user_id : int,token = Depends(auth_handler.auth_wrapp
 
 @router.get('/get_workspace_flow_list')
 async def create_workspace(user_id:int,workspace_id : int,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Get list of flows which are stored in workspace
-    """
+    """Get list of flows which are stored in workspace"""
+
     try:
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
@@ -99,9 +95,8 @@ async def create_workspace(user_id:int,workspace_id : int,token = Depends(auth_h
 
 @router.post('/move_flow')
 async def move_flow(flow_id:int, workspace_id : int,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Move flow into selected workspace
-    """
+    """Move flow into selected workspace"""
+
     try:
         if (db.session.query(Flow).filter_by(id=flow_id).first()) == None:
             return JSONResponse(status_code=404,content={"errorMessage":"Can't found flow"})
@@ -122,9 +117,8 @@ async def move_flow(flow_id:int, workspace_id : int,token = Depends(auth_handler
 
 @router.delete('/remove_workspace')
 async def remove_workspace(user_id:int, workspace_id : int,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Remove(Delete) workspace
-    """
+    """Remove(Delete) workspace"""
+
     try:
         if (db.session.query(Workspace).filter_by(id=workspace_id).first()) == None:
             return JSONResponse(status_code=404,content={"errorMessage":"Can't find workspace"})
@@ -146,9 +140,8 @@ async def remove_workspace(user_id:int, workspace_id : int,token = Depends(auth_
 
 @router.patch('/remove_from_workspace')
 async def remove_workspace(user_id:int, flow_id : int,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Remove flow from selected workspace
-    """
+    """Remove flow from selected workspace"""
+
     try:
         user_check = await check_user_id(user_id)
         if user_check.status_code != 200 :
@@ -163,9 +156,8 @@ async def remove_workspace(user_id:int, flow_id : int,token = Depends(auth_handl
 
 @router.patch('/rename_workspace')
 async def rename_workspace(user_id : int, workspace_id:int, new_name:str,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Rename selected workspace
-    """
+    """Rename selected workspace"""
+
     try:
         workspace_names =[i[0] for i in db.session.query(Workspace.name).filter_by(user_id=user_id).all()]
 

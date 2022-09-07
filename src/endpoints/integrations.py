@@ -14,9 +14,8 @@ router = APIRouter(
 
 @router.post("/slack")
 async def slack_integration(data:SlackSchema):
-    """
-    Add channel's name,id and bot_token by user into DB
-    """
+    """Add channel's name,id and bot_token by user into DB"""
+
     try:
         new_channel = Slack(channel_name=data.data['incoming_webhook']['channel'],channel_id=data.data['incoming_webhook']['channel_id'],workspace_name=data.data['team']['name'],bot_token=data.data['access_token'],user_id=data.userId)
         db.session.add(new_channel)
@@ -29,9 +28,8 @@ async def slack_integration(data:SlackSchema):
 
 @router.get('/get_slack')
 async def get_connected_channels(userId:int):
-    """
-    Get all connected channels by user
-    """
+    """Get all connected channels by user"""
+
     try:
         all_channels = db.session.query(Slack).filter_by(user_id = userId).all()
         channels = []
@@ -45,9 +43,8 @@ async def get_connected_channels(userId:int):
 
 @router.post("/sendgrid_email")
 async def add_sendgrid_email(data:SendgridMailSchema):
-    """
-    Set/Add Sendgrid account by user with API key
-    """
+    """Set/Add Sendgrid account by user with API key"""
+
     try:
         sg_email = SendEmail(from_email=data.from_email,secret=data.secret,user_id=data.userId)
         db.session.add(sg_email)
@@ -60,9 +57,8 @@ async def add_sendgrid_email(data:SendgridMailSchema):
 
 @router.get('/get_email')
 async def get_sendgid_email(userId:int):
-    """
-    Get all emails set by user
-    """
+    """Get all emails set by user"""
+
     try:
         all_emails = db.session.query(SendEmail).filter_by(user_id = userId).all()
         emails = []

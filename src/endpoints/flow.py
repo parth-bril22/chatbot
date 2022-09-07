@@ -251,9 +251,8 @@ async def save_draft(flow_id:int):
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"errorMessage":"Can't save draft"})
 
 async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Retun the diagram for the preview (user conversion)
-    """
+    """Return the diagram for the preview (user conversion)"""
+
     try:
         get_diagram = db.session.query(Flow).filter_by(id=flow_id).first()
         db.session.query(Flow).filter_by(id=flow_id).update({"updated_at": datetime.today().isoformat()})        
@@ -267,9 +266,8 @@ async def preview(flow_id : int,token = Depends(auth_handler.auth_wrapper)):
 
 @router.post('/{my_token}/preview')
 async def tokenize_preview(my_token:str):
-    """
-    Retun the diagram for the preview using valid token(user conversion)
-    """
+    """Return the diagram for the preview using valid token(user conversion)"""
+
     try:
         flow_id =  db.session.query(Flow.id).filter_by(publish_token = my_token).first()[0]
 
@@ -283,9 +281,8 @@ async def tokenize_preview(my_token:str):
     
 @router.post('/publish')
 async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Save latest diagram(nodes,connections,sub_nodes) with token in database and allow to publish 
-    """
+    """Save latest diagram(nodes,connections,sub_nodes) with token in database and allow to publish"""
+
     try:
         # valid_user = await check_user_token(flow_id,token)
         # if (valid_user.status_code != status.HTTP_200_OK):
@@ -317,9 +314,8 @@ async def publish(flow_id: int,diagram : Dict,token = Depends(auth_handler.auth_
 
 @router.post("/disable_flow")
 async def flow_disabled(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Disable flow
-    """
+    """Disable flow"""
+
     try:
         valid_user = await check_user_token(flow_id,token)
         if (valid_user.status_code != status.HTTP_200_OK):
@@ -337,9 +333,8 @@ async def flow_disabled(flow_id: int,token = Depends(auth_handler.auth_wrapper))
 
 @router.patch('/archive_flow')
 async def archive_flow(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Move into trash folder
-    """
+    """Move flow into trash folder"""
+
     try:
         valid_user = await check_user_token(flow_id,token)
         if (valid_user.status_code != status.HTTP_200_OK):
@@ -358,9 +353,8 @@ async def archive_flow(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
 
 @router.get('/get_trashed_flows')
 async def get_trashed_flows(user_id: int,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Get the list of flows which in trash folder
-    """
+    """Get the list of flows which in trash folder"""
+
     try:
         user_check = await check_user_id(user_id)
         if user_check.status_code != status.HTTP_200_OK :
@@ -379,9 +373,8 @@ async def get_trashed_flows(user_id: int,token = Depends(auth_handler.auth_wrapp
 
 @router.delete('/trash/delete_forever')
 async def delete_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Delete permanently flow
-    """
+    """Delete permanently flow"""
+
     try:
         valid_user = await check_user_token(flow_id,token)
         if (valid_user.status_code != status.HTTP_200_OK):
@@ -397,9 +390,8 @@ async def delete_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
 
 @router.post('/trash/restore_flow')
 async def restore_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Restore any flow and use it 
-    """
+    """Restore any flow and use it"""
+
     try:
         valid_user = await check_user_token(flow_id,token)
         if (valid_user.status_code != status.HTTP_200_OK):
@@ -416,9 +408,8 @@ async def restore_flow(flow_id: int,token = Depends(auth_handler.auth_wrapper)):
 
 @router.get("/flow_detail")
 async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Get flow details name and publish_token
-    """
+    """Get flow details name and publish_token"""
+
     try:
         valid_user = await check_user_token(flow_id,token)
         if (valid_user.status_code != status.HTTP_200_OK):
@@ -431,9 +422,8 @@ async def get_flow_detail(flow_id:int,token = Depends(auth_handler.auth_wrapper)
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND,content={"errorMessage":"Can't found"})
 
 async def post_message(slack_id,message):
-    """
-    Send the message to the slack channel
-    """
+    """Send the message to the slack channel"""
+
     slack_db = db.session.query(Slack).filter_by(id=slack_id).first()
     client = WebClient(token=slack_db.bot_token)
     try:
@@ -445,12 +435,10 @@ async def post_message(slack_id,message):
         print(f"Got an error: {e.response['error']}")
 
 async def send_email(data):
-    """
-    Send Email by user to customers
-    """
+    """Send Email by user to customers"""
+
     try:
-        print(data['to_email'])
-        if not data['customEmail']: 
+        if not data['customEmail']:
             message = Mail(
             from_email=SENDGRID_EMAIL,
             to_emails=data['to_email'],
@@ -480,9 +468,8 @@ async def send_email(data):
 
 @router.post("/save_chat_history")
 async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Save the chat history of every user
-    """
+    """Save the chat history of every user"""
+
     try:
         valid_user = await check_user_token(chats.flow_id,token)
         if (valid_user.status_code != status.HTTP_200_OK):
@@ -575,9 +562,8 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
 
 @router.get("/get_chat_history")
 async def get_chat_history(ip:str,token:str):
-    """
-    Get the chat history of every user
-    """
+    """Get the chat history of every user"""
+
     try:
         flow_id = db.session.query(Flow.id).filter_by(publish_token=token).first()
         chat_history = db.session.query(Chat).filter_by(visitor_ip=ip).filter_by(flow_id=flow_id[0]).first()
@@ -613,9 +599,8 @@ async def upload_file_to_s3(flow_id:int,file: UploadFile):
 
 @router.post("/upload_user")
 async def upload_file_from_user(flow_id:int,file: UploadFile):    
-    """
-    Upload the html file into s3 bucket
-    """
+    """Upload the html file into s3 bucket"""
+
     try:
         
         s3 = boto3.resource("s3",aws_access_key_id =AWS_ACCESS_KEY,aws_secret_access_key=AWS_ACCESS_SECRET_KEY)
@@ -630,6 +615,9 @@ async def upload_file_from_user(flow_id:int,file: UploadFile):
 
 @router.get("/flow_analysis")
 async def get_flow_analysis_data(flow_id:int,token = Depends(auth_handler.auth_wrapper)):
+    """Get the analysis for flow
+    Details: This analysis shows how many visitors visit this flow and which path they choose (how conversion goes) in percentage"""
+
     try:
         valid_user = await check_user_token(flow_id,token)
         if (valid_user.status_code != status.HTTP_200_OK):
@@ -684,6 +672,8 @@ async def get_flow_analysis_data(flow_id:int,token = Depends(auth_handler.auth_w
 
 @router.post("/upload_from_user")
 async def upload_to_s3_from_user(file:UploadFile,node_id:int,flow_id:int):
+    """Upload files at conversion time by user which store in s3 bucket"""
+
     try:
         s3 = boto3.resource("s3",aws_access_key_id =AWS_ACCESS_KEY,aws_secret_access_key=AWS_ACCESS_SECRET_KEY)
         bucket = s3.Bucket(BUCKET_NAME)

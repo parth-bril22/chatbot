@@ -25,9 +25,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 def validate_user(user:ModelUser):
-    """
-    Validate if email id already exists, is valid and passowrd. Takes ModelUser as input
-    """
+    """Validate if email id already exists, is valid and passowrd. Takes ModelUser as input"""
     
     if(bool(db.session.query(ModelUser).filter_by(email = user.email).first())):
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content = {"errorMessage" : 'Email already exists'})
@@ -46,9 +44,8 @@ def validate_user(user:ModelUser):
 
 @router.post("/signup/" )
 async def signup(user: SchemaUser):
-    """
-    User signup
-    """
+    """User signup"""
+
     try:
         validated_user = validate_user(user)
         if (validated_user != True): 
@@ -66,9 +63,8 @@ async def signup(user: SchemaUser):
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"errorMessage": "Please check inputs!"})
         
 async def get_user_by_email(my_email: str):
-    """
-    Checks if the email exists or not
-    """
+    """Checks if the email exists or not"""
+
     try:
         user = db.session.query(ModelUser).filter_by(email=my_email).first()
         if(user == None):
@@ -77,13 +73,10 @@ async def get_user_by_email(my_email: str):
     except:
         return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content = {"message" : 'Please check email'})
 
-   
-
 @router.post("/login/")
 async def authenticate_user(input_user: lg):
-    """
-    User login/Signin
-    """
+    """User login/Signin"""
+
     try:
         user = await get_user_by_email(input_user.email)
         if (not user) or (not bcrypt.checkpw(input_user.password.encode('utf-8'), user.password.encode('utf-8'))):
@@ -99,9 +92,8 @@ async def authenticate_user(input_user: lg):
 
 @router.post('/refresh')
 async def refresh( refresh_token : str):
-    """
-    For check using refresh token after session is expired 
-    """
+    """For check using refresh token after session is expired"""
+
     try:
         payload = auth_handler.decode_refresh_token(refresh_token)
             # Check if token is not expired
@@ -119,9 +111,7 @@ async def refresh( refresh_token : str):
 
 
 def send_mail(my_uuid:str):
-    """
-    Send password reset email to user 
-    """
+    """Send password reset link on email of user"""
 
     message = Mail(
     from_email='testforfastapi@gmail.com',
@@ -142,9 +132,8 @@ def send_mail(my_uuid:str):
 
 @router.post('/request_change_password')
 async def req_change_password(email_id : str):
-    """
-    Request to change the password by user
-    """
+    """Request to change the password by user"""
+
     try:
         my_email =  email_id
         user = db.session.query(ModelUser).filter_by(email = my_email).first()
@@ -164,9 +153,8 @@ async def req_change_password(email_id : str):
     
 
 def get_uuid_details(my_uuid:str):
-    """
-    Get id and time generated of the entered uuid
-    """
+    """Get id and time generated of the entered uuid"""
+
     try:
         user = db.session.query(Password_tokens).filter_by(uuid = str(my_uuid)).first()
         if(user == None):
@@ -178,9 +166,8 @@ def get_uuid_details(my_uuid:str):
 
 
 async def get_user_by_id(my_id: int):
-    """
-   Get the user info by id 
-    """
+    """Get the user info by id"""
+
     try:
         user = db.session.query(ModelUser).filter_by(id = my_id).first()
         if(user == None):
@@ -192,11 +179,9 @@ async def get_user_by_id(my_id: int):
         
 @router.post('/reset_password_link')
 async def reset_password_link(my_uuid:str,ps:PasswordResetSchema):
-    """
-    Reset the password using link 
-    """
+    """Reset the password using link which send to registered mail-id"""
+
     try :
-            
         uuid_details = get_uuid_details((my_uuid))
 
         if(uuid_details.used == True):
@@ -225,9 +210,8 @@ async def reset_password_link(my_uuid:str,ps:PasswordResetSchema):
  
 @router.patch('/change_password')
 async def change_password(ps:PasswordChangeSchema, my_email = Depends(auth_handler.auth_wrapper)):
-    """
-    Change password by user  
-    """
+    """Change password by user"""
+
     try:
 
         user = await get_user_by_email(my_email)
@@ -251,9 +235,8 @@ async def change_password(ps:PasswordChangeSchema, my_email = Depends(auth_handl
 
 @router.delete('/delete_account')
 async def delete_user(my_email = Depends(auth_handler.auth_wrapper)):
-    """
-    Delete account  
-    """
+    """Delete user's account permanently"""
+
     try:
         db.session.query(ModelUser).filter_by(email = my_email).delete()
         db.session.commit()
@@ -265,9 +248,8 @@ async def delete_user(my_email = Depends(auth_handler.auth_wrapper)):
 
 @router.get('/user_profile')
 async def user_profile(user_id : int):
-    """
-    Get the user profile 
-    """
+    """Get the user profile"""
+
     try:
         token = db.session.query(ModelUser.token).filter_by(id=user_id).first()[0]
         db.session.commit()
