@@ -86,13 +86,13 @@ async def signup(user: SchemaUser):
             user_id = db.session.query(ModelUser.id).filter_by(id=db_user.id).first()
 
             # defualt vars
-            var_list = [{"name": "id","type": "String","userId": user_id,"value":user_id},{"name": "name","type": "String","userId":user_id,"value":user.first_name },
-            {"name": "email","type": "String","userId": user_id,"value":user.email},{"name": "date","type": "String","userId": user_id,"value":datetime.today().isoformat()}]
+            var_list = [{"name": "id","type": "String","userId": user_id[0],"value":user_id[0]},{"name": "name","type": "String","userId":user_id[0],"value":user.first_name },
+            {"name": "email","type": "String","userId": user_id[0],"value":user.email},{"name": "date","type": "String","userId": user_id[0],"value":datetime.today().isoformat()}]
 
             for var in var_list:
                 await create_global_variable(var)
 
-            return JSONResponse(status_code=status.HTTP_201_CREATED, content = {'message': "Signup Successful",'token':token, "refresh_token" : auth_handler.create_refresh_token(user.email),'user_id':user_id})
+            return JSONResponse(status_code=status.HTTP_201_CREATED, content = {'message': "Signup Successful",'token':token, "refresh_token" : auth_handler.create_refresh_token(user.email),'user_id':user_id[0]})
     except Exception as e:
         print("Error at signup: ", e)
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"errorMessage": "Please check inputs!"})
