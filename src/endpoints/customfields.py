@@ -52,7 +52,7 @@ async def get_variables(user_id:int):
         var_list = []
         db_variables = db.session.query(Variable).filter_by(user_id=user_id).all()
         for i in db_variables:
-            var_list.append({"id": i.id,"name":i.name,"type":i.type, "user_id":i.user_id})
+            var_list.append({"varName":i.name,"varValue":i.value})
             
         db.session.commit()
         db.session.close()
