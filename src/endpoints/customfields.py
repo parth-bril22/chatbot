@@ -32,7 +32,7 @@ async def create_global_variable(schema:GlobalVariableSchema):
             if schema.name in var_names:
                 return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,content={"errorMessage":"The variable name "  +{schema.name}+ "is not allowed"})
             # create the variable
-            var = Variable(name = schema.name,type = schema.type,node_id=schema.nodeId,user_id=schema.userId,value=None)
+            var = Variable(name = schema.name,type = schema.type,node_id=schema.nodeId,user_id=schema.userId,value="")
             db.session.add(var)
             db.session.commit()
             db.session.close()
