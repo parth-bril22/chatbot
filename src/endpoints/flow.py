@@ -36,9 +36,8 @@ router = APIRouter(
 )
 
 async def check_user_id(user_id:str):
-    """
-    Check User is exists with given flows 
-    """
+    """Check Flow are exists for that user"""
+
     try:
         if(db.session.query(Flow).filter_by(user_id = user_id).first() == None):
             return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't find flows for this user."})
@@ -50,9 +49,8 @@ async def check_user_id(user_id:str):
 
 @router.post('/create_flow')
 async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Create a new Flow 
-    """
+    """Create a new Flow"""
+
     try:
         flow_names =[i[0] for i in db.session.query(Flow.name).filter_by(user_id=flow.user_id).filter_by(status = 'active').all()]
 
@@ -87,9 +85,8 @@ async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrappe
 
 @router.get('/get_flow_list')
 async def get_flow_list(user_id : int,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Get the flow list by user
-    """
+    """Get the flow list by user"""
+
     try:
         flows = db.session.query(Flow).filter_by(user_id = user_id).filter_by(isEnable = True).all()
         # get the workspace id & list 
@@ -105,9 +102,8 @@ async def get_flow_list(user_id : int,token = Depends(auth_handler.auth_wrapper)
 
 @router.post('/rename_flow')
 async def rename_flow(user_id : int, flow_id:int, new_name:str,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Rename flow
-    """
+    """Rename flow"""
+
     try:
         flow_names =[i[0] for i in db.session.query(Flow.name).filter_by(user_id=user_id).filter_by(status = 'active').all()]
 
@@ -137,9 +133,8 @@ async def rename_flow(user_id : int, flow_id:int, new_name:str,token = Depends(a
 
 @router.delete('/delete_flow_list')
 async def delete_flow(user_id : int, flow_list: List[int],token = Depends(auth_handler.auth_wrapper)):
-    """
-    Delete one flow or multiple flows at a time 
-    """
+    """Delete one flow or multiple flows at a time"""
+
     try:
         for flow_id in flow_list:
             valid_user = await check_user_token(flow_id,token)
@@ -166,9 +161,8 @@ async def delete_flow(user_id : int, flow_list: List[int],token = Depends(auth_h
 
 @router.post('/duplicate_flow')
 async def duplicate_flow(user_id:int, flow_id:int,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Create a copy(duplicate) flow with same data
-    """
+    """Create a copy(duplicate) flow with same data"""
+
     try:
         valid_user = await check_user_token(flow_id,token)
         if (valid_user.status_code != status.HTTP_200_OK):
@@ -194,9 +188,8 @@ async def duplicate_flow(user_id:int, flow_id:int,token = Depends(auth_handler.a
 
 @router.get("/get_diagram")
 async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
-    """
-    Get the diagram which contain all nodes, connections, sub_nodes with data
-    """
+    """Get the diagram which contain all nodes, connections, sub_nodes with data"""
+
     try:
         flow_data = db.session.query(Flow).filter_by(id=flow_id).filter_by(status="trashed").first()        
         if (flow_data != None):
@@ -233,9 +226,8 @@ async def get_diagram(flow_id :int,token = Depends(auth_handler.auth_wrapper)):
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage": "Cannot get diagram"})
 
 async def save_draft(flow_id:int):
-    """
-    Save the diagram in db
-    """
+    """Save the diagram in db"""
+    
     try:
         diagram = await get_diagram(flow_id)
         for node in diagram['nodes']:

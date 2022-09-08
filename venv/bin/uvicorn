@@ -1,5 +1,5 @@
 #!/bin/sh
-'''exec' "/home/brilworks-23/Downloads/Chatbot Project/chatbot/venv/bin/python" "$0" "$@"
+'''exec' "/home/brilworks-23/Downloads/Chatbot Project/chatbot/venv/bin/python3.8" "$0" "$@"
 ' '''
 # -*- coding: utf-8 -*-
 import re
