@@ -9,5 +9,4 @@ class Variable(Base):
     name = Column(String)
     type = Column(String)
     value = Column(String)
-    node_id = Column(Integer)
     user_id = Column(Integer)
