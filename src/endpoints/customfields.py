@@ -63,12 +63,12 @@ async def get_variables(user_id:int):
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,content={"errorMessage":"Can't create a variable"})
 
 @router.post("/save_var")
-async def save_variables(vars:List):
+async def save_variables(vars:List,user_id:int):
     """Save values of all variables"""
 
     try:
         for i in vars:
-            db.session.query(Variable).filter_by(name=i['varName']).update({'value':i['varValue']})  
+            db.session.query(Variable).filter_by(user_id=user_id).filter_by(name=i['varName']).update({'value':i['varValue']})  
             db.session.commit()
             db.session.close()
         
