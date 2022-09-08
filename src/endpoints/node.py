@@ -184,7 +184,7 @@ async def create_nodes(node : NodeSchema,token = Depends(auth_handler.auth_wrapp
         if (validate_user.status_code != status.HTTP_200_OK):
             return validate_user
         create_node_response, node_id = await create_node(node)
-        if (create_node_response.status_code != status.HTTP_200_OK):
+        if (create_node_response.status_code != status.HTTP_201_CREATED):
             return create_node_response
 
         return JSONResponse(status_code=status.HTTP_201_CREATED, content={"message": "Node created successfully!", "ids": node_id})
@@ -417,7 +417,7 @@ async def create_connections(connection : ConnectionSchema,token = Depends(auth_
         if (validate_user.status_code != status.HTTP_200_OK):
             return validate_user
         x = await create_connection(connection)
-        if(x.status_code != status.HTTP_200_OK):
+        if(x.status_code != status.HTTP_201_CREATED):
             return x
 
         return JSONResponse(status_code = status.HTTP_200_OK, content = {"message" :"Connection created succssfully!"})
@@ -457,7 +457,7 @@ async def create_node_with_conn(my_node:NodeSchema,node_id:int, sub_node_id:str,
         if (validate_user.status_code != status.HTTP_200_OK):
             return validate_user
         create_node_response, my_id = await create_node(node=my_node)
-        if (create_node_response.status_code != status.HTTP_200_OK):
+        if (create_node_response.status_code != status.HTTP_201_CREATED):
             return create_node_response
         sub_node = db.session.query(SubNode.id).filter_by(node_id=node_id).filter_by(id=sub_node_id).first()
         if (sub_node == None):
@@ -478,11 +478,11 @@ async def add_connection(my_node: NodeSchema, connection: ConnectionSchema,token
 
     try:
         validate_user = await check_user_token(my_node.flow_id,token)
-        if (validate_user.status_code != status.HTTP_200_OK):
+        if (validate_user.status_code != 200):
             return validate_user
 
-        status, new_node_id = await create_node(node=my_node)
-        if (status.status_code != status.HTTP_200_OK):
+        node_respoonse, new_node_id = await create_node(node=my_node)
+        if (node_respoonse.status_code != status.HTTP_201_CREATED):
             return status
 
         first_connection = ConnectionSchema(flow_id=connection.flow_id, source_node_id=connection.source_node_id,
