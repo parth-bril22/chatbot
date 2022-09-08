@@ -61,7 +61,7 @@ async def signup(user: SchemaUser):
 
             # defualt vars
             var_list = [{"name": "id","type": "String","userId": user_id,"value":user_id},{"name": "name","type": "String","userId":user_id,"value":user.first_name },
-            {"name": "email","type": "String","userId": user_id,"value":user.email},{"name": "date","type": "string","userId": user_id,"value":datetime.today().isoformat()}]
+            {"name": "email","type": "String","userId": user_id,"value":user.email},{"name": "date","type": "String","userId": user_id,"value":datetime.today().isoformat()}]
 
             for var in var_list:
                 await create_global_variable(var)
