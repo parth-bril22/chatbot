@@ -68,7 +68,7 @@ async def save_variables(vars:List):
 
     try:
         for i in vars:
-            db.session.query(Variable).filter_by(name=i['name']).update({'value':i['value']})  
+            db.session.query(Variable).filter_by(name=i['varName']).update({'value':i['varValue']})  
             db.session.commit()
             db.session.close()
         
