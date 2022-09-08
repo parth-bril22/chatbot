@@ -1,5 +1,6 @@
 import bcrypt
 import re
+from typing import Dict
 from fastapi import APIRouter
 from uuid import uuid4
 from fastapi import Depends, HTTPException,status
@@ -10,7 +11,7 @@ from fastapi.responses import JSONResponse
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
-from ..endpoints.customfields import create_global_variable
+from ..models.customfields import Variable
 from ..models.users import User as ModelUser
 from ..models.users import Password_tokens
 from ..schemas.userSchema import User as SchemaUser
@@ -42,6 +43,31 @@ def validate_user(user:ModelUser):
 
     else:
         return True
+
+async def create_global_variable(schema:Dict):
+    """Create a custom global variable"""
+
+    try:
+        types = ['String','Number','Boolean','Date','Array']
+        
+        if schema['type'] in types:
+
+            # check not same name variable
+            var_names = [i[0] for i in db.session.query(Variable.name).filter_by(user_id=schema['userId']).all()]
+            if schema['name'] in var_names:
+                return JSONResponse(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,content={"errorMessage":"The variable name "  +{schema['name']}+ "is not allowed"})
+            # create the variable
+            var = Variable(name = schema['name'],type = schema['type'],user_id=schema['userId'],value=schema['value'])
+            db.session.add(var)
+            db.session.commit()
+            db.session.close()
+
+            return JSONResponse(status_code=status.HTTP_201_CREATED,content={"message":"Created successfully"})
+        else:
+            return JSONResponse(status_code=status.HTTP_406_NOT_ACCEPTABLE,content={"errorMessage":"Type is not correct"})
+    except Exception as e:
+        print(e,"at create global variables. Time:", datetime.now())
+        return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,content={"errorMessage":"Can't create a variable"})
 
 @router.post("/signup/" )
 async def signup(user: SchemaUser):
