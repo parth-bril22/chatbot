@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
+from ..endpoints.customfields import create_global_variable
 from ..models.users import User as ModelUser
 from ..models.users import Password_tokens
 from ..schemas.userSchema import User as SchemaUser
@@ -57,7 +58,15 @@ async def signup(user: SchemaUser):
             db.session.add(db_user)
             db.session.commit()
             user_id = db.session.query(ModelUser.id).filter_by(id=db_user.id).first()
-            return JSONResponse(status_code=status.HTTP_201_CREATED, content = {'message': "Signup Successful",'token':token, "refresh_token" : auth_handler.create_refresh_token(user.email),'user_id':user_id[0]})
+
+            # defualt vars
+            var_list = [{"name": "id","type": "String","userId": user_id,"value":user_id},{"name": "name","type": "String","userId":user_id,"value":user.first_name },
+            {"name": "email","type": "String","userId": user_id,"value":user.email},{"name": "date","type": "string","userId": user_id,"value":datetime.today().isoformat()}]
+
+            for var in var_list:
+                await create_global_variable(var)
+
+            return JSONResponse(status_code=status.HTTP_201_CREATED, content = {'message': "Signup Successful",'token':token, "refresh_token" : auth_handler.create_refresh_token(user.email),'user_id':user_id})
     except Exception as e:
         print("Error at signup: ", e)
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"errorMessage": "Please check inputs!"})
