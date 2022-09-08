@@ -68,7 +68,7 @@ async def create_flow(flow : FlowSchema,token = Depends(auth_handler.auth_wrappe
         node_data = [{"text": "Welcome","button":"Start"}]
 
         # Add Welcome node for new Flow
-        welcome_node = Node(name = "Welcome", type = "special", data = node_data, position = {"x": 180,"y": 260},flow_id=flow_id[0])
+        welcome_node = Node(name = "Welcome", type = "special", data = node_data, position = {"x": 180,"y": 260},flow_id=flow_id[0],destination="")
         db.session.add(welcome_node)
         db.session.commit()
 
