@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from routes.api import router as api_router
 from fastapi_sqlalchemy import DBSessionMiddleware
-from src.dependencies.config import DATABASE_URL
+from src.dependencies.config import API_PREFIX, DATABASE_URL,API_PREFIX
 app = FastAPI()
 app.add_middleware(DBSessionMiddleware, db_url = DATABASE_URL)
 origins = ["*"]
@@ -16,8 +16,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(api_router)
-# app.include_router(api_router,prefix=API_PREFIX)
+# app.include_router(api_router)
+app.include_router(api_router,prefix=API_PREFIX)
 
 
 if __name__ == '__main__':

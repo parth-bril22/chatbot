@@ -7,7 +7,7 @@ from ..models.integrations import Slack,SendEmail
 from fastapi.responses import JSONResponse
 
 router = APIRouter(
-    prefix="/api/integrations/v1",
+    prefix="/integrations",
     tags=["Integrations"],
     responses={404: {"description": "Not found"}},
 )

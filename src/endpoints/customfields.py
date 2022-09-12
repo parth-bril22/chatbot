@@ -12,7 +12,7 @@ auth_handler = AuthHandler()
 
 
 router = APIRouter(
-    prefix="/api/customfields/v1",
+    prefix="/customfields",
     tags=["Customfield"],
     responses={404: {"description": "Not found"}},
 )

@@ -17,7 +17,7 @@ from ..dependencies.auth import AuthHandler
 auth_handler = AuthHandler()
 
 router = APIRouter(
-    prefix="/api/node/v1",
+    prefix="/node",
     tags=["Node"],
     responses={404: {"description": "Not found"}},
 )
