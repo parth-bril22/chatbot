@@ -16,4 +16,4 @@ SENDGRID_EMAIL='priya.b@brilworks.com'
 
 API_PREFIX = "/api"
 
-ROUTE_PREFIX_V1 = "/v1"
+VERSION_PREFIX = "/v1"

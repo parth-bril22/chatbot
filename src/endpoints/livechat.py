@@ -1,13 +1,11 @@
-from email import message
 from fastapi import APIRouter, Depends , encoders, UploadFile,status
 from fastapi.responses import JSONResponse, Response
 from fastapi_sqlalchemy import db
+from fastapi_socketio import SocketManager
 from datetime import datetime
 from typing import List,Dict
-
 from ..schemas.livechatSchema import *
 from ..models.livechat import *
-
 from ..dependencies.auth import AuthHandler
 auth_handler = AuthHandler()
 
@@ -17,6 +15,13 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+socket_manager = SocketManager(app=router)
+
+
 @router.post("/connect")
 async def connection_establish():
     return JSONResponse(status_code=status.HTTP_200_OK,message={"Success"})
+
+@router.sio.on('join')
+async def handle_join(sid, *args, **kwargs):
+    await router.sio.emit('lobby', 'User joined')
