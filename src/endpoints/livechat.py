@@ -34,20 +34,20 @@ class ConnectionManager:
         for connection in self.active_connections:
             await connection.send_text(message)
 
-socket_manager = SocketManager(app=router)
+socket_manager = ConnectionManager()
 
 # @router.sio.on('join')
 # async def handle_join(sid, *args, **kwargs):
 #     await router.sio.emit('lobby', 'User joined')
 
 # fastapi websocket which is use for the send messages to eachother via socket 
-@router.websocket("/ws/{agent_id}")
+@router.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: int):
     await socket_manager.connect(websocket) # connecteion eshtablish 
     try:
         while True:
             data = await websocket.receive_text() # receive message 
-            # await socket_manager.send_personal_message(f"You wrote: {data}", websocket)
+            await socket_manager.send_personal_message(f"You wrote: {data}", websocket)
             message = {"clientId":client_id,"message":data}
             await socket_manager.broadcast(json.dumps(message)) # send message to each other
             
