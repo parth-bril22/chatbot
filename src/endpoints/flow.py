@@ -541,7 +541,8 @@ async def save_chat_history(chats:ChatSchema,token = Depends(auth_handler.auth_w
                     await send_email(ch['data'])
                 else:
                     pass
-            new_chat = Chat(flow_id = chats.flow_id, visited_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),chat = chats.chat,visitor_ip=chats.visitor_ip)
+            visitor_token = uuid.uuid4() # create customer token for new user
+            new_chat = Chat(flow_id = chats.flow_id, visited_at = datetime.today().isoformat(), updated_at = datetime.today().isoformat(),chat = chats.chat,visitor_ip=chats.visitor_ip,visitor_token=visitor_token)
             db.session.add(new_chat)
         
         db.session.commit()

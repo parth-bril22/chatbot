@@ -10,11 +10,10 @@ class NodeSchema(BaseModel):
     destination: str = "name"
     position: Dict = {"top":"0","left":"0"}
     # all fields from all types are present. Later in api.py, only the relevant fields will be taken into consideration
-    data: Dict = {"nodeData":[{"text":"","value":"" ,"name" :"", "type":"", "source":"", "btn":"","value1":"","value2":"","operator":"","jumpId":"","slack_id":"","from_email":"","to_email":"","subject":"","customEmail":""}]}
+    data: Dict = {"nodeData":[{"text":"","value":"" ,"name" :"", "type":"", "source":"", "btn":"","value1":"","value2":"","operator":"","jumpId":"","slack_id":"","from_email":"","to_email":"","subject":"","customEmail":"","assignedAgents":[]}]}
     class Config:
         orm_mode = True
         underscore_attrs_are_private = True
-
 
 class DelNodeSchema(BaseModel):
     id : int

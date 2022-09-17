@@ -27,7 +27,7 @@ class Chat(Base):
     updated_at = Column(DateTime)
     chat = Column(JSON)
     visitor_ip = Column(String)
-    token = Column(String)
+    visitor_token = Column(String)
 
 class EmbedScript(Base):
     __tablename__ = 'embedscripts'

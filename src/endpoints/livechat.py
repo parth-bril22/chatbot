@@ -1,10 +1,10 @@
 import json
 from fastapi import APIRouter,status, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse
 from fastapi_sqlalchemy import db
-from fastapi_socketio import SocketManager
+# from fastapi_socketio import SocketManager
 from datetime import datetime
-from typing import List,Dict
+from typing import List
 from ..schemas.livechatSchema import *
 from ..models.livechat import *
 from ..dependencies.auth import AuthHandler
@@ -82,9 +82,8 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int,token:str):
 @router.post('/create_agent')
 async def create_agent(agent : AgentSchema):
     """Create a agent"""
-
     try:
-        # check the workspace has same name or not 
+        # check the agent has same name or not
         agent_names =[i[0] for i in db.session.query(Agents.name).filter_by(user_id=agent.user_id).all()]
 
         if (agent.name.rstrip()) in agent_names:
@@ -107,38 +106,15 @@ async def get_agents(user_id : int):
     try:
         all_agents = db.session.query(Agents).filter_by(user_id=user_id).all()
         agent_list =[]
-        for workspace in all_agents:
-            get_workspace = {"id":workspace.id,"name":workspace.name}
-            agent_list.append(get_workspace)
+        for agent in all_agents:
+            get_agent = {"id":agent.id,"name":agent.name}
+            agent_list.append(get_agent)
         sorted_agents = sorted(agent_list, key=lambda agent_list: agent_list['id'],reverse = True)
 
         return {"agents":sorted_agents}
     except Exception as e:
         print(e, "at getting agent list. Time:", datetime.now())
         return JSONResponse(status_code=400, content={"errorMessage":"Can't get the list of agents"})
-
-    
-# @router.post('/assign_agent')
-# async def move_flow(flow_id:int, workspace_id : int,token = Depends(auth_handler.auth_wrapper)):
-#     """Assign agent into flow"""
-
-#     try:
-#         if (db.session.query(Flow).filter_by(id=flow_id).first()) == None:
-#             return JSONResponse(status_code=404,content={"errorMessage":"Can't found flow"})
-
-#         if ((db.session.query(Flow).filter_by(id=flow_id).first()).workspace_id == workspace_id):
-#             return JSONResponse(status_code=208,content={"errorMessage":"Flow is already in workspace"})
-
-#         db_workspace_name = db.session.query(Workspace.name).filter_by(id=workspace_id).first()
-#         db.session.query(Flow).filter_by(id=flow_id).update({"workspace_id":workspace_id,"workspace_name": db_workspace_name.name})
-#         db.session.commit()
-#         db.session.close()
-#         return JSONResponse(status_code = 200, content = {"message": "Flow move successfully!"})
-#     except Exception as e:
-#         print(e, "at move flow. Time:", datetime.now())
-        # return JSONResponse(status_code=400, content={"errorMessage":"Can't move flow from workspace"})
-
-
 
 @router.delete('/delete_agent')
 async def delete_agent(user_id:int, agent_id : int):
@@ -150,10 +126,10 @@ async def delete_agent(user_id:int, agent_id : int):
         db.session.query(Agents).filter_by(user_id=user_id).filter_by(id = agent_id).delete() 
         db.session.commit()
 
-        return JSONResponse(status_code = 200, content = {"message": "Workspace removed successfully!"})
+        return JSONResponse(status_code = 200, content = {"message": "Agent removed successfully!"})
     except Exception as e:
-        print(e, "at remove workspace. Time:", datetime.now())
-        return JSONResponse(status_code=400, content={"errorMessage":"Can't remove workspace"})
+        print(e, "at remove agent. Time:", datetime.now())
+        return JSONResponse(status_code=400, content={"errorMessage":"Can't remove agent"})
 
 
 
