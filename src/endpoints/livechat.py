@@ -6,7 +6,8 @@ from fastapi_sqlalchemy import db
 from datetime import datetime
 from typing import List
 from ..schemas.livechatSchema import *
-from ..models.livechat import *
+from ..models.livechat import Account, Agents
+from ..models.users import User
 from ..dependencies.auth import AuthHandler
 auth_handler = AuthHandler()
 
@@ -38,30 +39,8 @@ class ConnectionManager:
             await connection.send_text(message)
 
 socket_manager = ConnectionManager()
-
-# @router.sio.on('join')
-# async def handle_join(sid, *args, **kwargs):
-#     await router.sio.emit('lobby', 'User joined')
-
-# fastapi websocket which is use for the send messages to eachother via socket 
-
-# async def generate_token():
-
-
 @router.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: int,token:str):
-    # print(websocket.client)
-    # print(websocket.application_state)
-    # print(websocket.base_url)
-    # print(websocket.cookies)
-    # print(websocket.client)
-    # print(websocket.get)
-    # print(websocket.app)
-    # print(websocket.client_state)
-    # print(websocket.headers)
-    # print(websocket.keys)
-    # print(websocket.scope)
-    # print(websocket.url)
     print(websocket.values)
     if token != "secret":
             return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"message": "Please provide right token"})
@@ -78,26 +57,23 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int,token:str):
         message = {"clientId":client_id,"message":"Offline"}
         await socket_manager.broadcast(json.dumps(message))
 
-
-@router.post('/create_agent')
-async def create_agent(agent : AgentSchema):
-    """Create a agent"""
+@router.post('/agents')
+async def add_teammember(mail : str):
+    """add a teammember"""
     try:
-        # check the agent has same name or not
-        agent_names =[i[0] for i in db.session.query(Agents.name).filter_by(user_id=agent.user_id).all()]
 
-        if (agent.name.rstrip()) in agent_names:
-            return JSONResponse(status_code=404, content={"errorMessage":"Given name is already exists"})
+        if db.session.query(User.name).filter_by(email=mail).first() != None:
+            return JSONResponse(status_code=404, content={"errorMessage":"Given email is already registered"})
 
-        new_agent = Agents(name = agent.name.rstrip(), user_id = agent.user_id,isavailable=False)
+        new_agent = User(name = agent.name.rstrip(), user_id = agent.user_id,isavailable=False)
         db.session.add(new_agent)
         db.session.commit()
         db.session.close()
 
-        return JSONResponse(status_code = 200, content = {"message": "Agnet is successfully created!"})
+        return JSONResponse(status_code = 200, content = {"message": "Team member is successfully added!"})
     except Exception as e:
         print(e, "at creating agent. Time:", datetime.now())
-        return JSONResponse(status_code=400, content={"errorMessage":"Can't create a agent"})
+        return JSONResponse(status_code=400, content={"errorMessage":"Can't add a team member"})
 
 @router.get('/get_agents')
 async def get_agents(user_id : int):
@@ -131,6 +107,10 @@ async def delete_agent(user_id:int, agent_id : int):
         print(e, "at remove agent. Time:", datetime.now())
         return JSONResponse(status_code=400, content={"errorMessage":"Can't remove agent"})
 
+@router.get("/teammembers")
+async def team_members(account_id:int):
+    user_ids = db.session.query(Account.user_id).filter_by(id=account_id).all()
+    return user_ids
 
 
 
