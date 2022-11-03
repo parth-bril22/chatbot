@@ -154,6 +154,12 @@ async def create_node(node:NodeSchema):
                 second_sub_node = SubNode(id=str(new_node.id) + "_" + str(int(count) + 1).zfill(2) + "b", node_id=new_node.id,flow_id=node.flow_id, data=item, type=node.type)
                 db.session.add(first_sub_node)
                 db.session.add(second_sub_node)
+        elif node.type == 'yes_no':
+            for item in prop_dict:
+                first_sub_node = SubNode(id=str(new_node.id) + "_" + count + "b", node_id=new_node.id,flow_id=node.flow_id, data=item, type=node.type)
+                second_sub_node = SubNode(id=str(new_node.id) + "_" + str(int(count) + 1).zfill(2) + "b", node_id=new_node.id,flow_id=node.flow_id, data=item, type=node.type)
+                db.session.add(first_sub_node)
+                db.session.add(second_sub_node)
         elif node.type == "button":
             for item in prop_dict:
                 first_sub_node = SubNode(id=str(new_node.id) + "_" + str(count) + "b", node_id=new_node.id,flow_id=node.flow_id, data={"text":""}, type="chat")
