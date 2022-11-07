@@ -23,7 +23,10 @@ router = APIRouter(
 )
 
 async def upload_to_s3(file,node_id,flow_id):
-    """Store files to s3 bucket by user upload  for the media node"""
+    '''
+    Store files to s3 bucket by user upload  for the media node
+    
+    '''
 
     try:
         s3 = boto3.resource("s3",aws_access_key_id =AWS_ACCESS_KEY,aws_secret_access_key=AWS_ACCESS_SECRET_KEY)
@@ -57,7 +60,7 @@ async def upload_to_s3(file,node_id,flow_id):
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"errorMessage":"Can't upload"})
 
 async def check_user_token(flow_id:int,token=Depends(auth_handler.auth_wrapper)):
-    """User authentication by token"""
+    '''User authentication by token'''
 
     try:
        get_user_id = db.session.query(User).filter_by(email=token).first()  
@@ -71,7 +74,7 @@ async def check_user_token(flow_id:int,token=Depends(auth_handler.auth_wrapper))
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST,content={"errorMessage":"Can't authorized"})
 
 async def check_conditional_logic(prop_value_json : json):
-    """
+    '''
     Input format:
     "{\"||\" : {\"args\":[{\"==\":{\"arg1\":\"1\", \"arg2\" : \"2\"}}, {\"<\":{\"arg1\":\"1\", \"arg2\" : \"2\"}}]}}"
 
@@ -80,7 +83,7 @@ async def check_conditional_logic(prop_value_json : json):
     via if /else: 1)||, 2)args, 3) "==", 4)arg1,
     via try/except: 5) 1
 
-    """
+    '''
     if(len(prop_value_json.keys( )) == 0 ):
         raise HTTPException(status_code = status.HTTP_204_NO_CONTENT, )
     else:
@@ -110,13 +113,13 @@ async def check_conditional_logic(prop_value_json : json):
     return True
 
 async def check_property_dict(prop : Dict, keys : List):
-    """Validate node properties based on type"""
+    ''' Validate node properties based on type '''
     
     prop_dict = {k: v for k, v in prop.items() if k in keys}
     return True, prop_dict
 
 async def check_node_details(node:NodeSchema):
-    """Validate node details(data) based on type"""
+    ''' Validate node details(data) based on type '''
 
     node_type_params = db.session.query(NodeType).filter(NodeType.type == node.type).first()
 
@@ -133,7 +136,7 @@ async def check_node_details(node:NodeSchema):
     return JSONResponse(status_code=status.HTTP_200_OK), props
 
 async def create_node(node:NodeSchema):
-    """Create a node based on types"""
+    ''' Create a node based on types '''
 
     try:
         node_check, node_data = await check_node_details(node)
@@ -156,8 +159,8 @@ async def create_node(node:NodeSchema):
                 db.session.add(second_sub_node)
         elif node.type == 'yes_no':
             for item in prop_dict:
-                first_sub_node = SubNode(id=str(new_node.id) + "_" + count + "b", node_id=new_node.id,flow_id=node.flow_id, data={"text":"yes"}, type=node.type)
-                second_sub_node = SubNode(id=str(new_node.id) + "_" + str(int(count) + 1).zfill(2) + "b", node_id=new_node.id,flow_id=node.flow_id, data={"text":"no"}, type=node.type)
+                first_sub_node = SubNode(id=str(new_node.id) + "_" + count + "b", node_id=new_node.id,flow_id=node.flow_id, data={"btn":"yes"}, type=node.type)
+                second_sub_node = SubNode(id=str(new_node.id) + "_" + str(int(count) + 1).zfill(2) + "b", node_id=new_node.id,flow_id=node.flow_id, data={"btn":"no"}, type=node.type)
                 db.session.add(first_sub_node)
                 db.session.add(second_sub_node)
         elif node.type == "button":
@@ -183,7 +186,7 @@ async def create_node(node:NodeSchema):
 
 @router.post('/create_node')
 async def create_nodes(node : NodeSchema,token = Depends(auth_handler.auth_wrapper)):
-    """Create a node based on types"""
+    ''' Create a node based on types '''
 
     try:
         validate_user = await check_user_token(node.flow_id,token)
@@ -200,7 +203,7 @@ async def create_nodes(node : NodeSchema,token = Depends(auth_handler.auth_wrapp
 
 @router.post('/upload_file')
 async def upload_files_to_s3(file:UploadFile,node_id:int,flow_id:int):
-    """Upload file for media & other file for file and media node"""
+    ''' Upload file for media & other file for file and media node '''
 
     try:
         upload_file = await upload_to_s3(file,node_id,flow_id)
@@ -215,7 +218,7 @@ async def upload_files_to_s3(file:UploadFile,node_id:int,flow_id:int):
 
 @router.delete('/delete_node')
 async def delete_node(node_id : str, flow_id:int,token = Depends(auth_handler.auth_wrapper)):
-    """Delete node permanently"""
+    ''' Delete node permanently '''
     try:
         validate_user = await check_user_token(flow_id,token)
 
@@ -238,7 +241,7 @@ async def delete_node(node_id : str, flow_id:int,token = Depends(auth_handler.au
 
 @router.put('/update_node')
 async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handler.auth_wrapper)):
-    """Update node details as per requirements"""
+    ''' Update node details as per requirements '''
 
     try:
         validate_user = await check_user_token(my_node.flow_id,token)
@@ -264,7 +267,7 @@ async def update_node(node_id:str,my_node:NodeSchema,token = Depends(auth_handle
 
 @router.post("/add_sub_node")
 async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapper)):
-    """Add sub nodes as per requirements (it can be multiple)"""
+    ''' Add sub nodes as per requirements (it can be multiple) '''
 
     try:
         validate_user = await check_user_token(sub.flow_id,token)
@@ -312,7 +315,7 @@ async def add_sub_node(sub:SubNodeSchema,token = Depends(auth_handler.auth_wrapp
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't add sub node"})
 
 async def update_subnode(subnodeSchema:UpdateSubNodeSchema,token):
-    """Update sub node properties"""
+    ''' Update sub node properties '''
 
     try :
         validate_user = await check_user_token(subnodeSchema.flow_id,token)
@@ -345,7 +348,7 @@ async def update_subnode(subnodeSchema:UpdateSubNodeSchema,token):
 
 @router.put('/update_subnode')
 async def update_sub_node(sub_nodes:List[UpdateSubNodeSchema],token = Depends(auth_handler.auth_wrapper)):
-    """Update Multiple sub-nodes or one sub-node"""
+    ''' Update Multiple sub-nodes or one sub-node ''' 
 
     try:
         for subnode in sub_nodes:
@@ -357,7 +360,7 @@ async def update_sub_node(sub_nodes:List[UpdateSubNodeSchema],token = Depends(au
 
 @router.delete('/delete_sub_node')
 async def delete_sub_node(sub_node_id : str,flow_id:int,token = Depends(auth_handler.auth_wrapper)):
-    """Delete sub-node"""
+    ''' Delete sub-node '''
 
     try:
         validate_user = await check_user_token(flow_id,token)
@@ -380,7 +383,7 @@ async def delete_sub_node(sub_node_id : str,flow_id:int,token = Depends(auth_han
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't delete subnode"})  
 
 async def create_connection(connection : ConnectionSchema):
-    """Create a connection(edge) between nodes"""
+    ''' Create a connection(edge) between nodes ''' 
 
     try:
         if connection.sub_node_id == "" : connection.sub_node_id = "b"
@@ -416,7 +419,7 @@ async def create_connection(connection : ConnectionSchema):
          
 @router.post('/create_connection')
 async def create_connections(connection : ConnectionSchema,token = Depends(auth_handler.auth_wrapper)):
-    """Create a connection between nodes"""
+    ''' Create a connection between nodes '''
 
     try:
         validate_user = await check_user_token(connection.flow_id,token)
@@ -433,7 +436,7 @@ async def create_connections(connection : ConnectionSchema,token = Depends(auth_
     
 @router.delete('/delete_connection')
 async def delete_connection(connection_id: int,flow_id:int,token = Depends(auth_handler.auth_wrapper)):
-    """Delete a connection between nodes"""
+    ''' Delete a connection between nodes ''' 
 
     try:
         validate_user = await check_user_token(flow_id,token)
@@ -456,7 +459,7 @@ async def delete_connection(connection_id: int,flow_id:int,token = Depends(auth_
 
 @router.post("/create_node_with_conn")
 async def create_node_with_conn(my_node:NodeSchema,node_id:int, sub_node_id:str,token = Depends(auth_handler.auth_wrapper)):
-    """Create a connection with creating node, both  created at a time"""
+    ''' Create a connection with creating node, both  created at a time ''' 
 
     try:
         validate_user = await check_user_token(my_node.flow_id,token)
@@ -480,7 +483,7 @@ async def create_node_with_conn(my_node:NodeSchema,node_id:int, sub_node_id:str,
 
 @router.post('/add_connection')
 async def add_connection(my_node: NodeSchema, connection: ConnectionSchema,token = Depends(auth_handler.auth_wrapper)):
-    """Add connections for node which has already connections"""
+    ''' Add connections for node which has already connections '''
 
     try:
         validate_user = await check_user_token(my_node.flow_id,token)
