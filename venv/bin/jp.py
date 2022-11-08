@@ -1,4 +1,4 @@
-#!/home/brilworks-23/Downloads/Chatbot Project/chatbot/venv/bin/python
+#!/home/brilworks-23/Downloads/chatbot/venv/bin/python3
 
 import sys
 import json

@@ -159,7 +159,7 @@ async def create_node(node:NodeSchema):
                 db.session.add(second_sub_node)
         elif node.type == 'yes_no':
             for item in prop_dict:
-                first_sub_node = SubNode(id=str(new_node.id) + "_" + str(count) + "b", node_id=new_node.id,flow_id=node.flow_id, data={"text":""}, type="chat")
+                first_sub_node = SubNode(id=str(new_node.id) + "_" + str(count) + "b", node_id=new_node.id,flow_id=node.flow_id, data={"text":"What's your choice ?"}, type="chat")
                 second_sub_node = SubNode(id=str(new_node.id) + "_" + str(int(count) + 1).zfill(2) + "b", node_id=new_node.id,flow_id=node.flow_id, data={"btn":"yes"}, type=node.type)
                 third_sub_node = SubNode(id=str(new_node.id) + "_" + str(int(count) + 2).zfill(2) + "b", node_id=new_node.id,flow_id=node.flow_id, data={"btn":"no"}, type=node.type)
                 db.session.add(first_sub_node)
