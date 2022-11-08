@@ -5,7 +5,7 @@ from fastapi_sqlalchemy import db
 # from fastapi_socketio import SocketManager
 from datetime import datetime
 from typing import List
-from ..schemas.livechatSchema import *
+from ..schemas.livechatSchema import AgentSchema,MemberSchema
 from ..models.livechat import Account, Agents
 from ..models.users import User
 from ..dependencies.auth import AuthHandler
@@ -58,8 +58,8 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int,token:str):
         await socket_manager.broadcast(json.dumps(message))
 
 @router.post('/agents')
-async def add_teammember(mail : str):
-    """add a teammember"""
+async def add_teammember(mail : str,agent:AgentSchema):
+    ''' This function is use to add a new teammember '''
     try:
 
         if db.session.query(User.name).filter_by(email=mail).first() != None:
@@ -77,13 +77,13 @@ async def add_teammember(mail : str):
 
 @router.get('/get_agents')
 async def get_agents(user_id : int):
-    """Get all agent list per user"""
+    ''' This function is use to get all agent list per user '''
 
     try:
         all_agents = db.session.query(Agents).filter_by(user_id=user_id).all()
         agent_list =[]
         for agent in all_agents:
-            get_agent = {"id":agent.id,"name":agent.name}
+            get_agent = {"id":agent.id,"name":agent.ename}
             agent_list.append(get_agent)
         sorted_agents = sorted(agent_list, key=lambda agent_list: agent_list['id'],reverse = True)
 
@@ -94,7 +94,7 @@ async def get_agents(user_id : int):
 
 @router.delete('/delete_agent')
 async def delete_agent(user_id:int, agent_id : int):
-    """Remove(Delete) agent"""
+    ''' This function is use to remove(Delete) agent '''
 
     try:
         if (db.session.query(Agents).filter_by(id=agent_id).first()) == None:

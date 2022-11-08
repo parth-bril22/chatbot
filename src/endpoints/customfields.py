@@ -20,7 +20,7 @@ router = APIRouter(
 
 @router.post("/global_variable")
 async def create_global_variable(schema:GlobalVariableSchema):
-    """Create a custom global variable"""
+    ''' Create a custom global variable '''
 
     try:
         types = ['String','Number','Boolean','Date','Array']
@@ -46,7 +46,7 @@ async def create_global_variable(schema:GlobalVariableSchema):
 
 @router.get("/variables")
 async def get_variables(user_id:int):
-    """Get all variable by user id"""
+    ''' Get all variable by user id '''
 
     try:
         var_list = []
@@ -64,7 +64,7 @@ async def get_variables(user_id:int):
 
 @router.post("/save_var")
 async def save_variables(vars:List,user_id:int):
-    """Save values of all variables"""
+    ''' Save values of all variables '''
 
     try:
         for i in vars:
