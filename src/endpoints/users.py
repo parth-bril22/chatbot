@@ -1,7 +1,7 @@
 import bcrypt
 import re
 from typing import Dict
-from fastapi import APIRouter
+from fastapi import APIRouter,encoders
 from uuid import uuid4
 from fastapi import Depends, HTTPException,status
 from fastapi_sqlalchemy import db
@@ -12,6 +12,7 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
 from ..models.customfields import Variable
+from ..models.flow import Chat
 from ..models.users import User as ModelUser
 from ..models.users import Password_tokens
 from ..schemas.userSchema import User as SchemaUser
@@ -293,3 +294,18 @@ async def user_profile(user_id : int):
     except Exception as e:
         print(e, "at user proflie. Time:", datetime.now())
         return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't find user"})
+
+@router.get('/visitors')
+async def get_visitors(flow_id : int):
+    ''' Get the visitor information '''
+
+    try:
+        visitor_list = db.session.query(Chat).filter_by(flow_id=flow_id).all()
+        final_visitor_list = []
+        for i in visitor_list:
+            final_visitor_list.append({"flow_id":i.flow_id,"visitor_id":i.visitor_id,"visited_ip":i.visitor_ip,"updated_at":i.updated_at,"visited_at":i.visited_at,"visitor_token":i.visitor_token})
+
+        return JSONResponse(status_code = status.HTTP_200_OK, content = encoders.jsonable_encoder(final_visitor_list))
+    except Exception as e:
+        print(e, "at get visitors. Time:", datetime.now())
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't find any visitor"})
