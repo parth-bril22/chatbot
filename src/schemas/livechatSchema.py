@@ -3,7 +3,7 @@ from typing import List
 
 
 class AgentSchema(BaseModel):
-    _id: int  # id is made private by the "_" before its name, so frontend need not enter it.
+    _id: int  # id is private.
     user_id: int
     name: str
     isavailable: bool = False
@@ -14,7 +14,7 @@ class AgentSchema(BaseModel):
 
 
 class MemberSchema(BaseModel):
-    _id: int  # id is made private by the "_" before its name, so frontend need not enter it.
+    _id: int  # id is private.
     user_id: List[int]
 
     class Config:

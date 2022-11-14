@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 
 class WorkSpaceSchema(BaseModel):
-    _id: int  # id is made private by the "_" before its name, so frontend need not enter it.
+    _id: int  # id is private.
     user_id: int
     name: str
 

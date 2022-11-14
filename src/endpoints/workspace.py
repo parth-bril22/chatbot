@@ -84,7 +84,7 @@ async def create_workspace(
 
 
 @router.get("/get_workspace")
-async def create_workspace(user_id: int, token=Depends(auth_handler.auth_wrapper)):
+async def get_workspace(user_id: int, token=Depends(auth_handler.auth_wrapper)):
     """Get all workspaces list per user"""
 
     try:
@@ -108,7 +108,7 @@ async def create_workspace(user_id: int, token=Depends(auth_handler.auth_wrapper
 
 
 @router.get("/get_workspace_flow_list")
-async def create_workspace(
+async def get_workspace_flow_list(
     user_id: int, workspace_id: int, token=Depends(auth_handler.auth_wrapper)
 ):
     """Get list of flows which are stored in workspace"""
@@ -118,7 +118,7 @@ async def create_workspace(
         if user_check.status_code != 200:
             return user_check
 
-        if (db.session.query(Workspace).filter_by(id=workspace_id).first()) == None:
+        if (db.session.query(Workspace).filter_by(id=workspace_id).first()) is None:
             return JSONResponse(
                 status_code=404, content={"errorMessage": "Can't find the workspace"}
             )
@@ -163,7 +163,7 @@ async def move_flow(
     """Move flow into selected workspace"""
 
     try:
-        if (db.session.query(Flow).filter_by(id=flow_id).first()) == None:
+        if (db.session.query(Flow).filter_by(id=flow_id).first()) is None:
             return JSONResponse(
                 status_code=404, content={"errorMessage": "Can't found flow"}
             )
@@ -201,7 +201,7 @@ async def remove_workspace(
     """Remove(Delete) workspace"""
 
     try:
-        if (db.session.query(Workspace).filter_by(id=workspace_id).first()) == None:
+        if (db.session.query(Workspace).filter_by(id=workspace_id).first()) is None:
             return JSONResponse(
                 status_code=404, content={"errorMessage": "Can't find workspace"}
             )
@@ -232,7 +232,7 @@ async def remove_workspace(
 
 
 @router.patch("/remove_from_workspace")
-async def remove_workspace(
+async def remove_from_workspace(
     user_id: int, flow_id: int, token=Depends(auth_handler.auth_wrapper)
 ):
     """Remove flow from selected workspace"""
@@ -279,7 +279,7 @@ async def rename_workspace(
             )
 
         db_workspace = db.session.query(Workspace).filter_by(id=workspace_id)
-        if db_workspace.first() == None:
+        if db_workspace.first() is None:
             return JSONResponse(
                 status_code=404,
                 content={"errorMessage": "Can't find flow with given name"},

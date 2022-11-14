@@ -3,13 +3,13 @@ from pydantic import BaseModel
 
 
 class NodeSchema(BaseModel):
-    _id: int  # id is made private by the "_" before its name, so frontend need not enter it.
+    _id: int  # id is private.
     flow_id: int
     _name: str = "name"
     type: str = "chat"
     destination: str = "name"
     position: Dict = {"top": "0", "left": "0"}
-    # all fields from all types are present. Later in api.py, only the relevant fields will be taken into consideration
+    # all fields from all types are present.
     data: Dict = {
         "nodeData": [
             {
