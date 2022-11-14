@@ -1,7 +1,7 @@
 import bcrypt
 import re
 from typing import Dict
-from fastapi import APIRouter,encoders
+from fastapi import APIRouter, encoders
 from uuid import uuid4
 from fastapi import Depends, HTTPException, status
 from fastapi_sqlalchemy import db
@@ -14,6 +14,7 @@ from sendgrid.helpers.mail import Mail
 from ..models.customfields import Variable
 from ..models.flow import Chat
 from ..models.users import User as ModelUser
+from ..models.flow import Chat
 from ..models.users import Password_tokens
 from ..schemas.userSchema import User as SchemaUser
 from ..schemas.userSchema import LoginSchema as lg
@@ -31,7 +32,7 @@ router = APIRouter(
 
 
 def validate_user(user: ModelUser):
-    """Validate if email id already exists, is valid and passowrd. Takes ModelUser as input"""
+    """Validate the user by email. Takes ModelUser as input"""
 
     if bool(db.session.query(ModelUser).filter_by(email=user.email).first()):
         return JSONResponse(
@@ -124,7 +125,7 @@ async def signup(user: SchemaUser):
 
     try:
         validated_user = validate_user(user)
-        if validated_user != True:
+        if validated_user is not True:
             return validated_user
         else:
             hashed_password = bcrypt.hashpw(
@@ -196,7 +197,7 @@ async def get_user_by_email(my_email: str):
 
     try:
         user = db.session.query(ModelUser).filter_by(email=my_email).first()
-        if user == None:
+        if user is None:
             return False
         return ModelUser(
             id=user.id,
@@ -206,7 +207,8 @@ async def get_user_by_email(my_email: str):
             last_name=user.last_name,
             created_at=user.created_at,
         )
-    except:
+    except Exception as e:
+        print("Error at check email: ", e)
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"message": "Please check email"},
@@ -291,7 +293,8 @@ def send_mail(my_uuid: str):
         from_email="testforfastapi@gmail.com",
         to_emails="testforfastapi@gmail.com",
         subject="Password Reset",
-        html_content="Hello! <p> Your UUID is:<p> https://chatbot-apis-dev.herokuapp.com/reset_password_link?my_uuid="
+        html_content="Hello! <p> UUID :"
+        + "<p> https://chatbot-apis-dev.herokuapp.com/reset_password_link?my_uuid="
         + str(my_uuid)
         + "<p> The link will expire in 10 minutes.",
     )
@@ -320,7 +323,7 @@ async def req_change_password(email_id: str):
         my_email = email_id
         user = db.session.query(ModelUser).filter_by(email=my_email).first()
 
-        if user == None:
+        if user is None:
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
                 content={"message": "The user is not registered"},
@@ -335,7 +338,8 @@ async def req_change_password(email_id: str):
         db.session.merge(db_user)
         db.session.commit()
         return send_mail(my_uuid)
-    except:
+    except Exception as e:
+        print(e, "at change password. Time:", datetime.now())
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"message": "UUID entered incorrectly"},
@@ -347,14 +351,16 @@ def get_uuid_details(my_uuid: str):
 
     try:
         user = db.session.query(Password_tokens).filter_by(uuid=str(my_uuid)).first()
-        if user == None:
+        if user is None:
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content={"message": "UUID not found"},
             )
 
         return Password_tokens(id=user.id, uuid=my_uuid, time=user.time, used=user.used)
-    except:
+
+    except Exception as e:
+        print(e, "at getting uuid. Time:", datetime.now())
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"message": "UUID entered incorrectly"},
@@ -366,7 +372,7 @@ async def get_user_by_id(my_id: int):
 
     try:
         user = db.session.query(ModelUser).filter_by(id=my_id).first()
-        if user == None:
+        if user is None:
             return False
         return ModelUser(
             id=my_id,
@@ -390,7 +396,7 @@ async def reset_password_link(my_uuid: str, ps: PasswordResetSchema):
     try:
         uuid_details = get_uuid_details((my_uuid))
 
-        if uuid_details.used == True:
+        if uuid_details.used is True:
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content={"message": "Link already used once"},
@@ -468,7 +474,7 @@ async def change_password(
                 return JSONResponse(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     content={
-                        "message": "Passwords must be same and of length greater than 6 and must not be the same as old password "
+                        "message": "Passwords must be same and of length greater than 6"
                     },
                 )
         else:
@@ -518,19 +524,3 @@ async def user_profile(user_id: int):
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't find user"},
         )
-
-
-@router.get('/visitors')
-async def get_visitors(flow_id : int):
-    ''' Get the visitor information '''
-
-    try:
-        visitor_list = db.session.query(Chat).filter_by(flow_id=flow_id).all()
-        final_visitor_list = []
-        for i in visitor_list:
-            final_visitor_list.append({"flow_id":i.flow_id,"visitor_id":i.visitor_id,"visited_ip":i.visitor_ip,"updated_at":i.updated_at,"visited_at":i.visited_at,"visitor_token":i.visitor_token})
-
-        return JSONResponse(status_code = status.HTTP_200_OK, content = encoders.jsonable_encoder(final_visitor_list))
-    except Exception as e:
-        print(e, "at get visitors. Time:", datetime.now())
-        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content={"errorMessage":"Can't find any visitor"})

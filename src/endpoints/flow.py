@@ -37,11 +37,11 @@ router = APIRouter(
 )
 
 
-async def check_user_id(user_id: str):
+async def check_user_id(user_id: int):
     """Check Flow are exists for that user"""
 
     try:
-        if db.session.query(Flow).filter_by(user_id=user_id).first() == None:
+        if db.session.query(Flow).filter_by(user_id=user_id).first() is None:
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
                 content={"errorMessage": "Can't find flows for this user."},
@@ -77,7 +77,7 @@ async def create_flow(flow: FlowSchema, token=Depends(auth_handler.auth_wrapper)
                 content={"errorMessage": "Name is already taken"},
             )
 
-        if flow.name == None or len(flow.name.strip()) == 0:
+        if flow.name is None or len(flow.name.strip()) == 0:
             return Response(
                 status_code=status.HTTP_204_NO_CONTENT,
                 content={"errorMessage": "Please, Enter valid name!"},
@@ -210,7 +210,7 @@ async def rename_flow(
             return user_check
 
         flow_info = db.session.query(Flow).filter_by(id=flow_id)
-        if flow_info.first() == None:
+        if flow_info.first() is None:
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
                 content={"errorMessage": "Can't find flow"},
@@ -251,7 +251,7 @@ async def delete_flow(
             return user_check
 
         for flow_id in flow_list:
-            if db.session.query(Flow).filter_by(id=flow_id).first() == None:
+            if db.session.query(Flow).filter_by(id=flow_id).first() is None:
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content={"errorMessage": "Can't find flow"},
@@ -290,7 +290,7 @@ async def duplicate_flow(
             return user_check
 
         flow_data = db.session.query(Flow).filter_by(id=flow_id).first()
-        if flow_data == None:
+        if flow_data is None:
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
                 content={"errorMessage": "Can't find flow"},
@@ -334,7 +334,7 @@ async def get_diagram(flow_id: int, token=Depends(auth_handler.auth_wrapper)):
             .filter_by(status="trashed")
             .first()
         )
-        if flow_data != None:
+        if flow_data is not None:
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
                 content={"errorMessage": "Can't find flow"},
@@ -359,7 +359,6 @@ async def get_diagram(flow_id: int, token=Depends(auth_handler.auth_wrapper)):
                 "flow_id": flow_id,
             }
             connections_list.append(get_conn)
-        # all_custom_fileds = db.session.query(CustomFields).filter_by(flow_id=flow_id).all()
         all_nodes = db.session.query(Node).filter_by(flow_id=flow_id).all()
         sub_nodes = db.session.query(SubNode).filter_by(flow_id=flow_id).all()
         customfields = (
@@ -425,7 +424,7 @@ async def save_draft(flow_id: int):
         diagram = await get_diagram(flow_id)
         for node in diagram["nodes"]:
             if node["type"] == "slack":
-                if node["data"]["nodeData"][0]["data"]["slack_id"] == None:
+                if node["data"]["nodeData"][0]["data"]["slack_id"] is None:
                     return JSONResponse(
                         status_code=status.HTTP_400_BAD_REQUEST,
                         content={"errorMessage": "No slack channel selected"},
@@ -453,7 +452,7 @@ async def preview(flow_id: int, token=Depends(auth_handler.auth_wrapper)):
         db.session.query(Flow).filter_by(id=flow_id).update(
             {"updated_at": datetime.today().isoformat()}
         )
-        if get_diagram == None:
+        if get_diagram is None:
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={"errorMessage": "Please publish the flow"},
@@ -499,23 +498,23 @@ async def tokenize_preview(my_token: str):
 async def publish(
     flow_id: int, diagram: Dict, token=Depends(auth_handler.auth_wrapper)
 ):
-    """Save latest diagram(nodes,connections,sub_nodes) with token in database and allow to publish"""
+    """Save latest diagram with token in database and allow to publish"""
 
     try:
         # valid_user = await check_user_token(flow_id,token)
-        # if (valid_user.status_code != status.HTTP_200_OK):
+        # if (valid_user.status_code is not status.HTTP_200_OK):
         #     return valid_user
         save_draft_status = await save_draft(flow_id)
         if save_draft_status.status_code != status.HTTP_200_OK:
             return save_draft_status
 
         db_token = db.session.query(Flow.publish_token).filter_by(id=flow_id).first()[0]
-        if db_token != None:
+        if db_token is not None:
             publish_token = db_token
         else:
             publish_token = uuid.uuid4()
 
-        if diagram == None:
+        if diagram is None:
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={"errorMessage": "diagram field should not be empty!"},
@@ -531,7 +530,7 @@ async def publish(
         db.session.commit()
         db.session.close()
 
-        if token == None:
+        if token is None:
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
                 content={"errorMessage": "Can't found"},
@@ -639,7 +638,7 @@ async def get_trashed_flows(user_id: int, token=Depends(auth_handler.auth_wrappe
 
 
 @router.delete("/trash/delete_forever")
-async def delete_flow(flow_id: int, token=Depends(auth_handler.auth_wrapper)):
+async def complete_delete_flow(flow_id: int, token=Depends(auth_handler.auth_wrapper)):
     """Delete permanently flow"""
 
     try:
@@ -789,14 +788,10 @@ async def save_chat_history(
             .first()
         )
 
-        if get_visitor != None:
-            # finish_count = db.session.query(Flow.finished).filter_by(id = chats.flow_id).first() #can keep this same
-            # flow_info = db.session.query(Flow.diagram).filter_by(id=chats.flow_id).first()
-
+        if get_visitor is not None:
             # published_nodes = []
             # for i in flow_info['diagram']['nodes']:
             #     published_nodes.append(i['id'])
-
             saved_nodes = []
             for i in chats.chat:
                 saved_nodes.append(i["node_id"])
@@ -809,7 +804,8 @@ async def save_chat_history(
             #     finish = finish + 1
             # else:
             #     finish = finish
-            # db.session.query(Flow).filter_by(id = chats.flow_id).update({"finished":finish})
+            # db.session.query(Flow).filter_by(id = chats.flow_id)
+            # .update({"finished":finish})
             for ch in chats.chat:
                 if ch["type"] == "slack":
                     await post_message(int(ch["data"]["slack_id"]), ch["data"]["text"])
@@ -828,14 +824,13 @@ async def save_chat_history(
                 db.session.query(Flow.chats).filter_by(id=chats.flow_id).first()
             )  # can keep this same
 
-            if chat_count[0] == None:
+            if chat_count[0] is None:
                 chat = 0
             else:
                 chat = chat_count[0]
 
             # increase count of chats initialized
             chat = chat + 1
-            # flow_info = db.session.query(Flow.diagram).filter_by(id=chats.flow_id).first()
 
             # published_nodes = []
             # for i in flow_info['diagram']['nodes']:
@@ -854,7 +849,6 @@ async def save_chat_history(
             #     finish = finish + 1
             # else:
             #     finish = finish
-            # db.session.query(Flow).filter_by(id = chats.flow_id).update({"finished":finish})
             db.session.query(Flow).filter_by(id=chats.flow_id).update({"chats": chat})
             for ch in chats.chat:
                 if ch["type"] == "slack":
@@ -903,7 +897,7 @@ async def get_chat_history(ip: str, token: str):
             .filter_by(flow_id=flow_id[0])
             .first()
         )
-        if chat_history == None:
+        if chat_history is None:
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
                 content={"errorMessage": "Can't find ip address"},
@@ -935,7 +929,8 @@ async def upload_file_to_s3(flow_id: int, file: UploadFile):
             ExtraArgs={"ContentType": "text/html"},
         )
 
-        s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/embedfile/{flow_id}/{file.filename}"
+        s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com\
+            /embedfile/{flow_id}/{file.filename}"
 
         db_file = EmbedScript(
             file_name=file.filename,
@@ -974,7 +969,8 @@ async def upload_file_from_user(flow_id: int, file: UploadFile):
             ExtraArgs={"ContentType": "text/html"},
         )
 
-        s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/visitorfiles/{flow_id}/{file.filename}"
+        # S3_url
+        # f"https://{BUCKET}.s3.ap-south-1.amazonaws.com/visitorfiles/{flowid}/{filename}"
         return JSONResponse(
             status_code=status.HTTP_200_OK, content={"message": "Success"}
         )
@@ -991,7 +987,8 @@ async def get_flow_analysis_data(
     flow_id: int, token=Depends(auth_handler.auth_wrapper)
 ):
     """Get the analysis for flow
-    Details: This analysis shows how many visitors visit this flow and which path they choose (how conversion goes) in percentage"""
+    Details: This analysis shows how many visitors visit this flow
+    and which path they choose (how conversion goes) in percentage"""
 
     try:
         valid_user = await check_user_token(flow_id, token)
@@ -1073,7 +1070,7 @@ async def upload_to_s3_from_user(file: UploadFile, node_id: int, flow_id: int):
             .filter_by(id=node_id)
             .filter_by(flow_id=flow_id)
             .first()
-            == None
+            is None
         ):
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -1108,7 +1105,8 @@ async def upload_to_s3_from_user(file: UploadFile, node_id: int, flow_id: int):
                 ExtraArgs={"ContentType": file.content_type},
             )
 
-        s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/userfiles/{flow_id}/{node_id}/{file.filename}"
+        s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com\
+            /userfiles/{flow_id}/{node_id}/{file.filename}"
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={"message": "Successfully Uploaded", "url": s3_file_url},

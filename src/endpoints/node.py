@@ -78,7 +78,8 @@ async def upload_to_s3(file, node_id, flow_id):
                 ExtraArgs={"ContentType": file.content_type},
             )
 
-        s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/mediafile/{flow_id}/{node_id}/{file.filename}"
+        s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com\
+            /mediafile/{flow_id}/{node_id}/{file.filename}"
         db_subnode_data = (
             db.session.query(SubNode)
             .filter_by(flow_id=flow_id)
@@ -148,17 +149,7 @@ async def check_user_token(flow_id: int, token=Depends(auth_handler.auth_wrapper
         )
 
 
-async def check_conditional_logic(prop_value_json: json):
-    """
-    Input format:
-    "{\"||\" : {\"args\":[{\"==\":{\"arg1\":\"1\", \"arg2\" : \"2\"}}, {\"<\":{\"arg1\":\"1\", \"arg2\" : \"2\"}}]}}"
-
-    Check if json is empty or not
-    then check at five levels:
-    via if /else: 1)||, 2)args, 3) "==", 4)arg1,
-    via try/except: 5) 1
-
-    """
+async def check_conditional_logic(prop_value_json: Dict):
     if len(prop_value_json.keys()) == 0:
         raise HTTPException(
             status_code=status.HTTP_204_NO_CONTENT,
@@ -186,7 +177,12 @@ async def check_conditional_logic(prop_value_json: json):
                                     try:
                                         value = json.loads(all_symbols[symbol][arg])
                                         value + 1
-                                    except:
+                                    except Exception as e:
+                                        print(
+                                            e,
+                                            "at conditional logic. Time:",
+                                            datetime.now(),
+                                        )
                                         Response(status_code=status.HTTP_204_NO_CONTENT)
                 else:
                     Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -207,7 +203,7 @@ async def check_node_details(node: NodeSchema):
         db.session.query(NodeType).filter(NodeType.type == node.type).first()
     )
 
-    if node_type_params == None:
+    if node_type_params is None:
         return (
             JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -221,7 +217,7 @@ async def check_node_details(node: NodeSchema):
         bool_val, prop_dict = await check_property_dict(
             property, list(node_type_params.params.keys())
         )
-        if bool_val == False:
+        if bool_val is False:
             return prop_dict, {}
         else:
             props.append(prop_dict)
@@ -411,7 +407,7 @@ async def delete_node(
             db.session.query(Node).filter_by(flow_id=flow_id).filter_by(id=node_id)
         )
 
-        if node_in_db.first() == None:
+        if node_in_db.first() is None:
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
                 content={"message": "Can't find node"},
@@ -455,7 +451,7 @@ async def update_node(
             .filter_by(id=node_id)
             .filter_by(flow_id=my_node.flow_id)
             .first()
-            == None
+            is None
         ):
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -508,7 +504,7 @@ async def add_sub_node(sub: SubNodeSchema, token=Depends(auth_handler.auth_wrapp
             .filter_by(id=sub.node_id)
             .filter_by(flow_id=sub.flow_id)
             .first()
-            == None
+            is None
         ):
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -534,7 +530,7 @@ async def add_sub_node(sub: SubNodeSchema, token=Depends(auth_handler.auth_wrapp
         current_node = db.session.query(Node).filter_by(id=sub.node_id).first()
         relevant_items = dict()
         for k, v in sub.data.items():
-            if k and v != None:
+            if k and v is not None:
                 relevant_items[k] = v
 
         new_sub_node = SubNode(
@@ -546,7 +542,7 @@ async def add_sub_node(sub: SubNodeSchema, token=Depends(auth_handler.auth_wrapp
         )
         db.session.add(new_sub_node)
 
-        if current_node.data == None:
+        if current_node.data is None:
             current_node.data = []
         current_node.data = list(current_node.data)
         current_node.data.append(relevant_items)
@@ -582,7 +578,7 @@ async def update_subnode(subnodeSchema: UpdateSubNodeSchema, token):
             .filter_by(id=subnodeSchema.id)
         )
 
-        if node_in_db.first() == None:
+        if node_in_db.first() is None:
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
                 content={"errorMessage": "Can't find node"},
@@ -662,7 +658,7 @@ async def delete_sub_node(
             .filter_by(flow_id=flow_id)
             .filter_by(id=sub_node_id)
         )
-        if node_in_db.first() == None:
+        if node_in_db.first() is None:
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
                 content={"errorMessage": "Can't find subnode"},
@@ -707,12 +703,13 @@ async def create_connection(connection: ConnectionSchema):
                 .first()
             )
 
-            if source_node_exists == None or target_node_exists == None:
+            if source_node_exists is None or target_node_exists is None:
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content={"errorMessage": "Can't find node"},
                 )
-        except:
+        except Exception as e:
+            print(e, "at creating connection. Time:", datetime.now())
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
                 content={"errorMessage": "Can't create  connection"},
@@ -811,7 +808,7 @@ async def delete_connection(
             return validate_user
 
         connection_in_db = db.session.query(Connections).filter_by(id=connection_id)
-        if connection_in_db.first() == None:
+        if connection_in_db.first() is None:
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
                 content={"errorMessage": "Can't find connections"},
@@ -857,7 +854,7 @@ async def create_node_with_conn(
             .filter_by(id=sub_node_id)
             .first()
         )
-        if sub_node == None:
+        if sub_node is None:
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
                 content={"message": "Can't find subnode"},

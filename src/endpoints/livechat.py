@@ -6,7 +6,7 @@ from fastapi_sqlalchemy import db
 # from fastapi_socketio import SocketManager
 from datetime import datetime
 from typing import List
-from ..schemas.livechatSchema import AgentSchema, MemberSchema
+from ..schemas.livechatSchema import AgentSchema
 from ..models.livechat import Account, Agents
 from ..models.users import User
 from ..dependencies.auth import AuthHandler
@@ -30,9 +30,6 @@ class ConnectionManager:
 
     def disconnect(self, websocket: WebSocket):
         self.active_connections.remove(websocket)
-
-    async def send_personal_message(self, message: str, websocket: WebSocket):
-        await websocket.send_text(message)
 
     async def send_personal_message(self, message: str, websocket: WebSocket):
         await websocket.send_text(message)
@@ -76,7 +73,7 @@ async def add_teammember(mail: str, agent: AgentSchema):
     """This function is use to add a new teammember"""
     try:
 
-        if db.session.query(User.name).filter_by(email=mail).first() != None:
+        if db.session.query(User.name).filter_by(email=mail).first() is not None:
             return JSONResponse(
                 status_code=404,
                 content={"errorMessage": "Given email is already registered"},
@@ -126,7 +123,7 @@ async def delete_agent(user_id: int, agent_id: int):
     """This function is use to remove(Delete) agent"""
 
     try:
-        if (db.session.query(Agents).filter_by(id=agent_id).first()) == None:
+        if (db.session.query(Agents).filter_by(id=agent_id).first()) is None:
             return JSONResponse(
                 status_code=404, content={"errorMessage": "Can't find agent"}
             )
