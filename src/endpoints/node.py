@@ -149,7 +149,7 @@ async def check_user_token(flow_id: int, token=Depends(auth_handler.auth_wrapper
         )
 
 
-async def check_conditional_logic(prop_value_json: Dict):    
+async def check_conditional_logic(prop_value_json: Dict):
     if len(prop_value_json.keys()) == 0:
         raise HTTPException(
             status_code=status.HTTP_204_NO_CONTENT,
@@ -178,7 +178,11 @@ async def check_conditional_logic(prop_value_json: Dict):
                                         value = json.loads(all_symbols[symbol][arg])
                                         value + 1
                                     except Exception as e:
-                                        print(e, "at conditional logic. Time:", datetime.now())
+                                        print(
+                                            e,
+                                            "at conditional logic. Time:",
+                                            datetime.now(),
+                                        )
                                         Response(status_code=status.HTTP_204_NO_CONTENT)
                 else:
                     Response(status_code=status.HTTP_204_NO_CONTENT)

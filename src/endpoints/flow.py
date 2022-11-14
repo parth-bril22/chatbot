@@ -788,7 +788,7 @@ async def save_chat_history(
             .first()
         )
 
-        if get_visitor is not None:        
+        if get_visitor is not None:
             # published_nodes = []
             # for i in flow_info['diagram']['nodes']:
             #     published_nodes.append(i['id'])
