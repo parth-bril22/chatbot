@@ -526,7 +526,6 @@ async def add_sub_node(sub: SubNodeSchema, token=Depends(auth_handler.auth_wrapp
             i = 1
         id = str(sub.node_id) + "_" + str(i).zfill(2) + "b"
 
-        relevant_items = dict()
         current_node = db.session.query(Node).filter_by(id=sub.node_id).first()
         relevant_items = dict()
         for k, v in sub.data.items():

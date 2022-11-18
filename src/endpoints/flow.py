@@ -1,32 +1,32 @@
-import uuid
-import boto3
-import os
 import collections
-from fastapi import APIRouter, Depends, encoders, UploadFile, status
+import os
+import uuid
+from datetime import datetime
+from typing import Dict, List
+
+import boto3
+from fastapi import APIRouter, Depends, UploadFile, encoders, status
 from fastapi.responses import JSONResponse, Response
 from fastapi_sqlalchemy import db
-from datetime import datetime
-from typing import List, Dict
-
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
-
 from src.models.customfields import Variable
 
-from ..dependencies.config import SENDGRID_EMAIL
-
-from ..dependencies.config import AWS_ACCESS_KEY, AWS_ACCESS_SECRET_KEY, BUCKET_NAME
-
-from ..schemas.flowSchema import FlowSchema, ChatSchema
-from ..models.flow import Flow, Chat, EmbedScript
-from ..models.integrations import SendEmail, Slack
-from ..models.node import Node, SubNode, Connections
-from ..endpoints.node import check_user_token
-
 from ..dependencies.auth import AuthHandler
+from ..dependencies.config import (
+    AWS_ACCESS_KEY,
+    AWS_ACCESS_SECRET_KEY,
+    BUCKET_NAME,
+    SENDGRID_EMAIL,
+)
+from ..endpoints.node import check_user_token
+from ..models.flow import Chat, EmbedScript, Flow
+from ..models.integrations import SendEmail, Slack
+from ..models.node import Connections, Node, SubNode
+from ..schemas.flowSchema import ChatSchema, FlowSchema
 
 auth_handler = AuthHandler()
 
@@ -1016,15 +1016,15 @@ async def get_flow_analysis_data(
                 else:
                     pop_list
                 id_list = []
-                for i in chat_data[i][0]:
-                    if i["type"] == "button":
-                        id_list.append(i["id"])
-                    elif "from" in i:
+                for j in chat_data[i][0]:
+                    if j["type"] == "button":
+                        id_list.append(j["id"])
+                    elif "from" in j:
                         pass
-                    elif i["id"] in pop_list:
+                    elif j["id"] in pop_list:
                         pass
                     else:
-                        id_list.append(i["id"])
+                        id_list.append(j["id"])
                 subnode_list.extend(list(set(id_list)))
 
         subnode_set = list(set(subnode_list))

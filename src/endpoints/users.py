@@ -12,9 +12,8 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
 from ..models.customfields import Variable
-from ..models.flow import Chat
+from ..models.flow import Chat, Flow
 from ..models.users import User as ModelUser
-from ..models.flow import Chat
 from ..models.users import Password_tokens
 from ..schemas.userSchema import User as SchemaUser
 from ..schemas.userSchema import LoginSchema as lg
@@ -532,11 +531,18 @@ async def get_visitors(flow_id: int):
 
     try:
         visitor_list = db.session.query(Chat).filter_by(flow_id=flow_id).all()
+
+        flow_name = db.session.query(Flow.name).filter_by(id=flow_id).first()
+
+        url = ""
         final_visitor_list = []
         for i in visitor_list:
             final_visitor_list.append(
                 {
                     "flow_id": i.flow_id,
+                    "name": None,
+                    "flow_name": flow_name[0],
+                    "Bot": url,
                     "visitor_id": i.visitor_id,
                     "visited_ip": i.visitor_ip,
                     "updated_at": i.updated_at,
