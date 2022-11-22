@@ -17,7 +17,6 @@ from fastapi_sqlalchemy import db
 
 from ..schemas.nodeSchema import (
     CreateNode,
-    CreateCustomField,
     CreateSubNode,
     CreateConnection,
     UpdateSubNode
