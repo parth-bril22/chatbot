@@ -40,8 +40,8 @@ async def slack_integration(data: SlackSchema):
 
 
 @router.get("/get_slack")
-async def get_connected_channels(userId: int):
-    """Get all connected channels by user"""
+async def get_slack_channels(userId: int):
+    """Get all connected slack channels by user"""
 
     try:
         all_channels = db.session.query(Slack).filter_by(user_id=userId).all()
@@ -64,7 +64,7 @@ async def get_connected_channels(userId: int):
 
 
 @router.post("/sendgrid_email")
-async def add_sendgrid_email(data: SendgridMailSchema):
+async def sendgrid_integration(data: SendgridMailSchema):
     """Set/Add Sendgrid account by user with API key"""
 
     try:
@@ -87,7 +87,7 @@ async def add_sendgrid_email(data: SendgridMailSchema):
 
 
 @router.get("/get_email")
-async def get_sendgid_email(userId: int):
+async def get_emails(userId: int):
     """Get all emails set by user"""
 
     try:

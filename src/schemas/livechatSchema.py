@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import List
 
 
-class AgentSchema(BaseModel):
+class AddMember(BaseModel):
     _id: int  # id is private.
     user_id: int
     name: str

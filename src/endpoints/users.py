@@ -12,13 +12,12 @@ from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 
 from ..models.customfields import Variable
-from ..models.flow import Chat
-from ..models.users import User as ModelUser
-from ..models.flow import Chat
+from ..models.flow import Chat, Flow
+from ..models.users import UserInfo as ModelUser
 from ..models.users import Password_tokens
 from ..schemas.userSchema import User as SchemaUser
 from ..schemas.userSchema import LoginSchema as lg
-from ..schemas.userSchema import PasswordResetSchema, PasswordChangeSchema
+from ..schemas.userSchema import PasswordResetSchema, ChangePasswordSchema
 
 from ..dependencies.auth import AuthHandler
 
@@ -91,7 +90,7 @@ async def create_global_variable(schema: Dict):
                         + "is not allowed"
                     },
                 )
-            # create the variable
+
             var = Variable(
                 name=schema["name"],
                 type=schema["type"],
@@ -116,6 +115,101 @@ async def create_global_variable(schema: Dict):
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't create a variable"},
+        )
+
+
+async def validate_user_email(my_email: str):
+    """Checks if the email exists or not"""
+
+    try:
+        user = db.session.query(ModelUser).filter_by(email=my_email).first()
+        if user is None:
+            return False
+        return ModelUser(
+            id=user.id,
+            email=user.email,
+            password=user.password,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            created_at=user.created_at,
+        )
+    except Exception as e:
+        print("Error at check email: ", e)
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"message": "Please check email"},
+        )
+
+
+def send_mail(my_uuid: str):
+    """Send email to user"""
+
+    message = Mail(
+        from_email="testforfastapi@gmail.com",
+        to_emails="testforfastapi@gmail.com",
+        subject="Password Reset",
+        html_content="Hello! <p> UUID :"
+        + "<p> https://chatbot-apis-dev.herokuapp.com/reset_password_link?my_uuid="
+        + str(my_uuid)
+        + "<p> The link will expire in 10 minutes.",
+    )
+    link1 = "https://chatbot-apis-dev.herokuapp.com/reset_password_link?my_uuid=" + str(
+        my_uuid
+    )
+    try:
+        sg = SendGridAPIClient("SENDGRID_API_CLIENT")
+        response = sg.send(message)
+        print(response.status_code)
+        print(response.body)
+        print(response.headers)
+        return {"message": "Link sent to on your mail,please check", "link": link1}
+    except Exception:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"message": "Sorry!We could not send the link right now"},
+        )
+
+
+def get_uuid_details(my_uuid: str):
+    """Get id and time generated of the entered uuid"""
+
+    try:
+        user = db.session.query(Password_tokens).filter_by(uuid=str(my_uuid)).first()
+        if user is None:
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"message": "UUID not found"},
+            )
+
+        return Password_tokens(id=user.id, uuid=my_uuid, time=user.time, used=user.used)
+
+    except Exception as e:
+        print(e, "at getting uuid. Time:", datetime.now())
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"message": "UUID entered incorrectly"},
+        )
+
+
+async def get_user(my_id: int):
+    """Get the user info as per id"""
+
+    try:
+        user = db.session.query(ModelUser).filter_by(id=my_id).first()
+        if user is None:
+            return False
+        return ModelUser(
+            id=my_id,
+            email=user.email,
+            password=user.password,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            created_at=user.created_at,
+        )
+    except Exception as e:
+        print(e, "at getting user by id. Time:", datetime.now())
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND, content={"Email is not exists"}
         )
 
 
@@ -191,36 +285,12 @@ async def signup(user: SchemaUser):
             content={"errorMessage": "Please check inputs!"},
         )
 
-
-async def get_user_by_email(my_email: str):
-    """Checks if the email exists or not"""
-
-    try:
-        user = db.session.query(ModelUser).filter_by(email=my_email).first()
-        if user is None:
-            return False
-        return ModelUser(
-            id=user.id,
-            email=user.email,
-            password=user.password,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            created_at=user.created_at,
-        )
-    except Exception as e:
-        print("Error at check email: ", e)
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"message": "Please check email"},
-        )
-
-
 @router.post("/login/")
 async def authenticate_user(input_user: lg):
     """User login/Signin"""
 
     try:
-        user = await get_user_by_email(input_user.email)
+        user = await validate_user_email(input_user.email)
         if (not user) or (
             not bcrypt.checkpw(
                 input_user.password.encode("utf-8"), user.password.encode("utf-8")
@@ -264,7 +334,7 @@ async def refresh(refresh_token: str):
         if datetime.utcfromtimestamp(payload.get("exp")) > datetime.utcnow():
             email = payload.get("email")
             # Validate email
-            user = await get_user_by_email(email)
+            user = await validate_user_email(email)
             if user:
                 # Create and return token
                 return JSONResponse(
@@ -285,38 +355,8 @@ async def refresh(refresh_token: str):
         content={"errorMessage": "Unauthorized"},
     )
 
-
-def send_mail(my_uuid: str):
-    """Send password reset link on email of user"""
-
-    message = Mail(
-        from_email="testforfastapi@gmail.com",
-        to_emails="testforfastapi@gmail.com",
-        subject="Password Reset",
-        html_content="Hello! <p> UUID :"
-        + "<p> https://chatbot-apis-dev.herokuapp.com/reset_password_link?my_uuid="
-        + str(my_uuid)
-        + "<p> The link will expire in 10 minutes.",
-    )
-    link1 = "https://chatbot-apis-dev.herokuapp.com/reset_password_link?my_uuid=" + str(
-        my_uuid
-    )
-    try:
-        sg = SendGridAPIClient("SENDGRID_API_CLIENT")
-        response = sg.send(message)
-        print(response.status_code)
-        print(response.body)
-        print(response.headers)
-        return {"message": "Link sent to on your mail,please check", "link": link1}
-    except Exception:
-        return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND,
-            content={"message": "Sorry!We could not send the link right now"},
-        )
-
-
 @router.post("/request_change_password")
-async def req_change_password(email_id: str):
+async def change_password_request(email_id: str):
     """Request to change the password by user"""
 
     try:
@@ -346,51 +386,8 @@ async def req_change_password(email_id: str):
         )
 
 
-def get_uuid_details(my_uuid: str):
-    """Get id and time generated of the entered uuid"""
-
-    try:
-        user = db.session.query(Password_tokens).filter_by(uuid=str(my_uuid)).first()
-        if user is None:
-            return JSONResponse(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"message": "UUID not found"},
-            )
-
-        return Password_tokens(id=user.id, uuid=my_uuid, time=user.time, used=user.used)
-
-    except Exception as e:
-        print(e, "at getting uuid. Time:", datetime.now())
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"message": "UUID entered incorrectly"},
-        )
-
-
-async def get_user_by_id(my_id: int):
-    """Get the user info by id"""
-
-    try:
-        user = db.session.query(ModelUser).filter_by(id=my_id).first()
-        if user is None:
-            return False
-        return ModelUser(
-            id=my_id,
-            email=user.email,
-            password=user.password,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            created_at=user.created_at,
-        )
-    except Exception as e:
-        print(e, "at getting user by id. Time:", datetime.now())
-        return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND, content={"Email is not exists"}
-        )
-
-
-@router.post("/reset_password_link")
-async def reset_password_link(my_uuid: str, ps: PasswordResetSchema):
+@router.post("/reset_password")
+async def reset_password(my_uuid: str, ps: PasswordResetSchema):
     """Reset the password using link which send to registered mail-id"""
 
     try:
@@ -409,7 +406,7 @@ async def reset_password_link(my_uuid: str, ps: PasswordResetSchema):
                 content={"message": "More than 10 minutes have passed"},
             )
         else:
-            new_user = await get_user_by_id(uuid_details.id)
+            new_user = await get_user(uuid_details.id)
             if ps.password == ps.confirm_password:
                 if len(ps.password) < 7:
                     raise HTTPException(
@@ -446,13 +443,13 @@ async def reset_password_link(my_uuid: str, ps: PasswordResetSchema):
 
 @router.patch("/change_password")
 async def change_password(
-    ps: PasswordChangeSchema, my_email=Depends(auth_handler.auth_wrapper)
+    ps: ChangePasswordSchema, my_email=Depends(auth_handler.auth_wrapper)
 ):
     """Change password by user"""
 
     try:
 
-        user = await get_user_by_email(my_email)
+        user = await validate_user_email(my_email)
         actual_password = user.password.encode("utf-8")
 
         if bcrypt.checkpw(ps.current_password.encode("utf-8"), actual_password):
@@ -510,7 +507,7 @@ async def delete_user(my_email=Depends(auth_handler.auth_wrapper)):
 
 
 @router.get("/user_profile")
-async def user_profile(user_id: int):
+async def get_user_profile(user_id: int):
     """Get the user profile"""
 
     try:
@@ -532,11 +529,18 @@ async def get_visitors(flow_id: int):
 
     try:
         visitor_list = db.session.query(Chat).filter_by(flow_id=flow_id).all()
+
+        flow_name = db.session.query(Flow.name).filter_by(id=flow_id).first()
+
+        url = ""
         final_visitor_list = []
         for i in visitor_list:
             final_visitor_list.append(
                 {
                     "flow_id": i.flow_id,
+                    "name": None,
+                    "flow_name": flow_name[0],
+                    "Bot": url,
                     "visitor_id": i.visitor_id,
                     "visited_ip": i.visitor_ip,
                     "updated_at": i.updated_at,

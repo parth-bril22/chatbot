@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship
 Base = declarative_base()
 
 
-class User(Base):
+class UserInfo(Base):
     __tablename__ = "user_info"
     id = Column(Integer, primary_key=True)
     email = Column(String)

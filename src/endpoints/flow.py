@@ -1,32 +1,32 @@
-import uuid
-import boto3
-import os
 import collections
-from fastapi import APIRouter, Depends, encoders, UploadFile, status
+import os
+import uuid
+from datetime import datetime
+from typing import Dict, List
+
+import boto3
+from fastapi import APIRouter, Depends, UploadFile, encoders, status
 from fastapi.responses import JSONResponse, Response
 from fastapi_sqlalchemy import db
-from datetime import datetime
-from typing import List, Dict
-
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
 
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
-
 from src.models.customfields import Variable
 
-from ..dependencies.config import SENDGRID_EMAIL
-
-from ..dependencies.config import AWS_ACCESS_KEY, AWS_ACCESS_SECRET_KEY, BUCKET_NAME
-
-from ..schemas.flowSchema import FlowSchema, ChatSchema
-from ..models.flow import Flow, Chat, EmbedScript
-from ..models.integrations import SendEmail, Slack
-from ..models.node import Node, SubNode, Connections
-from ..endpoints.node import check_user_token
-
 from ..dependencies.auth import AuthHandler
+from ..dependencies.config import (
+    AWS_ACCESS_KEY,
+    AWS_ACCESS_SECRET_KEY,
+    BUCKET_NAME,
+    SENDGRID_EMAIL,
+)
+from ..endpoints.node import authenticate_user
+from ..models.flow import Chat, EmbedScript, Flow
+from ..models.integrations import SendEmail, Slack
+from ..models.node import Connections, Node, SubNode
+from ..schemas.flowSchema import ChatSchema, FlowSchema
 
 auth_handler = AuthHandler()
 
@@ -200,7 +200,7 @@ async def rename_flow(
                 status_code=status.HTTP_409_CONFLICT,
                 content={"errorMessage": "Name is already exists"},
             )
-        valid_user = await check_user_token(flow_id, token)
+        valid_user = await authenticate_user(flow_id, token)
         if valid_user.status_code != status.HTTP_200_OK:
             return valid_user
 
@@ -242,7 +242,7 @@ async def delete_flow(
 
     try:
         for flow_id in flow_list:
-            valid_user = await check_user_token(flow_id, token)
+            valid_user = await authenticate_user(flow_id, token)
             if valid_user.status_code != status.HTTP_200_OK:
                 return valid_user
         # check user existance
@@ -280,7 +280,7 @@ async def duplicate_flow(
     """Create a copy(duplicate) flow with same data"""
 
     try:
-        valid_user = await check_user_token(flow_id, token)
+        valid_user = await authenticate_user(flow_id, token)
         if valid_user.status_code != status.HTTP_200_OK:
             return valid_user
 
@@ -501,7 +501,7 @@ async def publish(
     """Save latest diagram with token in database and allow to publish"""
 
     try:
-        # valid_user = await check_user_token(flow_id,token)
+        # valid_user = await authenticate_user(flow_id,token)
         # if (valid_user.status_code is not status.HTTP_200_OK):
         #     return valid_user
         save_draft_status = await save_draft(flow_id)
@@ -550,7 +550,7 @@ async def flow_disabled(flow_id: int, token=Depends(auth_handler.auth_wrapper)):
     """This function is use to disable flow"""
 
     try:
-        valid_user = await check_user_token(flow_id, token)
+        valid_user = await authenticate_user(flow_id, token)
         if valid_user.status_code != status.HTTP_200_OK:
             return valid_user
         db.session.query(Flow).filter_by(id=flow_id).update({"isEnable": False})
@@ -573,7 +573,7 @@ async def archive_flow(flow_id: int, token=Depends(auth_handler.auth_wrapper)):
     """Move flow into trash folder"""
 
     try:
-        valid_user = await check_user_token(flow_id, token)
+        valid_user = await authenticate_user(flow_id, token)
         if valid_user.status_code != status.HTTP_200_OK:
             return valid_user
         db.session.query(Flow).filter_by(id=flow_id).update(
@@ -642,7 +642,7 @@ async def complete_delete_flow(flow_id: int, token=Depends(auth_handler.auth_wra
     """Delete permanently flow"""
 
     try:
-        valid_user = await check_user_token(flow_id, token)
+        valid_user = await authenticate_user(flow_id, token)
         if valid_user.status_code != status.HTTP_200_OK:
             return valid_user
         db.session.query(Flow).filter_by(id=flow_id).filter_by(
@@ -666,7 +666,7 @@ async def restore_flow(flow_id: int, token=Depends(auth_handler.auth_wrapper)):
     """Restore any flow and use it"""
 
     try:
-        valid_user = await check_user_token(flow_id, token)
+        valid_user = await authenticate_user(flow_id, token)
         if valid_user.status_code != status.HTTP_200_OK:
             return valid_user
         db.session.query(Flow).filter_by(id=flow_id).update(
@@ -694,7 +694,7 @@ async def get_flow_detail(flow_id: int, token=Depends(auth_handler.auth_wrapper)
     """Get flow details name and publish_token"""
 
     try:
-        valid_user = await check_user_token(flow_id, token)
+        valid_user = await authenticate_user(flow_id, token)
         if valid_user.status_code != status.HTTP_200_OK:
             return valid_user
         db_name = db.session.query(Flow).filter_by(id=flow_id).first()
@@ -778,7 +778,7 @@ async def save_chat_history(
     """Save the chat history of every user"""
 
     try:
-        valid_user = await check_user_token(chats.flow_id, token)
+        valid_user = await authenticate_user(chats.flow_id, token)
         if valid_user.status_code != status.HTTP_200_OK:
             return valid_user
         get_visitor = (
@@ -991,7 +991,7 @@ async def get_flow_analysis_data(
     and which path they choose (how conversion goes) in percentage"""
 
     try:
-        valid_user = await check_user_token(flow_id, token)
+        valid_user = await authenticate_user(flow_id, token)
         if valid_user.status_code != status.HTTP_200_OK:
             return valid_user
         diagram = await get_diagram(flow_id)
@@ -1016,15 +1016,15 @@ async def get_flow_analysis_data(
                 else:
                     pop_list
                 id_list = []
-                for i in chat_data[i][0]:
-                    if i["type"] == "button":
-                        id_list.append(i["id"])
-                    elif "from" in i:
+                for j in chat_data[i][0]:
+                    if j["type"] == "button":
+                        id_list.append(j["id"])
+                    elif "from" in j:
                         pass
-                    elif i["id"] in pop_list:
+                    elif j["id"] in pop_list:
                         pass
                     else:
-                        id_list.append(i["id"])
+                        id_list.append(j["id"])
                 subnode_list.extend(list(set(id_list)))
 
         subnode_set = list(set(subnode_list))

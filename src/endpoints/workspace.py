@@ -4,7 +4,7 @@ from fastapi_sqlalchemy import db
 
 from ..schemas.workspaceSchema import WorkSpaceSchema
 from ..models.flow import Flow
-from ..models.users import User
+from ..models.users import UserInfo
 from ..models.workspace import Workspace
 from fastapi.responses import JSONResponse
 from ..endpoints.flow import check_user_id
@@ -24,7 +24,7 @@ async def check_user_token(workspace_id: int, token=Depends(auth_handler.auth_wr
     """Check authorization of user"""
 
     try:
-        get_user_id = db.session.query(User).filter_by(email=token).first()
+        get_user_id = db.session.query(UserInfo).filter_by(email=token).first()
         workspace_ids = [
             i[0]
             for i in db.session.query(Workspace.id)
