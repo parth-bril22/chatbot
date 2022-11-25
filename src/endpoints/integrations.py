@@ -2,8 +2,8 @@ from fastapi import APIRouter, status
 from datetime import datetime
 from fastapi_sqlalchemy import db
 
-from ..schemas.integrationSchema import SlackSchema, SendgridMailSchema
-from ..models.integrations import Slack, SendEmail
+from ..schemas.integrationSchema import Slack, SendgridMail
+from ..models.integrations import Slack, SendGrid
 from fastapi.responses import JSONResponse
 
 router = APIRouter(
@@ -14,7 +14,7 @@ router = APIRouter(
 
 
 @router.post("/slack")
-async def slack_integration(data: SlackSchema):
+async def slack_integration(data: Slack):
     """Add channel's name,id and bot_token by user into DB"""
 
     try:
@@ -27,7 +27,7 @@ async def slack_integration(data: SlackSchema):
         )
         db.session.add(new_channel)
         db.session.commit()
-        db.session.close()
+        # db.session.close()
         return JSONResponse(
             status_code=status.HTTP_201_CREATED, content={"message": "Success"}
         )
@@ -44,14 +44,11 @@ async def get_slack_channels(userId: int):
     """Get all connected slack channels by user"""
 
     try:
-        all_channels = db.session.query(Slack).filter_by(user_id=userId).all()
-        channels = []
-        for ch in all_channels:
-            get_channel = {
+        channels = [{
                 "id": ch.id,
                 "channel": (ch.workspace_name + " - " + ch.channel_name),
-            }
-            channels.append(get_channel)
+            } for ch in db.session.query(Slack).filter_by(user_id=userId).all()]
+    
         return JSONResponse(
             status_code=status.HTTP_200_OK, content={"channels": channels}
         )
@@ -64,11 +61,11 @@ async def get_slack_channels(userId: int):
 
 
 @router.post("/sendgrid_email")
-async def sendgrid_integration(data: SendgridMailSchema):
+async def sendgrid_integration(data: SendgridMail):
     """Set/Add Sendgrid account by user with API key"""
 
     try:
-        sg_email = SendEmail(
+        sg_email = SendGrid(
             from_email=data.from_email, secret=data.secret, user_id=data.userId
         )
         db.session.add(sg_email)
@@ -87,15 +84,12 @@ async def sendgrid_integration(data: SendgridMailSchema):
 
 
 @router.get("/get_email")
-async def get_emails(userId: int):
+async def get_sendgrid_emails(userId: int):
     """Get all emails set by user"""
 
     try:
-        all_emails = db.session.query(SendEmail).filter_by(user_id=userId).all()
-        emails = []
-        for e in all_emails:
-            get_email = {"id": e.id, "email": e.from_email}
-            emails.append(get_email)
+        emails = [{"id": e.id, "email": e.from_email} for e in db.session.query(SendGrid).filter_by(user_id=userId).all()]
+        
         return JSONResponse(status_code=status.HTTP_200_OK, content={"emails": emails})
     except Exception as e:
         print(e, "at geting emails. Time:", datetime.now())

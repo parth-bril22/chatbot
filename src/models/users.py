@@ -31,4 +31,4 @@ class Password_tokens(Base):
     uuid = Column(String)
     time = Column(DateTime)
     used = Column(BOOLEAN)
-    user = relationship("User", back_populates="pwd_token")
+    user = relationship("UserInfo", back_populates="pwd_token")

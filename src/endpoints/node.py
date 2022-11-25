@@ -19,7 +19,7 @@ from ..schemas.nodeSchema import (
     CreateNode,
     CreateSubNode,
     CreateConnection,
-    UpdateSubNode
+    UpdateSubNode,
 )
 from ..models.node import Node, NodeType, Connections, SubNode
 from ..models.flow import Flow
@@ -51,7 +51,7 @@ async def files_upload_to_s3(file, node_id, flow_id):
         )
         bucket = s3.Bucket(BUCKET_NAME)
 
-        CONTENT_TYPES = [
+        CONTENT_TYPES = (
             "image/png",
             "image/jpeg",
             "image/jpg",
@@ -65,7 +65,7 @@ async def files_upload_to_s3(file, node_id, flow_id):
             "audio/mpeg",
             "text/csv",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ]
+        )
         if file.content_type in CONTENT_TYPES:
             bucket.upload_fileobj(
                 file.file,

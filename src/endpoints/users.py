@@ -1,5 +1,5 @@
 import bcrypt
-import re
+from re import fullmatch
 from typing import Dict
 from fastapi import APIRouter, encoders
 from uuid import uuid4
@@ -16,7 +16,7 @@ from ..models.flow import Chat, Flow
 from ..models.users import UserInfo as ModelUser
 from ..models.users import Password_tokens
 from ..schemas.userSchema import User as SchemaUser
-from ..schemas.userSchema import LoginSchema as lg
+from ..schemas.userSchema import LoginSchema
 from ..schemas.userSchema import PasswordResetSchema, ChangePasswordSchema
 
 from ..dependencies.auth import AuthHandler
@@ -30,7 +30,7 @@ router = APIRouter(
 )
 
 
-def validate_user(user: ModelUser):
+def validate_user_detials(user: ModelUser):
     """Validate the user by email. Takes ModelUser as input"""
 
     if bool(db.session.query(ModelUser).filter_by(email=user.email).first()):
@@ -40,22 +40,8 @@ def validate_user(user: ModelUser):
         )
 
     elif not (
-        re.fullmatch(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", user.email)
-    ):
-        return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND,
-            content={"errorMessage": "Enter valid email"},
-        )
-
-    elif len(user.password) < 7:
-        return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND,
-            content={"errorMessage": "Password must be greater than 6 characters"},
-        )
-
-    elif not (
-        re.fullmatch(r"[a-zA-Z]+$", user.first_name)
-        and re.fullmatch(r"[A-Za-z]+$", user.last_name)
+        fullmatch(r"[a-zA-Z]+$", user.first_name)
+        and fullmatch(r"[A-Za-z]+$", user.last_name)
     ):
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -72,44 +58,41 @@ async def create_global_variable(schema: Dict):
     try:
         types = ["String", "Number", "Boolean", "Date", "Array"]
 
-        if schema["type"] in types:
-
-            # check not same name variable
-            var_names = [
+        if schema["type"] not in types:
+            return JSONResponse(
+                status_code=status.HTTP_406_NOT_ACCEPTABLE,
+                content={"errorMessage": "Type is not correct"},
+            )
+            
+        var_names = [
                 i[0]
                 for i in db.session.query(Variable.name)
                 .filter_by(user_id=schema["userId"])
                 .all()
             ]
-            if schema["name"] in var_names:
-                return JSONResponse(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    content={
-                        "errorMessage": "The variable name "
-                        + {schema["name"]}
-                        + "is not allowed"
-                    },
-                )
-
-            var = Variable(
-                name=schema["name"],
-                type=schema["type"],
-                user_id=schema["userId"],
-                value=schema["value"],
-            )
-            db.session.add(var)
-            db.session.commit()
-            db.session.close()
-
+        if schema["name"] in var_names:
             return JSONResponse(
-                status_code=status.HTTP_201_CREATED,
-                content={"message": "Created successfully"},
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content={
+                    "errorMessage": "The variable name "
+                    + {schema["name"]}
+                    + "is not allowed"
+                },
             )
-        else:
-            return JSONResponse(
-                status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                content={"errorMessage": "Type is not correct"},
-            )
+
+        var = Variable(
+            name=schema["name"],
+            type=schema["type"],
+            user_id=schema["userId"],
+            value=schema["value"],
+        )
+        db.session.add(var)
+        db.session.commit()
+
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content={"message": "Created successfully"},
+        )
     except Exception as e:
         print(e, "at create global variables. Time:", datetime.now())
         return JSONResponse(
@@ -118,11 +101,11 @@ async def create_global_variable(schema: Dict):
         )
 
 
-async def validate_user_email(my_email: str):
+async def validate_user_email(user_email: str):
     """Checks if the email exists or not"""
 
     try:
-        user = db.session.query(ModelUser).filter_by(email=my_email).first()
+        user = db.session.query(ModelUser).filter_by(email=user_email).first()
         if user is None:
             return False
         return ModelUser(
@@ -191,15 +174,15 @@ def get_uuid_details(my_uuid: str):
         )
 
 
-async def get_user(my_id: int):
+async def get_user(userId: int):
     """Get the user info as per id"""
 
     try:
-        user = db.session.query(ModelUser).filter_by(id=my_id).first()
+        user = db.session.query(ModelUser).filter_by(id=userId).first()
         if user is None:
             return False
         return ModelUser(
-            id=my_id,
+            id=id,
             email=user.email,
             password=user.password,
             first_name=user.first_name,
@@ -218,9 +201,23 @@ async def signup(user: SchemaUser):
     """User signup"""
 
     try:
-        validated_user = validate_user(user)
-        if validated_user is not True:
-            return validated_user
+        # user_details_validatation = validate_user_detials(user)
+        # if user_details_validatation is not True:
+        #     return user_details_validatation
+        if bool(db.session.query(ModelUser).filter_by(email=user.email).first()):
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"errorMessage": "Email already exists"},
+            )
+
+        elif not (
+            fullmatch(r"[a-zA-Z]+$", user.first_name)
+            and fullmatch(r"[A-Za-z]+$", user.last_name)
+        ):
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"errorMessage": "Enter valid name"},
+            )
         else:
             hashed_password = bcrypt.hashpw(
                 user.password.encode("utf-8"), bcrypt.gensalt()
@@ -236,6 +233,7 @@ async def signup(user: SchemaUser):
             )
             db.session.add(db_user)
             db.session.commit()
+
             user_id = db.session.query(ModelUser.id).filter_by(id=db_user.id).first()
 
             # defualt vars
@@ -285,26 +283,22 @@ async def signup(user: SchemaUser):
             content={"errorMessage": "Please check inputs!"},
         )
 
+
 @router.post("/login/")
-async def authenticate_user(input_user: lg):
+def login(input_user: LoginSchema):
     """User login/Signin"""
 
     try:
-        user = await validate_user_email(input_user.email)
-        if (not user) or (
-            not bcrypt.checkpw(
+        user = db.session.query(ModelUser).filter_by(email=input_user.email).first()
+        if (user is None) or (not bcrypt.checkpw(
                 input_user.password.encode("utf-8"), user.password.encode("utf-8")
-            )
-        ):
+            )):
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content={"errorMessage": "Invalid username or password"},
             )
         else:
             token = auth_handler.encode_token(input_user.email)
-            user_id = (
-                db.session.query(ModelUser.id).filter_by(email=input_user.email).first()
-            )
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content={
@@ -313,7 +307,7 @@ async def authenticate_user(input_user: lg):
                     "refresh_token": auth_handler.create_refresh_token(
                         input_user.email
                     ),
-                    "user_id": user_id[0],
+                    "user_id": user.id,
                 },
             )  # valid for 1 minute and 30 seconds, change expiration time in auth.py
     except Exception as e:
@@ -354,6 +348,7 @@ async def refresh(refresh_token: str):
         status_code=status.HTTP_401_UNAUTHORIZED,
         content={"errorMessage": "Unauthorized"},
     )
+
 
 @router.post("/request_change_password")
 async def change_password_request(email_id: str):
@@ -443,42 +438,31 @@ async def reset_password(my_uuid: str, ps: PasswordResetSchema):
 
 @router.patch("/change_password")
 async def change_password(
-    ps: ChangePasswordSchema, my_email=Depends(auth_handler.auth_wrapper)
+    ps: ChangePasswordSchema, token=Depends(auth_handler.auth_wrapper)
 ):
     """Change password by user"""
 
     try:
 
-        user = await validate_user_email(my_email)
-        actual_password = user.password.encode("utf-8")
-
-        if bcrypt.checkpw(ps.current_password.encode("utf-8"), actual_password):
-            if (
-                ps.new_password == ps.confirm_password
-                and len(ps.new_password) > 6
-                and ps.new_password != ps.current_password
-            ):
-                user.password = bcrypt.hashpw(
-                    ps.new_password.encode("utf-8"), bcrypt.gensalt()
-                ).decode("utf-8")
-                db.session.merge(user)
-                db.session.commit()
-                db.session.close()
-                return JSONResponse(
-                    status_code=status.HTTP_200_OK, content={"message": "success"}
-                )
-            else:
-                return JSONResponse(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    content={
-                        "message": "Passwords must be same and of length greater than 6"
-                    },
-                )
-        else:
+        user = await validate_user_email(token)
+        # actual_password = user.password.encode("utf-8")
+        if (not bcrypt.checkpw(ps.current_password.encode("utf-8"), user.password.encode("utf-8"))) and (not (ps.new_password == ps.confirm_password and len(ps.new_password) > 6 and ps.new_password != ps.current_password)):
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"message": "Please enter correct current password"},
+                content={"message": "Password should not be same as previous password"},
             )
+        print(ps.new_password)
+        newPassword = bcrypt.hashpw(
+            ps.new_password.encode("utf-8"), bcrypt.gensalt()
+        ).decode("utf-8")
+        print(newPassword) 
+        # update({"value": i["varValue"]})
+        print(token)
+        db.session.query(ModelUser).filter_by(email= token).update({"password":newPassword})
+        db.session.commit()
+        return JSONResponse(
+            status_code=status.HTTP_200_OK, content={"message": "success"}
+        )
     except Exception as e:
         print(e, "at changing password. Time:", datetime.now())
         return JSONResponse(

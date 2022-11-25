@@ -4,7 +4,7 @@ from datetime import datetime
 from fastapi import APIRouter, status
 from fastapi_sqlalchemy import db
 
-from ..schemas.customfieldSchema import GlobalVariableSchema
+from ..schemas.customfieldSchema import CreateVariable
 from ..models.customfields import Variable
 
 from ..dependencies.auth import AuthHandler
@@ -20,50 +20,38 @@ router = APIRouter(
 
 
 @router.post("/global_variable")
-async def create_global_variable(schema: GlobalVariableSchema):
+async def create_global_variable(schema: CreateVariable):
     """Create a custom global variable"""
 
     try:
-        types = ["String", "Number", "Boolean", "Date", "Array"]
-
-        if schema.type in types:
-
-            # check not same name variable
-            var_names = [
+        var_names = [
                 i[0]
                 for i in db.session.query(Variable.name)
                 .filter_by(user_id=schema.userId)
                 .all()
             ]
-            if schema.name in var_names:
-                return JSONResponse(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    content={
-                        "errorMessage": "The variable name "
-                        + {schema.name}
-                        + "is not allowed"
-                    },
-                )
-            # create the variable
-            var = Variable(
-                name=schema.name,
-                type=schema.type,
-                user_id=schema.userId,
-                value=schema.value,
+            
+        if schema.name in var_names:
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content={
+                    "errorMessage": "The variable name "
+                    + {schema.name}
+                    + "is not allowed"
+                },
             )
-            db.session.add(var)
-            db.session.commit()
-            db.session.close()
+        var = Variable(
+            name=schema.name,
+            type=schema.type,
+            user_id=schema.userId,
+            value=schema.value,
+        )
+        db.session.add(var)
 
-            return JSONResponse(
-                status_code=status.HTTP_201_CREATED,
-                content={"message": "Created successfully"},
-            )
-        else:
-            return JSONResponse(
-                status_code=status.HTTP_406_NOT_ACCEPTABLE,
-                content={"errorMessage": "Type is not correct"},
-            )
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content={"message": "Created successfully"},
+        )
     except Exception as e:
         print(e, "at create global variables. Time:", datetime.now())
         return JSONResponse(
@@ -77,22 +65,17 @@ async def get_variables(user_id: int):
     """Get all variable by user id"""
 
     try:
-        var_list = []
-        db_variables = db.session.query(Variable).filter_by(user_id=user_id).all()
-        for i in db_variables:
-            var_list.append({"varName": i.name, "varValue": i.value})
-
-        db.session.commit()
-        db.session.close()
+        vars = [{"varName": i.name, "varValue": i.value} for i in db.session.query(Variable).filter_by(user_id=user_id).all()]
+    
         return JSONResponse(
-            status_code=status.HTTP_200_OK, content={"Variables": var_list}
+            status_code=status.HTTP_200_OK, content={"Variables": vars}
         )
 
     except Exception as e:
         print(e, "at get variables. Time:", datetime.now())
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            content={"errorMessage": "Can't create a variable"},
+            content={"errorMessage": "Can't get a variable"},
         )
 
 
