@@ -2,7 +2,7 @@ from fastapi import APIRouter, status
 from datetime import datetime
 from fastapi_sqlalchemy import db
 
-from ..schemas.integrationSchema import Slack, SendgridMail
+from ..schemas.integrationSchema import SlackSchema, SendgridMailSchema
 from ..models.integrations import Slack, SendGrid
 from fastapi.responses import JSONResponse
 
@@ -14,7 +14,7 @@ router = APIRouter(
 
 
 @router.post("/slack")
-async def slack_integration(data: Slack):
+async def slack_integration(data: SlackSchema):
     """Add channel's name,id and bot_token by user into DB"""
 
     try:
@@ -61,7 +61,7 @@ async def get_slack_channels(userId: int):
 
 
 @router.post("/sendgrid_email")
-async def sendgrid_integration(data: SendgridMail):
+async def sendgrid_integration(data: SendgridMailSchema):
     """Set/Add Sendgrid account by user with API key"""
 
     try:

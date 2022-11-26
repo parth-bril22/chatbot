@@ -24,7 +24,7 @@ from ..dependencies.config import (
 )
 from ..endpoints.node import authenticate_user
 from ..models.flow import Chat, EmbedScript, Flow
-from ..models.integrations import SendEmail, Slack
+from ..models.integrations import SendGrid, Slack
 from ..models.node import Connections, Node, SubNode
 from ..schemas.flowSchema import ChatSchema, FlowSchema
 
@@ -747,7 +747,7 @@ async def send_email(data):
                 )
         else:
             message = Mail(
-                from_email=db.session.query(SendEmail.from_email)
+                from_email=db.session.query(SendGrid.from_email)
                 .filter_by(id=data["frome_email"])
                 .first(),
                 to_emails=data["to_email"],

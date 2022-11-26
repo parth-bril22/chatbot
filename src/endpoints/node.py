@@ -100,14 +100,12 @@ async def files_upload_to_s3(file, node_id, flow_id):
             .filter_by(node_id=db_subnode_data.node_id)
             .all()
         )
-        node_data = []
-        for sub_node in sub_nodes:
-            node_data.append(sub_node.data)
+        node_data = [sub_node.data for sub_node in sub_nodes]
 
-        db.session.query(Node).filter_by(flow_id=sub_node.flow_id).filter_by(
-            id=sub_node.node_id
+        db.session.query(Node).filter_by(flow_id=flow_id).filter_by(
+            id=node_id
         ).update({"data": node_data})
-        db.session.query(Flow).filter_by(id=sub_node.flow_id).update(
+        db.session.query(Flow).filter_by(id=flow_id).update(
             {"updated_at": datetime.today().isoformat()}
         )
         db.session.commit()
@@ -245,7 +243,6 @@ async def create_node(node: CreateNode):
         )
         db.session.add(new_node)
         db.session.commit()
-        node_id = new_node.id
         count = "01"
         if node.type == "conditional_logic":
             for item in prop_dict:
@@ -331,7 +328,7 @@ async def create_node(node: CreateNode):
                 status_code=status.HTTP_201_CREATED,
                 content={"message": "Node created successfully!"},
             ),
-            node_id,
+            new_node.id,
         )
     except Exception as e:
         print(e, "at creating node. Time:", datetime.now())

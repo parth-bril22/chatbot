@@ -2,7 +2,7 @@ from typing import Dict
 from pydantic import BaseModel
 
 
-class Slack(BaseModel):
+class SlackSchema(BaseModel):
     data: Dict
     userId: int
 
@@ -11,7 +11,7 @@ class Slack(BaseModel):
         underscore_attrs_are_private = True
 
 
-class SendgridMail(BaseModel):
+class SendgridMailSchema(BaseModel):
     from_email: str
     secret: str
     userId: int
