@@ -14,11 +14,7 @@ from sendgrid.helpers.mail import Mail
 
 from ..models.customfields import Variable
 from ..models.flow import Chat, Flow
-<<<<<<< HEAD
-from ..models.users import User as ModelUser
-=======
 from ..models.users import UserInfo as ModelUser
->>>>>>> refactor
 from ..models.users import Password_tokens
 from ..schemas.userSchema import User as SchemaUser
 from ..schemas.userSchema import LoginSchema
