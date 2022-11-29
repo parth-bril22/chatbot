@@ -742,6 +742,7 @@ async def connection(connection: CreateConnection):
             {"updated_at": datetime.today().isoformat()}
         )
         db.session.commit()
+        db.session.close()
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
             content={"message": "Connection created succssfully!"},
