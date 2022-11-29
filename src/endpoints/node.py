@@ -240,6 +240,8 @@ async def create_node(node: CreateNode):
         )
         db.session.add(new_node)
         db.session.commit()
+        node_id = new_node.id
+
         count = "01"
         if node.type == "conditional_logic":
             for item in prop_dict:
@@ -325,7 +327,7 @@ async def create_node(node: CreateNode):
                 status_code=status.HTTP_201_CREATED,
                 content={"message": "Node created successfully!"},
             ),
-            new_node.id,
+            node_id,
         )
     except Exception as e:
         print(e, "at creating node. Time:", datetime.now())
