@@ -229,11 +229,11 @@ async def create_node(node: CreateNode):
             return validate_node
 
         node_name = secrets.token_hex(4)
-
+        prop_dict = node_data
         new_node = Node(
             name=node_name,
             type=node.type,
-            data=node_data,
+            data=prop_dict,
             position=node.position,
             flow_id=node.flow_id,
             destination=node.destination,
@@ -242,7 +242,7 @@ async def create_node(node: CreateNode):
         db.session.commit()
         count = "01"
         if node.type == "conditional_logic":
-            for item in node_data:
+            for item in prop_dict:
                 first_sub_node = SubNode(
                     id=str(new_node.id) + "_" + count + "b",
                     node_id=new_node.id,
@@ -260,7 +260,7 @@ async def create_node(node: CreateNode):
                 db.session.add(first_sub_node)
                 db.session.add(second_sub_node)
         elif node.type == "yes_no":
-            for item in node_data:
+            for item in prop_dict:
                 first_sub_node = SubNode(
                     id=str(new_node.id) + "_" + str(count) + "b",
                     node_id=new_node.id,
@@ -286,7 +286,7 @@ async def create_node(node: CreateNode):
                 db.session.add(second_sub_node)
                 db.session.add(third_sub_node)
         elif node.type == "button":
-            for item in node_data:
+            for item in prop_dict:
                 first_sub_node = SubNode(
                     id=str(new_node.id) + "_" + str(count) + "b",
                     node_id=new_node.id,
@@ -304,7 +304,7 @@ async def create_node(node: CreateNode):
                 db.session.add(first_sub_node)
                 db.session.add(second_sub_node)
         else:
-            for item in node_data:
+            for item in prop_dict:
                 new_sub_node = SubNode(
                     id=str(new_node.id) + "_" + str(count) + "b",
                     node_id=new_node.id,
