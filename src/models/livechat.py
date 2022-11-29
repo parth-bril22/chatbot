@@ -4,7 +4,7 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 
-class Agents(Base):
+class Member(Base):
     __tablename__ = "agents"
     id = Column(Integer, primary_key=True)
     name = Column(String)

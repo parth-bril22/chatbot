@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship
 Base = declarative_base()
 
 
-class User(Base):
+class UserInfo(Base):
     __tablename__ = "user_info"
     id = Column(Integer, primary_key=True)
     email = Column(String)
@@ -31,4 +31,4 @@ class Password_tokens(Base):
     uuid = Column(String)
     time = Column(DateTime)
     used = Column(BOOLEAN)
-    user = relationship("User", back_populates="pwd_token")
+    user = relationship("UserInfo", back_populates="pwd_token")

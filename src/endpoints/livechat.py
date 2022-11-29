@@ -6,9 +6,9 @@ from fastapi_sqlalchemy import db
 # from fastapi_socketio import SocketManager
 from datetime import datetime
 from typing import List
-from ..schemas.livechatSchema import AgentSchema
-from ..models.livechat import Account, Agents
-from ..models.users import User
+from ..schemas.livechatSchema import AddMember
+from ..models.livechat import Account, Member
+from ..models.users import UserInfo
 from ..dependencies.auth import AuthHandler
 
 auth_handler = AuthHandler()
@@ -68,21 +68,21 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int, token: str):
         await socket_manager.broadcast(json.dumps(message))
 
 
-@router.post("/agents")
-async def add_teammember(mail: str, agent: AgentSchema):
-    """This function is use to add a new teammember"""
+@router.post("/add_member")
+async def add_member(mail: str, member: AddMember):
+    """This function is use to add a new team member"""
     try:
 
-        if db.session.query(User.name).filter_by(email=mail).first() is not None:
+        if db.session.query(UserInfo.name).filter_by(email=mail).first() is not None:
             return JSONResponse(
                 status_code=404,
                 content={"errorMessage": "Given email is already registered"},
             )
 
-        new_agent = User(
-            name=agent.name.rstrip(), user_id=agent.user_id, isavailable=False
+        new_member = UserInfo(
+            name=member.name.rstrip(), user_id=member.user_id, isavailable=False
         )
-        db.session.add(new_agent)
+        db.session.add(new_member)
         db.session.commit()
         db.session.close()
 
@@ -98,47 +98,47 @@ async def add_teammember(mail: str, agent: AgentSchema):
 
 @router.get("/get_agents")
 async def get_agents(user_id: int):
-    """This function is use to get all agent list per user"""
+    """This function is use to get all member list per user"""
 
     try:
-        all_agents = db.session.query(Agents).filter_by(user_id=user_id).all()
-        agent_list = []
-        for agent in all_agents:
-            get_agent = {"id": agent.id, "name": agent.ename}
-            agent_list.append(get_agent)
-        sorted_agents = sorted(
-            agent_list, key=lambda agent_list: agent_list["id"], reverse=True
+        members = sorted(
+            [
+                {"id": agent.id, "name": agent.ename}
+                for agent in db.session.query(Member).filter_by(user_id=user_id).all()
+            ],
+            key=lambda members: members["id"],
+            reverse=True,
         )
 
-        return {"agents": sorted_agents}
+        return {"agents": members}
     except Exception as e:
-        print(e, "at getting agent list. Time:", datetime.now())
+        print(e, "at getting member list. Time:", datetime.now())
         return JSONResponse(
-            status_code=400, content={"errorMessage": "Can't get the list of agents"}
+            status_code=400, content={"errorMessage": "Can't get the list of members"}
         )
 
 
 @router.delete("/delete_agent")
 async def delete_agent(user_id: int, agent_id: int):
-    """This function is use to remove(Delete) agent"""
+    """This function is use to remove(Delete) member"""
 
     try:
-        if (db.session.query(Agents).filter_by(id=agent_id).first()) is None:
+        if (db.session.query(Member).filter_by(id=agent_id).first()) is None:
             return JSONResponse(
-                status_code=404, content={"errorMessage": "Can't find agent"}
+                status_code=404, content={"errorMessage": "Can't find member"}
             )
-        db.session.query(Agents).filter_by(user_id=user_id).filter_by(
+        db.session.query(Member).filter_by(user_id=user_id).filter_by(
             id=agent_id
         ).delete()
         db.session.commit()
 
         return JSONResponse(
-            status_code=200, content={"message": "Agent removed successfully!"}
+            status_code=200, content={"message": "Member removed successfully!"}
         )
     except Exception as e:
-        print(e, "at remove agent. Time:", datetime.now())
+        print(e, "at remove member. Time:", datetime.now())
         return JSONResponse(
-            status_code=400, content={"errorMessage": "Can't remove agent"}
+            status_code=400, content={"errorMessage": "Can't remove member"}
         )
 
 

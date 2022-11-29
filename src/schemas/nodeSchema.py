@@ -2,7 +2,7 @@ from typing import Dict, Optional
 from pydantic import BaseModel
 
 
-class NodeSchema(BaseModel):
+class CreateNode(BaseModel):
     _id: int  # id is private.
     flow_id: int
     _name: str = "name"
@@ -38,7 +38,7 @@ class NodeSchema(BaseModel):
         underscore_attrs_are_private = True
 
 
-class DelNodeSchema(BaseModel):
+class DeleteNode(BaseModel):
     id: int
 
     class Config:
@@ -46,7 +46,7 @@ class DelNodeSchema(BaseModel):
         underscore_attrs_are_private = True
 
 
-class SubNodeSchema(BaseModel):
+class CreateSubNode(BaseModel):
     _id: str
     node_id: int
     flow_id: int
@@ -58,7 +58,7 @@ class SubNodeSchema(BaseModel):
         underscore_attrs_are_private = True
 
 
-class UpdateSubNodeSchema(BaseModel):
+class UpdateSubNode(BaseModel):
     id: str
     node_id: int
     flow_id: int
@@ -71,7 +71,7 @@ class UpdateSubNodeSchema(BaseModel):
         underscore_attrs_are_private = True
 
 
-class ConnectionSchema(BaseModel):
+class CreateConnection(BaseModel):
     _id: int
     flow_id: int
     _name: Optional[str]
@@ -84,7 +84,7 @@ class ConnectionSchema(BaseModel):
         underscore_attrs_are_private = True
 
 
-class NodeTypeSchema(BaseModel):
+class NodeTypes(BaseModel):
     _id: int
     type: str
     flow_id: int
@@ -95,7 +95,7 @@ class NodeTypeSchema(BaseModel):
         underscore_attrs_are_private = True
 
 
-class CustomFieldSchema(BaseModel):
+class CreateCustomField(BaseModel):
     _id: int
     flow_id: int
     name: str = ""

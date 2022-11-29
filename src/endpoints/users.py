@@ -1,7 +1,8 @@
 import bcrypt
-import re
+import boto3
+from re import fullmatch
 from typing import Dict
-from fastapi import APIRouter, encoders
+from fastapi import APIRouter, encoders, UploadFile
 from uuid import uuid4
 from fastapi import Depends, HTTPException, status
 from fastapi_sqlalchemy import db
@@ -13,13 +14,18 @@ from sendgrid.helpers.mail import Mail
 
 from ..models.customfields import Variable
 from ..models.flow import Chat, Flow
+<<<<<<< HEAD
 from ..models.users import User as ModelUser
+=======
+from ..models.users import UserInfo as ModelUser
+>>>>>>> refactor
 from ..models.users import Password_tokens
 from ..schemas.userSchema import User as SchemaUser
-from ..schemas.userSchema import LoginSchema as lg
-from ..schemas.userSchema import PasswordResetSchema, PasswordChangeSchema
+from ..schemas.userSchema import LoginSchema
+from ..schemas.userSchema import PasswordResetSchema, ChangePasswordSchema
 
 from ..dependencies.auth import AuthHandler
+from ..dependencies.config import AWS_ACCESS_KEY, AWS_ACCESS_SECRET_KEY, BUCKET_NAME
 
 auth_handler = AuthHandler()
 
@@ -30,7 +36,7 @@ router = APIRouter(
 )
 
 
-def validate_user(user: ModelUser):
+def validate_user_detials(user: ModelUser):
     """Validate the user by email. Takes ModelUser as input"""
 
     if bool(db.session.query(ModelUser).filter_by(email=user.email).first()):
@@ -40,22 +46,8 @@ def validate_user(user: ModelUser):
         )
 
     elif not (
-        re.fullmatch(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", user.email)
-    ):
-        return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND,
-            content={"errorMessage": "Enter valid email"},
-        )
-
-    elif len(user.password) < 7:
-        return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND,
-            content={"errorMessage": "Password must be greater than 6 characters"},
-        )
-
-    elif not (
-        re.fullmatch(r"[a-zA-Z]+$", user.first_name)
-        and re.fullmatch(r"[A-Za-z]+$", user.last_name)
+        fullmatch(r"[a-zA-Z]+$", user.first_name)
+        and fullmatch(r"[A-Za-z]+$", user.last_name)
     ):
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -72,44 +64,41 @@ async def create_global_variable(schema: Dict):
     try:
         types = ["String", "Number", "Boolean", "Date", "Array"]
 
-        if schema["type"] in types:
-
-            # check not same name variable
-            var_names = [
-                i[0]
-                for i in db.session.query(Variable.name)
-                .filter_by(user_id=schema["userId"])
-                .all()
-            ]
-            if schema["name"] in var_names:
-                return JSONResponse(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    content={
-                        "errorMessage": "The variable name "
-                        + {schema["name"]}
-                        + "is not allowed"
-                    },
-                )
-            # create the variable
-            var = Variable(
-                name=schema["name"],
-                type=schema["type"],
-                user_id=schema["userId"],
-                value=schema["value"],
-            )
-            db.session.add(var)
-            db.session.commit()
-            db.session.close()
-
-            return JSONResponse(
-                status_code=status.HTTP_201_CREATED,
-                content={"message": "Created successfully"},
-            )
-        else:
+        if schema["type"] not in types:
             return JSONResponse(
                 status_code=status.HTTP_406_NOT_ACCEPTABLE,
                 content={"errorMessage": "Type is not correct"},
             )
+
+        var_names = [
+            i[0]
+            for i in db.session.query(Variable.name)
+            .filter_by(user_id=schema["userId"])
+            .all()
+        ]
+        if schema["name"] in var_names:
+            return JSONResponse(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                content={
+                    "errorMessage": "The variable name "
+                    + {schema["name"]}
+                    + "is not allowed"
+                },
+            )
+
+        var = Variable(
+            name=schema["name"],
+            type=schema["type"],
+            user_id=schema["userId"],
+            value=schema["value"],
+        )
+        db.session.add(var)
+        db.session.commit()
+
+        return JSONResponse(
+            status_code=status.HTTP_201_CREATED,
+            content={"message": "Created successfully"},
+        )
     except Exception as e:
         print(e, "at create global variables. Time:", datetime.now())
         return JSONResponse(
@@ -118,14 +107,123 @@ async def create_global_variable(schema: Dict):
         )
 
 
+async def validate_user_email(user_email: str):
+    """Checks if the email exists or not"""
+
+    try:
+        user = db.session.query(ModelUser).filter_by(email=user_email).first()
+        if user is None:
+            return False
+        return ModelUser(
+            id=user.id,
+            email=user.email,
+            password=user.password,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            created_at=user.created_at,
+        )
+    except Exception as e:
+        print("Error at check email: ", e)
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"message": "Please check email"},
+        )
+
+
+def send_mail(my_uuid: str):
+    """Send email to user"""
+
+    message = Mail(
+        from_email="testforfastapi@gmail.com",
+        to_emails="testforfastapi@gmail.com",
+        subject="Password Reset",
+        html_content="Hello! <p> UUID :"
+        + "<p> https://chatbot-apis-dev.herokuapp.com/reset_password_link?my_uuid="
+        + str(my_uuid)
+        + "<p> The link will expire in 10 minutes.",
+    )
+    link1 = "https://chatbot-apis-dev.herokuapp.com/reset_password_link?my_uuid=" + str(
+        my_uuid
+    )
+    try:
+        sg = SendGridAPIClient("SENDGRID_API_CLIENT")
+        response = sg.send(message)
+        print(response.status_code)
+        print(response.body)
+        print(response.headers)
+        return {"message": "Link sent to on your mail,please check", "link": link1}
+    except Exception:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"message": "Sorry!We could not send the link right now"},
+        )
+
+
+def get_uuid_details(my_uuid: str):
+    """Get id and time generated of the entered uuid"""
+
+    try:
+        user = db.session.query(Password_tokens).filter_by(uuid=str(my_uuid)).first()
+        if user is None:
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                content={"message": "UUID not found"},
+            )
+
+        return Password_tokens(id=user.id, uuid=my_uuid, time=user.time, used=user.used)
+
+    except Exception as e:
+        print(e, "at getting uuid. Time:", datetime.now())
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"message": "UUID entered incorrectly"},
+        )
+
+
+async def get_user(userId: int):
+    """Get the user info as per id"""
+
+    try:
+        user = db.session.query(ModelUser).filter_by(id=userId).first()
+        if user is None:
+            return False
+        return ModelUser(
+            id=id,
+            email=user.email,
+            password=user.password,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            created_at=user.created_at,
+        )
+    except Exception as e:
+        print(e, "at getting user by id. Time:", datetime.now())
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND, content={"Email is not exists"}
+        )
+
+
 @router.post("/signup/")
 async def signup(user: SchemaUser):
     """User signup"""
 
     try:
-        validated_user = validate_user(user)
-        if validated_user is not True:
-            return validated_user
+        # user_details_validatation = validate_user_detials(user)
+        # if user_details_validatation is not True:
+        #     return user_details_validatation
+        if bool(db.session.query(ModelUser).filter_by(email=user.email).first()):
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"errorMessage": "Email already exists"},
+            )
+
+        elif not (
+            fullmatch(r"[a-zA-Z]+$", user.first_name)
+            and fullmatch(r"[A-Za-z]+$", user.last_name)
+        ):
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"errorMessage": "Enter valid name"},
+            )
         else:
             hashed_password = bcrypt.hashpw(
                 user.password.encode("utf-8"), bcrypt.gensalt()
@@ -141,6 +239,7 @@ async def signup(user: SchemaUser):
             )
             db.session.add(db_user)
             db.session.commit()
+
             user_id = db.session.query(ModelUser.id).filter_by(id=db_user.id).first()
 
             # defualt vars
@@ -191,36 +290,13 @@ async def signup(user: SchemaUser):
         )
 
 
-async def get_user_by_email(my_email: str):
-    """Checks if the email exists or not"""
-
-    try:
-        user = db.session.query(ModelUser).filter_by(email=my_email).first()
-        if user is None:
-            return False
-        return ModelUser(
-            id=user.id,
-            email=user.email,
-            password=user.password,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            created_at=user.created_at,
-        )
-    except Exception as e:
-        print("Error at check email: ", e)
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"message": "Please check email"},
-        )
-
-
 @router.post("/login/")
-async def authenticate_user(input_user: lg):
+def login(input_user: LoginSchema):
     """User login/Signin"""
 
     try:
-        user = await get_user_by_email(input_user.email)
-        if (not user) or (
+        user = db.session.query(ModelUser).filter_by(email=input_user.email).first()
+        if (user is None) or (
             not bcrypt.checkpw(
                 input_user.password.encode("utf-8"), user.password.encode("utf-8")
             )
@@ -231,9 +307,6 @@ async def authenticate_user(input_user: lg):
             )
         else:
             token = auth_handler.encode_token(input_user.email)
-            user_id = (
-                db.session.query(ModelUser.id).filter_by(email=input_user.email).first()
-            )
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content={
@@ -242,7 +315,7 @@ async def authenticate_user(input_user: lg):
                     "refresh_token": auth_handler.create_refresh_token(
                         input_user.email
                     ),
-                    "user_id": user_id[0],
+                    "user_id": user.id,
                 },
             )  # valid for 1 minute and 30 seconds, change expiration time in auth.py
     except Exception as e:
@@ -263,7 +336,7 @@ async def refresh(refresh_token: str):
         if datetime.utcfromtimestamp(payload.get("exp")) > datetime.utcnow():
             email = payload.get("email")
             # Validate email
-            user = await get_user_by_email(email)
+            user = await validate_user_email(email)
             if user:
                 # Create and return token
                 return JSONResponse(
@@ -285,37 +358,8 @@ async def refresh(refresh_token: str):
     )
 
 
-def send_mail(my_uuid: str):
-    """Send password reset link on email of user"""
-
-    message = Mail(
-        from_email="testforfastapi@gmail.com",
-        to_emails="testforfastapi@gmail.com",
-        subject="Password Reset",
-        html_content="Hello! <p> UUID :"
-        + "<p> https://chatbot-apis-dev.herokuapp.com/reset_password_link?my_uuid="
-        + str(my_uuid)
-        + "<p> The link will expire in 10 minutes.",
-    )
-    link1 = "https://chatbot-apis-dev.herokuapp.com/reset_password_link?my_uuid=" + str(
-        my_uuid
-    )
-    try:
-        sg = SendGridAPIClient("SENDGRID_API_CLIENT")
-        response = sg.send(message)
-        print(response.status_code)
-        print(response.body)
-        print(response.headers)
-        return {"message": "Link sent to on your mail,please check", "link": link1}
-    except Exception:
-        return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND,
-            content={"message": "Sorry!We could not send the link right now"},
-        )
-
-
 @router.post("/request_change_password")
-async def req_change_password(email_id: str):
+async def change_password_request(email_id: str):
     """Request to change the password by user"""
 
     try:
@@ -345,51 +389,8 @@ async def req_change_password(email_id: str):
         )
 
 
-def get_uuid_details(my_uuid: str):
-    """Get id and time generated of the entered uuid"""
-
-    try:
-        user = db.session.query(Password_tokens).filter_by(uuid=str(my_uuid)).first()
-        if user is None:
-            return JSONResponse(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"message": "UUID not found"},
-            )
-
-        return Password_tokens(id=user.id, uuid=my_uuid, time=user.time, used=user.used)
-
-    except Exception as e:
-        print(e, "at getting uuid. Time:", datetime.now())
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"message": "UUID entered incorrectly"},
-        )
-
-
-async def get_user_by_id(my_id: int):
-    """Get the user info by id"""
-
-    try:
-        user = db.session.query(ModelUser).filter_by(id=my_id).first()
-        if user is None:
-            return False
-        return ModelUser(
-            id=my_id,
-            email=user.email,
-            password=user.password,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            created_at=user.created_at,
-        )
-    except Exception as e:
-        print(e, "at getting user by id. Time:", datetime.now())
-        return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND, content={"Email is not exists"}
-        )
-
-
-@router.post("/reset_password_link")
-async def reset_password_link(my_uuid: str, ps: PasswordResetSchema):
+@router.post("/reset_password")
+async def reset_password(my_uuid: str, ps: PasswordResetSchema):
     """Reset the password using link which send to registered mail-id"""
 
     try:
@@ -408,7 +409,7 @@ async def reset_password_link(my_uuid: str, ps: PasswordResetSchema):
                 content={"message": "More than 10 minutes have passed"},
             )
         else:
-            new_user = await get_user_by_id(uuid_details.id)
+            new_user = await get_user(uuid_details.id)
             if ps.password == ps.confirm_password:
                 if len(ps.password) < 7:
                     raise HTTPException(
@@ -445,42 +446,43 @@ async def reset_password_link(my_uuid: str, ps: PasswordResetSchema):
 
 @router.patch("/change_password")
 async def change_password(
-    ps: PasswordChangeSchema, my_email=Depends(auth_handler.auth_wrapper)
+    ps: ChangePasswordSchema, token=Depends(auth_handler.auth_wrapper)
 ):
     """Change password by user"""
 
     try:
 
-        user = await get_user_by_email(my_email)
-        actual_password = user.password.encode("utf-8")
-
-        if bcrypt.checkpw(ps.current_password.encode("utf-8"), actual_password):
-            if (
+        user = await validate_user_email(token)
+        # actual_password = user.password.encode("utf-8")
+        if (
+            not bcrypt.checkpw(
+                ps.current_password.encode("utf-8"), user.password.encode("utf-8")
+            )
+        ) and (
+            not (
                 ps.new_password == ps.confirm_password
                 and len(ps.new_password) > 6
                 and ps.new_password != ps.current_password
-            ):
-                user.password = bcrypt.hashpw(
-                    ps.new_password.encode("utf-8"), bcrypt.gensalt()
-                ).decode("utf-8")
-                db.session.merge(user)
-                db.session.commit()
-                db.session.close()
-                return JSONResponse(
-                    status_code=status.HTTP_200_OK, content={"message": "success"}
-                )
-            else:
-                return JSONResponse(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    content={
-                        "message": "Passwords must be same and of length greater than 6"
-                    },
-                )
-        else:
+            )
+        ):
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"message": "Please enter correct current password"},
+                content={"message": "Password should not be same as previous password"},
             )
+        print(ps.new_password)
+        newPassword = bcrypt.hashpw(
+            ps.new_password.encode("utf-8"), bcrypt.gensalt()
+        ).decode("utf-8")
+        print(newPassword)
+        # update({"value": i["varValue"]})
+        print(token)
+        db.session.query(ModelUser).filter_by(email=token).update(
+            {"password": newPassword}
+        )
+        db.session.commit()
+        return JSONResponse(
+            status_code=status.HTTP_200_OK, content={"message": "success"}
+        )
     except Exception as e:
         print(e, "at changing password. Time:", datetime.now())
         return JSONResponse(
@@ -509,7 +511,7 @@ async def delete_user(my_email=Depends(auth_handler.auth_wrapper)):
 
 
 @router.get("/user_profile")
-async def user_profile(user_id: int):
+async def get_user_profile(user_id: int):
     """Get the user profile"""
 
     try:
@@ -560,4 +562,40 @@ async def get_visitors(flow_id: int):
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't find any visitor"},
+        )
+
+@router.post("/avatar")
+async def profile_image(user_id: int,file: UploadFile):
+    """Upload profile image by user"""
+
+    try:
+        s3 = boto3.resource(
+            "s3",
+            aws_access_key_id=AWS_ACCESS_KEY,
+            aws_secret_access_key=AWS_ACCESS_SECRET_KEY,
+        )
+        bucket = s3.Bucket(BUCKET_NAME)
+
+        CONTENT_TYPES = [
+            "image/png",
+            "image/jpeg",
+            "image/jpg",
+        ]
+        if file.content_type in CONTENT_TYPES:
+            bucket.upload_fileobj(
+                file.file,
+                "profileavatar/" + str(user_id) + "/" + file.filename,
+                ExtraArgs={"ContentType": file.content_type},
+            )
+
+        s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/profileavatar/{user_id}/{file.filename}"
+
+        db.session.query(ModelUser).filter_by(id=user_id).update({"avatar":s3_file_url})
+        db.session.commit()
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "success"})
+    except Exception as e:
+        print(e, "at upload profile picture. Time:", datetime.now())
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"errorMessage": "File not uploaded successfully!"},
         )

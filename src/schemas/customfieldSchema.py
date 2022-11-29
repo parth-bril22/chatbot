@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 
-class GlobalVariableSchema(BaseModel):
+class CreateVariable(BaseModel):
     name: str
     type: str
     userId: int

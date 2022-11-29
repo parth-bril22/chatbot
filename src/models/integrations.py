@@ -15,7 +15,7 @@ class Slack(Base):
     user_id = Column(Integer)
 
 
-class SendEmail(Base):
+class SendGrid(Base):
     __tablename__ = "send_email"
     id = Column(Integer, primary_key=True)
     from_email = Column(String)

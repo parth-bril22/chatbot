@@ -4,7 +4,7 @@ from fastapi_sqlalchemy import db
 
 from ..schemas.workspaceSchema import WorkSpaceSchema
 from ..models.flow import Flow
-from ..models.users import User
+from ..models.users import UserInfo
 from ..models.workspace import Workspace
 from fastapi.responses import JSONResponse
 from ..endpoints.flow import check_user_id
@@ -24,7 +24,7 @@ async def check_user_token(workspace_id: int, token=Depends(auth_handler.auth_wr
     """Check authorization of user"""
 
     try:
-        get_user_id = db.session.query(User).filter_by(email=token).first()
+        get_user_id = db.session.query(UserInfo).filter_by(email=token).first()
         workspace_ids = [
             i[0]
             for i in db.session.query(Workspace.id)
@@ -88,18 +88,16 @@ async def get_workspace(user_id: int, token=Depends(auth_handler.auth_wrapper)):
     """Get all workspaces list per user"""
 
     try:
-        all_workspaces = db.session.query(Workspace).filter_by(user_id=user_id).all()
-        workspace_list = []
-        for workspace in all_workspaces:
-            get_workspace = {"id": workspace.id, "name": workspace.name}
-            workspace_list.append(get_workspace)
-        sorted_worksapce = sorted(
-            workspace_list,
+        workspace_list = sorted(
+            [
+                {"id": i.id, "name": i.name}
+                for i in db.session.query(Workspace).filter_by(user_id=user_id).all()
+            ],
             key=lambda workspace_list: workspace_list["id"],
             reverse=True,
         )
 
-        return {"workspace": sorted_worksapce}
+        return {"workspace": workspace_list}
     except Exception as e:
         print(e, "at getting workspace list. Time:", datetime.now())
         return JSONResponse(
@@ -123,15 +121,8 @@ async def get_workspace_flow_list(
                 status_code=404, content={"errorMessage": "Can't find the workspace"}
             )
 
-        flows = (
-            db.session.query(Flow)
-            .filter_by(user_id=user_id)
-            .filter_by(workspace_id=workspace_id)
-            .all()
-        )
-        flow_list = []
-        for fl in flows:
-            flow_list.append(
+        flow_list = sorted(
+            [
                 {
                     "flow_id": fl.id,
                     "name": fl.name,
@@ -143,11 +134,16 @@ async def get_workspace_flow_list(
                     "workspace_id": fl.workspace_id,
                     "workspace_name": fl.workspace_name,
                 }
-            )
-        sorted_list = sorted(
-            flow_list, key=lambda flow_list: flow_list["flow_id"], reverse=True
+                for fl in db.session.query(Flow)
+                .filter_by(user_id=user_id)
+                .filter_by(workspace_id=workspace_id)
+                .all()
+            ],
+            key=lambda flow_list: flow_list["flow_id"],
+            reverse=True,
         )
-        return JSONResponse(status_code=200, content={"flows": sorted_list})
+
+        return JSONResponse(status_code=200, content={"flows": flow_list})
     except Exception as e:
         print(e, "at get flows stored in workspace. Time:", datetime.now())
         return JSONResponse(
@@ -163,14 +159,13 @@ async def move_flow(
     """Move flow into selected workspace"""
 
     try:
-        if (db.session.query(Flow).filter_by(id=flow_id).first()) is None:
+        flow_info = db.session.query(Flow).filter_by(id=flow_id).first()
+        if flow_info is None:
             return JSONResponse(
                 status_code=404, content={"errorMessage": "Can't found flow"}
             )
 
-        if (
-            db.session.query(Flow).filter_by(id=flow_id).first()
-        ).workspace_id == workspace_id:
+        if flow_info.workspace_id == workspace_id:
             return JSONResponse(
                 status_code=208,
                 content={"errorMessage": "Flow is already in workspace"},
@@ -201,25 +196,28 @@ async def remove_workspace(
     """Remove(Delete) workspace"""
 
     try:
-        if (db.session.query(Workspace).filter_by(id=workspace_id).first()) is None:
+        db_query = (
+            db.session.query(Workspace)
+            .filter_by(id=workspace_id)
+            .filter_by(id=workspace_id)
+            .first()
+        )
+        if db_query is None:
             return JSONResponse(
                 status_code=404, content={"errorMessage": "Can't find workspace"}
             )
-        db.session.query(Workspace).filter_by(user_id=user_id).filter_by(
-            id=workspace_id
-        ).delete()
+        db_query.delete()
         db.session.commit()
 
-        # get the all flows from the table
-        get_flow_ids = (
-            db.session.query(Flow.id).filter_by(workspace_id=workspace_id).all()
-        )
-        for id in get_flow_ids:
-            db.session.query(Flow).filter_by(id=id[0]).update(
-                {"workspace_id": 0, "workspace_name": None}
-            )
-            db.session.commit()
-            db.session.close()
+        [
+            db.session.query(Flow)
+            .filter_by(id=id[0])
+            .update({"workspace_id": 0, "workspace_name": None})
+            for id in db.session.query(Flow.id)
+            .filter_by(workspace_id=workspace_id)
+            .all()
+        ]
+        db.session.commit()
 
         return JSONResponse(
             status_code=200, content={"message": "Workspace removed successfully!"}
@@ -286,15 +284,16 @@ async def rename_workspace(
             )
         else:
             db_workspace.update({"name": new_name})
-            get_flow_ids = (
-                db.session.query(Flow.id).filter_by(workspace_id=workspace_id).all()
-            )
-            for id in get_flow_ids:
-                db.session.query(Flow).filter_by(id=id[0]).update(
-                    {"workspace_name": new_name}
-                )
+            [
+                db.session.query(Flow)
+                .filter_by(id=id[0])
+                .update({"workspace_name": new_name})
+                for id in db.session.query(Flow.id)
+                .filter_by(workspace_id=workspace_id)
+                .all()
+            ]
+
             db.session.commit()
-            db.session.close()
             return JSONResponse(
                 status_code=200, content={"message": "Name changed successfully!"}
             )
