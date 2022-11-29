@@ -44,11 +44,14 @@ async def get_slack_channels(userId: int):
     """Get all connected slack channels by user"""
 
     try:
-        channels = [{
+        channels = [
+            {
                 "id": ch.id,
                 "channel": (ch.workspace_name + " - " + ch.channel_name),
-            } for ch in db.session.query(Slack).filter_by(user_id=userId).all()]
-    
+            }
+            for ch in db.session.query(Slack).filter_by(user_id=userId).all()
+        ]
+
         return JSONResponse(
             status_code=status.HTTP_200_OK, content={"channels": channels}
         )
@@ -88,8 +91,11 @@ async def get_sendgrid_emails(userId: int):
     """Get all emails set by user"""
 
     try:
-        emails = [{"id": e.id, "email": e.from_email} for e in db.session.query(SendGrid).filter_by(user_id=userId).all()]
-        
+        emails = [
+            {"id": e.id, "email": e.from_email}
+            for e in db.session.query(SendGrid).filter_by(user_id=userId).all()
+        ]
+
         return JSONResponse(status_code=status.HTTP_200_OK, content={"emails": emails})
     except Exception as e:
         print(e, "at geting emails. Time:", datetime.now())

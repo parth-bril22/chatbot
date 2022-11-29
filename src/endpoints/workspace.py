@@ -88,8 +88,12 @@ async def get_workspace(user_id: int, token=Depends(auth_handler.auth_wrapper)):
     """Get all workspaces list per user"""
 
     try:
-        workspace_list =sorted([{"id": i.id, "name": i.name} for i in db.session.query(Workspace).filter_by(user_id=user_id).all()],
-        key=lambda workspace_list: workspace_list["id"],
+        workspace_list = sorted(
+            [
+                {"id": i.id, "name": i.name}
+                for i in db.session.query(Workspace).filter_by(user_id=user_id).all()
+            ],
+            key=lambda workspace_list: workspace_list["id"],
             reverse=True,
         )
 
@@ -117,8 +121,9 @@ async def get_workspace_flow_list(
                 status_code=404, content={"errorMessage": "Can't find the workspace"}
             )
 
-        flow_list = sorted([
-            {
+        flow_list = sorted(
+            [
+                {
                     "flow_id": fl.id,
                     "name": fl.name,
                     "updated_at": encoders.jsonable_encoder(fl.updated_at),
@@ -128,16 +133,16 @@ async def get_workspace_flow_list(
                     "publish_token": fl.publish_token,
                     "workspace_id": fl.workspace_id,
                     "workspace_name": fl.workspace_name,
-                } 
-            
-            for fl in db.session.query(Flow)
-            .filter_by(user_id=user_id)
-            .filter_by(workspace_id=workspace_id)
-            .all()
-        ],
-        key=lambda flow_list: flow_list["flow_id"], reverse=True
+                }
+                for fl in db.session.query(Flow)
+                .filter_by(user_id=user_id)
+                .filter_by(workspace_id=workspace_id)
+                .all()
+            ],
+            key=lambda flow_list: flow_list["flow_id"],
+            reverse=True,
         )
-        
+
         return JSONResponse(status_code=200, content={"flows": flow_list})
     except Exception as e:
         print(e, "at get flows stored in workspace. Time:", datetime.now())
@@ -191,9 +196,12 @@ async def remove_workspace(
     """Remove(Delete) workspace"""
 
     try:
-        db_query = db.session.query(Workspace).filter_by(id=workspace_id).filter_by(
-            id=workspace_id
-        ).first()
+        db_query = (
+            db.session.query(Workspace)
+            .filter_by(id=workspace_id)
+            .filter_by(id=workspace_id)
+            .first()
+        )
         if db_query is None:
             return JSONResponse(
                 status_code=404, content={"errorMessage": "Can't find workspace"}
@@ -201,9 +209,13 @@ async def remove_workspace(
         db_query.delete()
         db.session.commit()
 
-        [db.session.query(Flow).filter_by(id=id[0]).update(
-                {"workspace_id": 0, "workspace_name": None}
-            ) for id in db.session.query(Flow.id).filter_by(workspace_id=workspace_id).all()
+        [
+            db.session.query(Flow)
+            .filter_by(id=id[0])
+            .update({"workspace_id": 0, "workspace_name": None})
+            for id in db.session.query(Flow.id)
+            .filter_by(workspace_id=workspace_id)
+            .all()
         ]
         db.session.commit()
 
@@ -272,11 +284,15 @@ async def rename_workspace(
             )
         else:
             db_workspace.update({"name": new_name})
-            [db.session.query(Flow).filter_by(id=id[0]).update(
-                    {"workspace_name": new_name}) for id in 
-                db.session.query(Flow.id).filter_by(workspace_id=workspace_id).all()
+            [
+                db.session.query(Flow)
+                .filter_by(id=id[0])
+                .update({"workspace_name": new_name})
+                for id in db.session.query(Flow.id)
+                .filter_by(workspace_id=workspace_id)
+                .all()
             ]
-            
+
             db.session.commit()
             return JSONResponse(
                 status_code=200, content={"message": "Name changed successfully!"}

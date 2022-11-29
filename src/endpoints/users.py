@@ -1,7 +1,8 @@
 import bcrypt
+import boto3
 from re import fullmatch
 from typing import Dict
-from fastapi import APIRouter, encoders
+from fastapi import APIRouter, encoders, UploadFile
 from uuid import uuid4
 from fastapi import Depends, HTTPException, status
 from fastapi_sqlalchemy import db
@@ -20,6 +21,7 @@ from ..schemas.userSchema import LoginSchema
 from ..schemas.userSchema import PasswordResetSchema, ChangePasswordSchema
 
 from ..dependencies.auth import AuthHandler
+from ..dependencies.config import AWS_ACCESS_KEY, AWS_ACCESS_SECRET_KEY, BUCKET_NAME
 
 auth_handler = AuthHandler()
 
@@ -63,13 +65,13 @@ async def create_global_variable(schema: Dict):
                 status_code=status.HTTP_406_NOT_ACCEPTABLE,
                 content={"errorMessage": "Type is not correct"},
             )
-            
+
         var_names = [
-                i[0]
-                for i in db.session.query(Variable.name)
-                .filter_by(user_id=schema["userId"])
-                .all()
-            ]
+            i[0]
+            for i in db.session.query(Variable.name)
+            .filter_by(user_id=schema["userId"])
+            .all()
+        ]
         if schema["name"] in var_names:
             return JSONResponse(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -290,9 +292,11 @@ def login(input_user: LoginSchema):
 
     try:
         user = db.session.query(ModelUser).filter_by(email=input_user.email).first()
-        if (user is None) or (not bcrypt.checkpw(
+        if (user is None) or (
+            not bcrypt.checkpw(
                 input_user.password.encode("utf-8"), user.password.encode("utf-8")
-            )):
+            )
+        ):
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content={"errorMessage": "Invalid username or password"},
@@ -446,7 +450,17 @@ async def change_password(
 
         user = await validate_user_email(token)
         # actual_password = user.password.encode("utf-8")
-        if (not bcrypt.checkpw(ps.current_password.encode("utf-8"), user.password.encode("utf-8"))) and (not (ps.new_password == ps.confirm_password and len(ps.new_password) > 6 and ps.new_password != ps.current_password)):
+        if (
+            not bcrypt.checkpw(
+                ps.current_password.encode("utf-8"), user.password.encode("utf-8")
+            )
+        ) and (
+            not (
+                ps.new_password == ps.confirm_password
+                and len(ps.new_password) > 6
+                and ps.new_password != ps.current_password
+            )
+        ):
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content={"message": "Password should not be same as previous password"},
@@ -455,10 +469,12 @@ async def change_password(
         newPassword = bcrypt.hashpw(
             ps.new_password.encode("utf-8"), bcrypt.gensalt()
         ).decode("utf-8")
-        print(newPassword) 
+        print(newPassword)
         # update({"value": i["varValue"]})
         print(token)
-        db.session.query(ModelUser).filter_by(email= token).update({"password":newPassword})
+        db.session.query(ModelUser).filter_by(email=token).update(
+            {"password": newPassword}
+        )
         db.session.commit()
         return JSONResponse(
             status_code=status.HTTP_200_OK, content={"message": "success"}
@@ -542,4 +558,40 @@ async def get_visitors(flow_id: int):
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't find any visitor"},
+        )
+
+@router.post("/avatar")
+async def profile_image(user_id: int,file: UploadFile):
+    """Upload profile image by user"""
+
+    try:
+        s3 = boto3.resource(
+            "s3",
+            aws_access_key_id=AWS_ACCESS_KEY,
+            aws_secret_access_key=AWS_ACCESS_SECRET_KEY,
+        )
+        bucket = s3.Bucket(BUCKET_NAME)
+
+        CONTENT_TYPES = [
+            "image/png",
+            "image/jpeg",
+            "image/jpg",
+        ]
+        if file.content_type in CONTENT_TYPES:
+            bucket.upload_fileobj(
+                file.file,
+                "profileavatar/" + str(user_id) + "/" + file.filename,
+                ExtraArgs={"ContentType": file.content_type},
+            )
+
+        s3_file_url = f"https://{BUCKET_NAME}.s3.ap-south-1.amazonaws.com/profileavatar/{user_id}/{file.filename}"
+
+        db.session.query(ModelUser).filter_by(id=user_id).update({"avatar":s3_file_url})
+        db.session.commit()
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "success"})
+    except Exception as e:
+        print(e, "at upload profile picture. Time:", datetime.now())
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"errorMessage": "File not uploaded successfully!"},
         )

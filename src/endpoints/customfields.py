@@ -25,12 +25,12 @@ async def create_global_variable(schema: CreateVariable):
 
     try:
         var_names = [
-                i[0]
-                for i in db.session.query(Variable.name)
-                .filter_by(user_id=schema.userId)
-                .all()
-            ]
-            
+            i[0]
+            for i in db.session.query(Variable.name)
+            .filter_by(user_id=schema.userId)
+            .all()
+        ]
+
         if schema.name in var_names:
             return JSONResponse(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -65,11 +65,12 @@ async def get_variables(user_id: int):
     """Get all variable by user id"""
 
     try:
-        vars = [{"varName": i.name, "varValue": i.value} for i in db.session.query(Variable).filter_by(user_id=user_id).all()]
-    
-        return JSONResponse(
-            status_code=status.HTTP_200_OK, content={"Variables": vars}
-        )
+        vars = [
+            {"varName": i.name, "varValue": i.value}
+            for i in db.session.query(Variable).filter_by(user_id=user_id).all()
+        ]
+
+        return JSONResponse(status_code=status.HTTP_200_OK, content={"Variables": vars})
 
     except Exception as e:
         print(e, "at get variables. Time:", datetime.now())

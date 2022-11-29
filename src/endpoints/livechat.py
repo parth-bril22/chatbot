@@ -101,9 +101,14 @@ async def get_agents(user_id: int):
     """This function is use to get all member list per user"""
 
     try:
-        members = sorted([{"id": agent.id, "name": agent.ename} for agent in db.session.query(Member).filter_by(user_id=user_id).all()],
-            key=lambda members: members["id"], reverse=True
-        )   
+        members = sorted(
+            [
+                {"id": agent.id, "name": agent.ename}
+                for agent in db.session.query(Member).filter_by(user_id=user_id).all()
+            ],
+            key=lambda members: members["id"],
+            reverse=True,
+        )
 
         return {"agents": members}
     except Exception as e:

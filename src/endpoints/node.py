@@ -93,6 +93,7 @@ async def files_upload_to_s3(file, node_id, flow_id):
         db.session.query(SubNode).filter_by(flow_id=db_subnode_data.flow_id).filter_by(
             id=db_subnode_data.id
         ).update({"data": db_subnode_data.data})
+
         db.session.commit()
         sub_nodes = (
             db.session.query(SubNode)
@@ -102,9 +103,9 @@ async def files_upload_to_s3(file, node_id, flow_id):
         )
         node_data = [sub_node.data for sub_node in sub_nodes]
 
-        db.session.query(Node).filter_by(flow_id=flow_id).filter_by(
-            id=node_id
-        ).update({"data": node_data})
+        db.session.query(Node).filter_by(flow_id=flow_id).filter_by(id=node_id).update(
+            {"data": node_data}
+        )
         db.session.query(Flow).filter_by(id=flow_id).update(
             {"updated_at": datetime.today().isoformat()}
         )
@@ -126,10 +127,7 @@ async def authenticate_user(flow_id: int, token=Depends(auth_handler.auth_wrappe
 
     try:
         get_user_id = db.session.query(UserInfo).filter_by(email=token).first()
-        flow_ids = [
-            i[0]
-            for i in db.session.query(Flow.id).filter_by(user_id=get_user_id.id).all()
-        ]
+        flow_ids = tuple(i[0] for i in db.session.query(Flow.id).filter_by(user_id=get_user_id.id).all())
         if flow_id in flow_ids:
             return JSONResponse(
                 status_code=status.HTTP_200_OK, content={"message": "Flow is exists"}
@@ -230,13 +228,12 @@ async def create_node(node: CreateNode):
         if validate_node.status_code != status.HTTP_200_OK:
             return validate_node
 
-        prop_dict = node_data
         node_name = secrets.token_hex(4)
 
         new_node = Node(
             name=node_name,
             type=node.type,
-            data=prop_dict,
+            data=node_data,
             position=node.position,
             flow_id=node.flow_id,
             destination=node.destination,
@@ -245,7 +242,7 @@ async def create_node(node: CreateNode):
         db.session.commit()
         count = "01"
         if node.type == "conditional_logic":
-            for item in prop_dict:
+            for item in node_data:
                 first_sub_node = SubNode(
                     id=str(new_node.id) + "_" + count + "b",
                     node_id=new_node.id,
@@ -263,7 +260,7 @@ async def create_node(node: CreateNode):
                 db.session.add(first_sub_node)
                 db.session.add(second_sub_node)
         elif node.type == "yes_no":
-            for item in prop_dict:
+            for item in node_data:
                 first_sub_node = SubNode(
                     id=str(new_node.id) + "_" + str(count) + "b",
                     node_id=new_node.id,
@@ -289,7 +286,7 @@ async def create_node(node: CreateNode):
                 db.session.add(second_sub_node)
                 db.session.add(third_sub_node)
         elif node.type == "button":
-            for item in prop_dict:
+            for item in node_data:
                 first_sub_node = SubNode(
                     id=str(new_node.id) + "_" + str(count) + "b",
                     node_id=new_node.id,
@@ -307,7 +304,7 @@ async def create_node(node: CreateNode):
                 db.session.add(first_sub_node)
                 db.session.add(second_sub_node)
         else:
-            for item in prop_dict:
+            for item in node_data:
                 new_sub_node = SubNode(
                     id=str(new_node.id) + "_" + str(count) + "b",
                     node_id=new_node.id,
@@ -410,10 +407,6 @@ async def delete_node(
                 content={"message": "Can't find node"},
             )
         node_in_db.delete()
-        db.session.query(Connections).filter(
-            (Connections.source_node_id == node_id)
-            | (Connections.target_node_id == node_id)
-        ).delete()
         db.session.query(Flow).filter_by(id=flow_id).update(
             {"updated_at": datetime.today().isoformat()}
         )
@@ -593,9 +586,8 @@ async def update_subnode(sub_node: UpdateSubNode, token):
             .filter_by(node_id=sub_node.node_id)
             .all()
         )
-        node_data = []
-        for sub_node in sub_nodes:
-            node_data.append(sub_node.data)
+        
+        node_data = [s.data for s in sub_nodes]
 
         db.session.query(Node).filter_by(flow_id=sub_node.flow_id).filter_by(
             id=sub_node.node_id
@@ -660,9 +652,6 @@ async def delete_subnode(
             )
 
         node_in_db.delete()
-        db.session.query(Connections).filter(
-            Connections.sub_node_id == subnode_id
-        ).delete()
         db.session.query(Flow).filter_by(id=flow_id).update(
             {"updated_at": datetime.today().isoformat()}
         )
