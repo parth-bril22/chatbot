@@ -127,7 +127,7 @@ async def authenticate_user(flow_id: int, token=Depends(auth_handler.auth_wrappe
 
     try:
         get_user_id = db.session.query(UserInfo).filter_by(email=token).first()
-        flow_ids = tuple(i[0] for i in db.session.query(Flow.id).filter_by(user_id=get_user_id.id).all())
+        flow_ids = [i[0] for i in db.session.query(Flow.id).filter_by(user_id=get_user_id.id).all()]
         if flow_id in flow_ids:
             return JSONResponse(
                 status_code=status.HTTP_200_OK, content={"message": "Flow is exists"}
