@@ -671,7 +671,7 @@ async def delete_subnode(
         )
 
 
-async def connection(connection: CreateConnection):
+async def createConnection(connection: CreateConnection):
     """A connection(edge) between nodes"""
 
     try:
@@ -698,7 +698,7 @@ async def connection(connection: CreateConnection):
             print(e, "at creating connection. Time:", datetime.now())
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
-                content={"errorMessage": "Can't create  connection"},
+            content={"errorMessage": "Can't create  connection"},
             )
 
         if "" in connection.dict().values():
@@ -767,7 +767,7 @@ async def create_connection(
         validate_user = await authenticate_user(connection.flow_id, token)
         if validate_user.status_code != status.HTTP_200_OK:
             return validate_user
-        x = await connection(connection)
+        x = await createConnection(connection)
         if x.status_code != status.HTTP_201_CREATED:
             return x
 
