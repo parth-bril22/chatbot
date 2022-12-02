@@ -671,7 +671,7 @@ async def delete_subnode(
         )
 
 
-async def createConnection(connection: CreateConnection):
+async def create_node_connection(connection: CreateConnection):
     """A connection(edge) between nodes"""
 
     try:
@@ -767,7 +767,7 @@ async def create_connection(
         validate_user = await authenticate_user(connection.flow_id, token)
         if validate_user.status_code != status.HTTP_200_OK:
             return validate_user
-        x = await createConnection(connection)
+        x = await create_node_connection(connection)
         if x.status_code != status.HTTP_201_CREATED:
             return x
 
@@ -852,7 +852,7 @@ async def connection_with_node(
             sub_node_id=subnode_id,
             target_node_id=id,
         )
-        await create_connection(create_conn)
+        await create_node_connection(create_conn)
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -889,7 +889,7 @@ async def add_connection(
             sub_node_id=connection.sub_node_id,
             target_node_id=new_node_id,
         )
-        await create_connection(first_connection)
+        await create_node_connection(first_connection)
 
         subnode_id = (
             db.session.query(SubNode.id)
@@ -904,7 +904,7 @@ async def add_connection(
             sub_node_id=subnode_id,
             target_node_id=connection.target_node_id,
         )
-        await create_connection(second_connection)
+        await create_node_connection(second_connection)
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
