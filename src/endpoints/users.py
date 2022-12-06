@@ -198,7 +198,7 @@ async def get_user(userId: int):
         )
 
 
-@router.post("/signup/")
+@router.post("/signup")
 async def signup(user: SchemaUser):
     """User signup"""
 
@@ -286,7 +286,7 @@ async def signup(user: SchemaUser):
         )
 
 
-@router.post("/login/")
+@router.post("/login")
 def login(input_user: LoginSchema):
     """User login/Signin"""
 
