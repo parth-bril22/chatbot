@@ -15,12 +15,7 @@ from typing import List, Dict
 from datetime import datetime
 from fastapi_sqlalchemy import db
 
-from ..schemas.nodeSchema import (
-    CreateNode,
-    CreateSubNode,
-    CreateConnection,
-    UpdateSubNode,
-)
+from ..schemas.nodeSchema import CreateNode, CreateCustomField, CreateConnection, CreateSubNode, UpdateSubNode
 from ..models.node import Node, NodeType, Connections, SubNode
 from ..models.flow import Flow
 from ..models.users import UserInfo
@@ -217,10 +212,10 @@ async def validate_node_detail(node: CreateNode):
             return prop_dict, {}
         else:
             props.append(prop_dict)
-    return JSONResponse(status_code=status.HTTP_200_OK), props
+    return JSONResponse(status_code=status.HTTP_200_OK,content="Checked"), props
 
 
-async def create_node(node: CreateNode):
+async def create_one_node(node: CreateNode):
     """Create a node based on types"""
 
     try:
@@ -322,15 +317,10 @@ async def create_node(node: CreateNode):
         db.session.commit()
         db.session.close()
 
-        return (
-            JSONResponse(
-                status_code=status.HTTP_201_CREATED,
-                content={"message": "Node created successfully!"},
-            ),
-            node_id,
-        )
+        return JSONResponse(status_code = status.HTTP_201_CREATED, content = {"message":"Node created successfully!"}) , node_id
+    
     except Exception as e:
-        print(e, "at creating node. Time:", datetime.now())
+        print(e, "at creating node -2. Time:", datetime.now())
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't create a node"},
@@ -345,7 +335,7 @@ async def create_nodes(node: CreateNode, token=Depends(auth_handler.auth_wrapper
         validate_user = await authenticate_user(node.flow_id, token)
         if validate_user.status_code != status.HTTP_200_OK:
             return validate_user
-        create_node_response, node_id = await create_node(node)
+        create_node_response, node_id = await create_one_node(node)
         if create_node_response.status_code != status.HTTP_201_CREATED:
             return create_node_response
 
@@ -832,7 +822,7 @@ async def connection_with_node(
         validate_user = await authenticate_user(node.flow_id, token)
         if validate_user.status_code != status.HTTP_200_OK:
             return validate_user
-        create_node_response, id = await create_node(node=node)
+        create_node_response, id = await create_one_node(node=node)
         if create_node_response.status_code != status.HTTP_201_CREATED:
             return create_node_response
         sub_node = (
@@ -879,7 +869,7 @@ async def add_connection(
         if validate_user.status_code != 200:
             return validate_user
 
-        node_respoonse, new_node_id = await create_node(node=node)
+        node_respoonse, new_node_id = await create_one_node(node=node)
         if node_respoonse.status_code != status.HTTP_201_CREATED:
             return status
 
