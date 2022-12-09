@@ -1,5 +1,6 @@
 import bcrypt
 import boto3
+import logging
 from re import fullmatch
 from typing import Dict
 from fastapi import APIRouter, encoders, UploadFile
@@ -25,11 +26,14 @@ from ..dependencies.config import AWS_ACCESS_KEY, AWS_ACCESS_SECRET_KEY, BUCKET_
 
 auth_handler = AuthHandler()
 
+logger = logging.getLogger(__file__)
+
 router = APIRouter(
     prefix="/users",
     tags=["User"],
     responses={404: {"description": "Not found"}},
 )
+
 
 
 def validate_user_detials(user: ModelUser):
@@ -58,9 +62,9 @@ async def create_global_variable(schema: Dict):
     """Create a custom global variable"""
 
     try:
-        types = ["String", "Number", "Boolean", "Date", "Array"]
+        var_types = ["String", "Number", "Boolean", "Date", "Array"]
 
-        if schema["type"] not in types:
+        if schema["type"] not in var_types:
             return JSONResponse(
                 status_code=status.HTTP_406_NOT_ACCEPTABLE,
                 content={"errorMessage": "Type is not correct"},
@@ -96,7 +100,7 @@ async def create_global_variable(schema: Dict):
             content={"message": "Created successfully"},
         )
     except Exception as e:
-        print(e, "at create global variables. Time:", datetime.now())
+        logger.error(f"Failed to create variables. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't create a variable"},
@@ -119,7 +123,7 @@ async def validate_user_email(user_email: str):
             created_at=user.created_at,
         )
     except Exception as e:
-        print("Error at check email: ", e)
+        logger.error(f"Failed to checking mail. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"message": "Please check email"},
@@ -144,9 +148,9 @@ def send_mail(my_uuid: str):
     try:
         sg = SendGridAPIClient("SENDGRID_API_CLIENT")
         response = sg.send(message)
-        print(response.status_code)
-        print(response.body)
-        print(response.headers)
+        logging.debug(response.status_code)
+        logging.debug(response.body)
+        logging.debug(response.headers)
         return {"message": "Link sent to on your mail,please check", "link": link1}
     except Exception:
         return JSONResponse(
@@ -169,7 +173,7 @@ def get_uuid_details(my_uuid: str):
         return Password_tokens(id=user.id, uuid=my_uuid, time=user.time, used=user.used)
 
     except Exception as e:
-        print(e, "at getting uuid. Time:", datetime.now())
+        logger.error(f"Failed to get uuid. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"message": "UUID entered incorrectly"},
@@ -192,7 +196,7 @@ async def get_user(userId: int):
             created_at=user.created_at,
         )
     except Exception as e:
-        print(e, "at getting user by id. Time:", datetime.now())
+        logger.error(f"Failed to get user. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND, content={"Email is not exists"}
         )
@@ -279,7 +283,7 @@ async def signup(user: SchemaUser):
                 },
             )
     except Exception as e:
-        print("Error at signup: ", e)
+        logger.error(f"Failed to signup. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Please check inputs!"},
@@ -315,15 +319,15 @@ def login(input_user: LoginSchema):
                 },
             )  # valid for 1 minute and 30 seconds, change expiration time in auth.py
     except Exception as e:
-        print("Error at login: ", e)
+        logger.error(f"Failed to login. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Please check inputs!"},
         )
 
 
-@router.post("/refresh")
-async def refresh(refresh_token: str):
+@router.post("/refresh_token")
+async def get_refresh_token(refresh_token: str):
     """For check using refresh token after session is expired"""
 
     try:
@@ -343,16 +347,12 @@ async def refresh(refresh_token: str):
                     },
                 )
 
-    except Exception:
+    except Exception as e:
+        logger.error(f"Failed to get refresh_token. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"errorMessage": "Unauthorized"},
         )
-    return JSONResponse(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        content={"errorMessage": "Unauthorized"},
-    )
-
 
 @router.post("/request_change_password")
 async def change_password_request(email_id: str):
@@ -378,7 +378,7 @@ async def change_password_request(email_id: str):
         db.session.commit()
         return send_mail(my_uuid)
     except Exception as e:
-        print(e, "at change password. Time:", datetime.now())
+        logger.error(f"Failed to send mail for change password. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"message": "UUID entered incorrectly"},
@@ -433,7 +433,7 @@ async def reset_password(my_uuid: str, ps: PasswordResetSchema):
                     content={"message": "Passwords are not same"},
                 )
     except Exception as e:
-        print(e, "at reset password. Time:", datetime.now())
+        logger.error(f"Failed to reset password. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Sorry,Link expired"},
@@ -465,13 +465,9 @@ async def change_password(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content={"message": "Password should not be same as previous password"},
             )
-        print(ps.new_password)
         newPassword = bcrypt.hashpw(
             ps.new_password.encode("utf-8"), bcrypt.gensalt()
         ).decode("utf-8")
-        print(newPassword)
-        # update({"value": i["varValue"]})
-        print(token)
         db.session.query(ModelUser).filter_by(email=token).update(
             {"password": newPassword}
         )
@@ -480,7 +476,7 @@ async def change_password(
             status_code=status.HTTP_200_OK, content={"message": "success"}
         )
     except Exception as e:
-        print(e, "at changing password. Time:", datetime.now())
+        logger.error(f"Failed to changing password. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't change password"},
@@ -499,7 +495,7 @@ async def delete_user(my_email=Depends(auth_handler.auth_wrapper)):
             status_code=status.HTTP_200_OK, content={"message": "deleted"}
         )
     except Exception as e:
-        print(e, "at delete account. Time:", datetime.now())
+        logger.error(f"Failed to delete user. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't delete account"},
@@ -516,7 +512,7 @@ async def get_user_profile(user_id: int):
         db.session.close()
         return JSONResponse(status_code=status.HTTP_200_OK, content={"Token": token})
     except Exception as e:
-        print(e, "at user proflie. Time:", datetime.now())
+        logger.error(f"Failed to get user profile. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't find user"},
@@ -554,7 +550,7 @@ async def get_visitors(flow_id: int):
             content=encoders.jsonable_encoder(final_visitor_list),
         )
     except Exception as e:
-        print(e, "at get visitors. Time:", datetime.now())
+        logger.error(f"Failed to get visitors. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't find any visitor"},
@@ -590,7 +586,7 @@ async def profile_image(user_id: int,file: UploadFile):
         db.session.commit()
         return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "success"})
     except Exception as e:
-        print(e, "at upload profile picture. Time:", datetime.now())
+        logger.error(f"Failed to upload profile picture. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "File not uploaded successfully!"},

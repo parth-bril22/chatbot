@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, encoders
 from datetime import datetime
 from fastapi_sqlalchemy import db
@@ -12,6 +13,8 @@ from ..endpoints.flow import check_user_id
 from ..dependencies.auth import AuthHandler
 
 auth_handler = AuthHandler()
+
+logger = logging.getLogger(__file__)
 
 router = APIRouter(
     prefix="/workspaces",
@@ -41,7 +44,7 @@ async def check_user_token(workspace_id: int, token=Depends(auth_handler.auth_wr
                 content={"errorMessage": "Can't find Workspace for this user"},
             )
     except Exception as e:
-        print(e, "at checking authorization. Time:", datetime.now())
+        logger.error(f"Failed to checking authorization. ERROR: {e}")
         return JSONResponse(
             status_code=400, content={"errorMessage": "Can't give permission"}
         )
@@ -77,7 +80,7 @@ async def create_workspace(
             status_code=200, content={"message": "Workspace is successfully created!"}
         )
     except Exception as e:
-        print(e, "at creating workspace. Time:", datetime.now())
+        logger.error(f"Failed to creating workspace. ERROR: {e}")
         return JSONResponse(
             status_code=400, content={"errorMessage": "Can't create a workspace"}
         )
@@ -99,7 +102,7 @@ async def get_workspace(user_id: int, token=Depends(auth_handler.auth_wrapper)):
 
         return {"workspace": workspace_list}
     except Exception as e:
-        print(e, "at getting workspace list. Time:", datetime.now())
+        logger.error(f"Failed to getting workspace list. ERROR: {e}")
         return JSONResponse(
             status_code=400, content={"errorMessage": "Can't get the list of workspace"}
         )
@@ -145,7 +148,7 @@ async def get_workspace_flow_list(
 
         return JSONResponse(status_code=200, content={"flows": flow_list})
     except Exception as e:
-        print(e, "at get flows stored in workspace. Time:", datetime.now())
+        logger.error(f"Failed to get flows stored in workspace. ERROR: {e}")
         return JSONResponse(
             status_code=400,
             content={"errorMessage": "Can't get the flows from workspace"},
@@ -183,7 +186,7 @@ async def move_flow(
             status_code=200, content={"message": "Flow move successfully!"}
         )
     except Exception as e:
-        print(e, "at move flow. Time:", datetime.now())
+        logger.error(f"Failed to moving flow. ERROR: {e}")
         return JSONResponse(
             status_code=400, content={"errorMessage": "Can't move flow from workspace"}
         )
@@ -223,7 +226,7 @@ async def remove_workspace(
             status_code=200, content={"message": "Workspace removed successfully!"}
         )
     except Exception as e:
-        print(e, "at remove workspace. Time:", datetime.now())
+        logger.error(f"Failed to removing workspace. ERROR: {e}")
         return JSONResponse(
             status_code=400, content={"errorMessage": "Can't remove workspace"}
         )
@@ -249,7 +252,7 @@ async def remove_from_workspace(
             content={"message": "Flow removed from workspace successfully!"},
         )
     except Exception as e:
-        print(e, "at remove flow from workspace. Time:", datetime.now())
+        logger.error(f"Failed to removing flow from workspace. ERROR: {e}")
         return JSONResponse(
             status_code=400,
             content={"errorMessage": "Can't remove flow from workspace"},
@@ -298,7 +301,7 @@ async def rename_workspace(
                 status_code=200, content={"message": "Name changed successfully!"}
             )
     except Exception as e:
-        print(e, "at rename workspace. Time:", datetime.now())
+        logger.error(f"Failed to renaming workspace. ERROR: {e}")
         return JSONResponse(
             status_code=400,
             content={"errorMessage": "Can't change the name of workspace"},

@@ -1,5 +1,6 @@
 import collections
 import os
+import logging
 import uuid
 from datetime import datetime
 from typing import Dict, List
@@ -30,6 +31,8 @@ from ..schemas.flowSchema import ChatSchema, FlowSchema
 
 auth_handler = AuthHandler()
 
+logger = logging.getLogger(__file__)
+
 router = APIRouter(
     prefix="/flow",
     tags=["Flow"],
@@ -49,7 +52,7 @@ async def check_user_id(user_id: int):
         else:
             return JSONResponse(status_code=status.HTTP_200_OK)
     except Exception as e:
-        print(e, "at user verification. Time:", datetime.now())
+        logger.error(f"Failed to user verificationc. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "User is not exists!"},
@@ -131,7 +134,7 @@ async def create_flow(flow: FlowSchema, token=Depends(auth_handler.auth_wrapper)
             content={"message": "Flow created Successfully!"},
         )
     except Exception as e:
-        print(e, "at create flow. Time:", datetime.now())
+        logger.error(f"Failed to create flow. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't create Flow"},
@@ -173,7 +176,7 @@ async def get_flow_list(user_id: int, token=Depends(auth_handler.auth_wrapper)):
             status_code=status.HTTP_200_OK, content={"flows": sorted_list}
         )
     except Exception as e:
-        print(e, "at getting flow list. Time:", datetime.now())
+        logger.error(f"Failed to get flow_list. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't find flows for this user"},
@@ -227,7 +230,7 @@ async def rename_flow(
             )
 
     except Exception as e:
-        print(e, "at rename flow. Time:", datetime.now())
+        logger.error(f"Failed to remove flow. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't change the flow name"},
@@ -266,7 +269,7 @@ async def delete_flow(
         )
 
     except Exception as e:
-        print(e, "at delete flow. Time:", datetime.now())
+        logger.error(f"Failed to delete flow. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't delete flow"},
@@ -316,7 +319,7 @@ async def duplicate_flow(
             content={"message": "Copy of flow created"},
         )
     except Exception as e:
-        print(e, "at duplcate flow. Time:", datetime.now())
+        logger.error(f"Failed to create duplicate flow. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't copy of this flow"},
@@ -410,7 +413,7 @@ async def get_diagram(flow_id: int, token=Depends(auth_handler.auth_wrapper)):
             "custom_fields": encoders.jsonable_encoder(customfields),
         }
     except Exception as e:
-        print(e, "at getting diagram. Time:", datetime.now())
+        logger.error(f"Failed to get diagram. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Cannot get diagram"},
@@ -437,7 +440,7 @@ async def save_draft(flow_id: int):
             content={"message": "Save data Successfully"},
         )
     except Exception as e:
-        print(e, "at save draft. Time:", datetime.now())
+        logger.error(f"Failed to save draft. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't save draft"},
@@ -460,7 +463,7 @@ async def preview(flow_id: int, token=Depends(auth_handler.auth_wrapper)):
         return get_diagram.diagram
 
     except Exception as e:
-        print(e, "at preview of flow. Time:", datetime.now())
+        logger.error(f"Failed to create preview a flow. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't Preview"},
@@ -487,7 +490,7 @@ async def tokenize_preview(my_token: str):
                 content={"errorMessage": "Token is not valid"},
             )
     except Exception as e:
-        print(e, "at token/preview. Time:", datetime.now())
+        logger.error(f"Failed to create preview using token. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't create preview"},
@@ -538,7 +541,7 @@ async def publish(
 
         return {"message": "success", "token": publish_token}
     except Exception as e:
-        print(e, "at publish flow. Time:", datetime.now())
+        logger.error(f"Failed to publish flow. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't publish"},
@@ -561,7 +564,7 @@ async def flow_disabled(flow_id: int, token=Depends(auth_handler.auth_wrapper)):
             status_code=status.HTTP_200_OK, content={"message": "flow disabled"}
         )
     except Exception as e:
-        print(e, "at disable flow. Time:", datetime.now())
+        logger.error(f"Failed to disable flow. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "please check the input"},
@@ -590,7 +593,7 @@ async def archive_flow(flow_id: int, token=Depends(auth_handler.auth_wrapper)):
             content={"message": "flow moved into trash folder"},
         )
     except Exception as e:
-        print(e, "at archive flow. Time:", datetime.now())
+        logger.error(f"Failed to archive flow. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "please check the input"},
@@ -630,7 +633,7 @@ async def get_trashed_flows(user_id: int, token=Depends(auth_handler.auth_wrappe
             status_code=status.HTTP_200_OK, content={"flows": flow_list}
         )
     except Exception as e:
-        print(e, "at getting trashed flow. Time:", datetime.now())
+        logger.error(f"Failed to get trashed flow. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "please check the input"},
@@ -654,7 +657,7 @@ async def complete_delete_flow(flow_id: int, token=Depends(auth_handler.auth_wra
             status_code=status.HTTP_200_OK, content={"message": "success"}
         )
     except Exception as e:
-        print(e, "at delete_forever. Time:", datetime.now())
+        logger.error(f"Failed to delete flow permenant. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "please check the input"},
@@ -682,7 +685,7 @@ async def restore_flow(flow_id: int, token=Depends(auth_handler.auth_wrapper)):
             status_code=status.HTTP_200_OK, content={"message": "success"}
         )
     except Exception as e:
-        print(e, "at restore flow. Time:", datetime.now())
+        logger.error(f"Failed to restore flow. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "please check the input"},
@@ -704,7 +707,7 @@ async def get_flow_detail(flow_id: int, token=Depends(auth_handler.auth_wrapper)
             content={"name": db_name.name, "publish_token": token},
         )
     except Exception as e:
-        print(e, "at flow details. Time:", datetime.now())
+        logger.error(f"Failed to get flow details. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't found"},
@@ -722,7 +725,7 @@ async def post_message(slack_id, message):
     except SlackApiError as e:
         assert e.response["ok"] is False
         assert e.response["error"]  # str like 'invalid_auth', 'channel_not_found'
-        print(f"Got an error: {e.response['error']}")
+        logger.error(f"Got error. ERROR: {e}")
 
 
 async def send_email(data):
@@ -740,7 +743,7 @@ async def send_email(data):
                 send_mail = SendGridAPIClient(os.environ.get("SENDGRID_API_KEY"))
                 send_mail.send(message)
             except Exception as e:
-                print(e, "at sending email. Time:", datetime.now())
+                logger.error(f"Failed to sending email. ERROR: {e}")
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content={"errorMessage": "API is not working"},
@@ -758,13 +761,13 @@ async def send_email(data):
                 send_mail = SendGridAPIClient(os.environ.get("SENDGRID_API_KEY"))
                 send_mail.send(message)
             except Exception as e:
-                print(e, "at sending email. Time:", datetime.now())
+                logger.error(f"Failed to sending email. ERROR: {e}")
                 return JSONResponse(
                     status_code=status.HTTP_404_NOT_FOUND,
                     content={"errorMessage": "API is not working"},
                 )
     except Exception as e:
-        print(e, "at sending email. Time:", datetime.now())
+        logger.error(f"Failed to sending  email. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't send email"},
@@ -878,7 +881,7 @@ async def save_chat_history(
             status_code=status.HTTP_200_OK, content={"message": "Success"}
         )
     except Exception as e:
-        print(e, "at save chat history. Time:", datetime.now())
+        logger.error(f"Failed to save chat history. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Error in save chat history"},
@@ -905,7 +908,7 @@ async def get_chat_history(ip: str, token: str):
         chat_data = {"chat": chat_history.chat, "flow_id": chat_history.flow_id}
         return JSONResponse(status_code=status.HTTP_200_OK, content=chat_data)
     except Exception as e:
-        print(e, "at get chat history. Time:", datetime.now())
+        logger.error(f"Failed to get chat history. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't find chat history"},
@@ -944,7 +947,7 @@ async def upload_file_to_s3(flow_id: int, file: UploadFile):
             status_code=status.HTTP_200_OK, content={"message": "Success"}
         )
     except Exception as e:
-        print(e, "at upload file to s3. Time:", datetime.now())
+        logger.error(f"Failed to upload file to s3. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Error at uploading file"},
@@ -975,7 +978,7 @@ async def upload_file_from_user(flow_id: int, file: UploadFile):
             status_code=status.HTTP_200_OK, content={"message": "Success"}
         )
     except Exception as e:
-        print(e, "at uplode html file. Time:", datetime.now())
+        logger.error(f"Failed to upload html file. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Error at uploading file"},
@@ -1046,7 +1049,7 @@ async def get_flow_analysis_data(
 
         return {"nodes": diagram["nodes"], "connections": connections}
     except Exception as e:
-        print(e, "at flow analysis. Time:", datetime.now())
+        logger.error(f"Failed to get flow analysis. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "There is no visitors!"},
@@ -1112,7 +1115,7 @@ async def upload_to_s3_from_user(file: UploadFile, node_id: int, flow_id: int):
             content={"message": "Successfully Uploaded", "url": s3_file_url},
         )
     except Exception as e:
-        print(e, "at upload from user. Time:", datetime.now())
+        logger.error(f"Failed to uploading from user. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Error at uploading"},

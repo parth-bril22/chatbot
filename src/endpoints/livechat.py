@@ -1,4 +1,5 @@
 import json
+import logging
 from fastapi import APIRouter, status, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 from fastapi_sqlalchemy import db
@@ -12,6 +13,8 @@ from ..models.users import UserInfo
 from ..dependencies.auth import AuthHandler
 
 auth_handler = AuthHandler()
+
+logger = logging.getLogger(__file__)
 
 router = APIRouter(
     prefix="/livechat",
@@ -44,7 +47,6 @@ socket_manager = ConnectionManager()
 
 @router.websocket("/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: int, token: str):
-    print(websocket.values)
     if token != "secret":
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -90,7 +92,7 @@ async def add_member(mail: str, member: AddMember):
             status_code=200, content={"message": "Team member is successfully added!"}
         )
     except Exception as e:
-        print(e, "at creating agent. Time:", datetime.now())
+        logger.error(f"Failed to create agent. ERROR: {e}")
         return JSONResponse(
             status_code=400, content={"errorMessage": "Can't add a team member"}
         )
@@ -112,7 +114,7 @@ async def get_agents(user_id: int):
 
         return {"agents": members}
     except Exception as e:
-        print(e, "at getting member list. Time:", datetime.now())
+        logger.error(f"Failed to get member list. ERROR: {e}")
         return JSONResponse(
             status_code=400, content={"errorMessage": "Can't get the list of members"}
         )
@@ -136,7 +138,7 @@ async def delete_agent(user_id: int, agent_id: int):
             status_code=200, content={"message": "Member removed successfully!"}
         )
     except Exception as e:
-        print(e, "at remove member. Time:", datetime.now())
+        logger.error(f"Failed to remove member agent. ERROR: {e}")
         return JSONResponse(
             status_code=400, content={"errorMessage": "Can't remove member"}
         )

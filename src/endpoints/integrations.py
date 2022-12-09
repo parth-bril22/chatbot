@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, status
 from datetime import datetime
 from fastapi_sqlalchemy import db
@@ -6,11 +7,14 @@ from ..schemas.integrationSchema import SlackSchema, SendgridMailSchema
 from ..models.integrations import Slack, SendGrid
 from fastapi.responses import JSONResponse
 
+
 router = APIRouter(
     prefix="/integrations",
     tags=["Integrations"],
     responses={404: {"description": "Not found"}},
 )
+
+logger = logging.getLogger(__file__)
 
 
 @router.post("/slack")
@@ -32,7 +36,7 @@ async def slack_integration(data: SlackSchema):
             status_code=status.HTTP_201_CREATED, content={"message": "Success"}
         )
     except Exception as e:
-        print(e, "at slack connection. Time:", datetime.now())
+        logger.error(f"Failed to connecting with slack. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't add Slack info"},
@@ -56,7 +60,7 @@ async def get_slack_channels(userId: int):
             status_code=status.HTTP_200_OK, content={"channels": channels}
         )
     except Exception as e:
-        print(e, "at get slack channels. Time:", datetime.now())
+        logger.error(f"Failed to get slack channles. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Channels not found!"},
@@ -79,7 +83,7 @@ async def sendgrid_integration(data: SendgridMailSchema):
             content={"message": "Successfully added!"},
         )
     except Exception as e:
-        print(e, "at slack connection. Time:", datetime.now())
+        logger.error(f"Failed to integrate with sendgrid. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't add sendgrid account"},
@@ -98,7 +102,7 @@ async def get_sendgrid_emails(userId: int):
 
         return JSONResponse(status_code=status.HTTP_200_OK, content={"emails": emails})
     except Exception as e:
-        print(e, "at geting emails. Time:", datetime.now())
+        logger.error(f"Failed to get email list. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't get the emails!"},

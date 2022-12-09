@@ -1,4 +1,5 @@
 import boto3
+import logging
 import secrets
 import json
 from fastapi.responses import JSONResponse
@@ -24,6 +25,8 @@ from ..dependencies.config import AWS_ACCESS_KEY, AWS_ACCESS_SECRET_KEY, BUCKET_
 from ..dependencies.auth import AuthHandler
 
 auth_handler = AuthHandler()
+
+logger = logging.getLogger(__file__)
 
 router = APIRouter(
     prefix="/node",
@@ -110,7 +113,7 @@ async def files_upload_to_s3(file, node_id, flow_id):
             status_code=status.HTTP_200_OK, content={"message": "Successfully Uploaded"}
         )
     except Exception as e:
-        print(e, "at upload to s3. Time:", datetime.now())
+        logger.error(f"Failed to upload to s3. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't upload"},
@@ -133,7 +136,7 @@ async def authenticate_user(flow_id: int, token=Depends(auth_handler.auth_wrappe
                 content={"errorMessage": "Can't find user"},
             )
     except Exception as e:
-        print(e, "at check user. Time:", datetime.now())
+        logger.error(f"Failed to check user. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't authorized"},
@@ -169,11 +172,7 @@ async def check_conditional_logic(prop_value_json: Dict):
                                         value = json.loads(all_symbols[symbol][arg])
                                         value + 1
                                     except Exception as e:
-                                        print(
-                                            e,
-                                            "at conditional logic. Time:",
-                                            datetime.now(),
-                                        )
+                                        logger.error(f"Failed to check conditional node. ERROR: {e}")
                                         Response(status_code=status.HTTP_204_NO_CONTENT)
                 else:
                     Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -215,7 +214,7 @@ async def validate_node_detail(node: CreateNode):
     return JSONResponse(status_code=status.HTTP_200_OK,content="Checked"), props
 
 
-async def create_one_node(node: CreateNode):
+async def create_single_node(node: CreateNode):
     """Create a node based on types"""
 
     try:
@@ -320,7 +319,7 @@ async def create_one_node(node: CreateNode):
         return JSONResponse(status_code = status.HTTP_201_CREATED, content = {"message":"Node created successfully!"}) , node_id
     
     except Exception as e:
-        print(e, "at creating node -2. Time:", datetime.now())
+        logger.error(f"Failed to create single node. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't create a node"},
@@ -335,7 +334,7 @@ async def create_nodes(node: CreateNode, token=Depends(auth_handler.auth_wrapper
         validate_user = await authenticate_user(node.flow_id, token)
         if validate_user.status_code != status.HTTP_200_OK:
             return validate_user
-        create_node_response, node_id = await create_one_node(node)
+        create_node_response, node_id = await create_single_node(node)
         if create_node_response.status_code != status.HTTP_201_CREATED:
             return create_node_response
 
@@ -344,7 +343,7 @@ async def create_nodes(node: CreateNode, token=Depends(auth_handler.auth_wrapper
             content={"message": "Node created successfully!", "ids": node_id},
         )
     except Exception as e:
-        print(e, "at creating node. Time:", datetime.now())
+        logger.error(f"Failed to create node. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't create a node"},
@@ -372,7 +371,7 @@ async def upload_files(file: UploadFile, node_id: int, flow_id: int):
             },
         )
     except Exception as e:
-        print(e, "at upload file. Time:", datetime.now())
+        logger.error(f"Failed to upload file. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't upload file"},
@@ -410,7 +409,7 @@ async def delete_node(
             content={"message": "Node deleted successfully!"},
         )
     except Exception as e:
-        print(e, "at delete node. Time:", datetime.now())
+        logger.error(f"Failed to delete node. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't delete node"},
@@ -465,7 +464,7 @@ async def update_node(
             content={"message": "Node successfully updated!"},
         )
     except Exception as e:
-        print(e, "at updating node. Time:", datetime.now())
+        logger.error(f"Failed to updating node. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't update the node"},
@@ -538,7 +537,7 @@ async def add_subnode(sub: CreateSubNode, token=Depends(auth_handler.auth_wrappe
             content={"message": "Sub node addedd successfully!"},
         )
     except Exception as e:
-        print(e, "at add subnode. Time:", datetime.now())
+        logger.error(f"Failed to add subnode. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't add sub node"},
@@ -593,7 +592,7 @@ async def update_subnode(sub_node: UpdateSubNode, token):
             status_code=status.HTTP_200_OK, content={"message": "Subnode updated"}
         )
     except Exception as e:
-        print(e, "at update subnode. Time:", datetime.now())
+        logger.error(f"Failed to update subnode. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't update subnode"},
@@ -614,7 +613,7 @@ async def update_subnodes(
             content={"message": "Subnode updated successfully!"},
         )
     except Exception as e:
-        print(e, "at update subnode. Time:", datetime.now())
+        logger.error(f"Failed to update subnode. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't update subnode"},
@@ -654,7 +653,7 @@ async def delete_subnode(
             status_code=status.HTTP_200_OK, content={"message": "Sub Node deleted"}
         )
     except Exception as e:
-        print(e, "at delete subnode. Time:", datetime.now())
+        logger.error(f"Failed to delete subnode. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't delete subnode"},
@@ -685,7 +684,7 @@ async def create_node_connection(connection: CreateConnection):
                     content={"errorMessage": "Can't find node"},
                 )
         except Exception as e:
-            print(e, "at creating connection. Time:", datetime.now())
+            logger.error(f"Failed to create connection. ERROR: {e}")
             return JSONResponse(
                 status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't create  connection"},
@@ -740,7 +739,7 @@ async def create_node_connection(connection: CreateConnection):
             content={"message": "Connection created succssfully!"},
         )
     except Exception as e:
-        print(e, "at creating connection. Time:", datetime.now())
+        logger.error(f"Failed to create connection. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"errorMessage": "Can't create connection."},
@@ -766,7 +765,7 @@ async def create_connection(
             content={"message": "Connection created succssfully!"},
         )
     except Exception as e:
-        print(e, "at creating connection. Time:", datetime.now())
+        logger.error(f"Failed to create connection. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't create connection."},
@@ -802,7 +801,7 @@ async def delete_connection(
             status_code=status.HTTP_200_OK, content={"message": "Connection deleted"}
         )
     except Exception as e:
-        print(e, "at deleting connection. Time:", datetime.now())
+        logger.error(f"Failed to delete connection. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't delete connection."},
@@ -814,7 +813,7 @@ async def connection_with_node(
     node: CreateNode,
     node_id: int,
     subnode_id: str,
-    token=Depends(auth_handler.auth_wrapper),
+    token=Depends(auth_handler.auth_wrapper), 
 ):
     """Create a connection with creating node, both  created at a time"""
 
@@ -822,7 +821,7 @@ async def connection_with_node(
         validate_user = await authenticate_user(node.flow_id, token)
         if validate_user.status_code != status.HTTP_200_OK:
             return validate_user
-        create_node_response, id = await create_one_node(node=node)
+        create_node_response, id = await create_single_node(node=node)
         if create_node_response.status_code != status.HTTP_201_CREATED:
             return create_node_response
         sub_node = (
@@ -849,7 +848,7 @@ async def connection_with_node(
             content={"message": "Created connection from node"},
         )
     except Exception as e:
-        print(e, "at creating connection. Time:", datetime.now())
+        logger.error(f"Failed to connection with node. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't create connection"},
@@ -869,7 +868,7 @@ async def add_connection(
         if validate_user.status_code != 200:
             return validate_user
 
-        node_respoonse, new_node_id = await create_one_node(node=node)
+        node_respoonse, new_node_id = await create_single_node(node=node)
         if node_respoonse.status_code != status.HTTP_201_CREATED:
             return status
 
@@ -901,7 +900,7 @@ async def add_connection(
             content={"message": "Added connection successfully!"},
         )
     except Exception as e:
-        print(e, "at adding connection. Time:", datetime.now())
+        logger.error(f"Failed to add connection. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't add connection"},

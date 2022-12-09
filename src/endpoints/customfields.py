@@ -1,3 +1,4 @@
+import logging
 from typing import List
 from fastapi.responses import JSONResponse
 from datetime import datetime
@@ -11,6 +12,7 @@ from ..dependencies.auth import AuthHandler
 
 auth_handler = AuthHandler()
 
+logger = logging.getLogger(__file__)
 
 router = APIRouter(
     prefix="/customfields",
@@ -53,7 +55,7 @@ async def create_global_variable(schema: CreateVariable):
             content={"message": "Created successfully"},
         )
     except Exception as e:
-        print(e, "at create global variables. Time:", datetime.now())
+        logger.error(f"Failed to create variable. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't create a variable"},
@@ -73,7 +75,7 @@ async def get_variables(user_id: int):
         return JSONResponse(status_code=status.HTTP_200_OK, content={"Variables": vars})
 
     except Exception as e:
-        print(e, "at get variables. Time:", datetime.now())
+        logger.error(f"Failed to get variables. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't get a variable"},
@@ -95,7 +97,7 @@ async def save_variables(vars: List, user_id: int):
         return JSONResponse(status_code=status.HTTP_200_OK, content={"Variables": vars})
 
     except Exception as e:
-        print(e, "at save variables. Time:", datetime.now())
+        logger.error(f"Failed to save variables. ERROR: {e}")
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
             content={"errorMessage": "Can't able to save variables"},
